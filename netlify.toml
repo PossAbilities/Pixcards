@@ -1,0 +1,19 @@
+# Netlify configuration for Pixcards (Next.js)
+# The official Next.js runtime is auto-detected and enabled by Netlify.
+
+[build]
+  # Generate the Prisma client, sync the schema to the database, then build.
+  command = "prisma generate && prisma db push --skip-generate && next build"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # Prisma + Next on Netlify
+  NEXT_TELEMETRY_DISABLED = "1"
+
+# Required environment variables (set in Netlify UI → Site settings → Environment):
+#   DATABASE_URL          Postgres connection string (use the Neon DB integration)
+#   AUTH_SECRET           openssl rand -base64 32
+#   NEXT_PUBLIC_APP_URL   https://your-site.netlify.app
+# Optional (Stripe — omit to run in demo mode):
+#   STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET,
+#   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, STRIPE_PRO_PRICE_ID

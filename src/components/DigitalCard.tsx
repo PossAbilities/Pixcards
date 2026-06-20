@@ -105,7 +105,7 @@ export function DigitalCard({
           className="absolute inset-0"
           style={{
             background: data.headerUrl
-              ? `center/cover no-repeat url(${data.headerUrl})`
+              ? `center/cover no-repeat url("${data.headerUrl}")`
               : t.header,
           }}
         />

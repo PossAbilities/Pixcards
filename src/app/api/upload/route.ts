@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
-import { randomUUID } from "crypto";
 import { getSessionUser } from "@/lib/auth";
 
-const MAX_BYTES = 5 * 1024 * 1024; // 5MB
+const MAX_BYTES = 2 * 1024 * 1024; // 2MB (stored inline as a data URI)
 const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
+/**
+ * Accepts an image and returns it as a data URI. Storing images inline keeps
+ * the app free of a separate object-storage dependency, so uploads work the
+ * same in local dev and on serverless hosts (Netlify) with a read-only
+ * filesystem. For high-volume production, swap this for S3/R2/Netlify Blobs.
+ */
 export async function POST(req: NextRequest) {
   const user = await getSessionUser();
   if (!user) {
@@ -26,17 +29,12 @@ export async function POST(req: NextRequest) {
   }
   if (file.size > MAX_BYTES) {
     return NextResponse.json(
-      { error: "File too large (max 5MB)." },
+      { error: "File too large (max 2MB)." },
       { status: 400 },
     );
   }
 
-  const ext = file.type.split("/")[1].replace("jpeg", "jpg");
-  const filename = `${user.id}-${randomUUID()}.${ext}`;
-  const dir = path.join(process.cwd(), "public", "uploads");
-  await mkdir(dir, { recursive: true });
-  const bytes = Buffer.from(await file.arrayBuffer());
-  await writeFile(path.join(dir, filename), bytes);
-
-  return NextResponse.json({ url: `/uploads/${filename}` });
+  const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
+  const url = `data:${file.type};base64,${base64}`;
+  return NextResponse.json({ url });
 }
