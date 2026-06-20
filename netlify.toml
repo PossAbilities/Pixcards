@@ -15,6 +15,8 @@
 #   DIRECT_URL            Supabase direct URL (port 5432) — used by db push
 #   AUTH_SECRET           openssl rand -base64 32
 #   NEXT_PUBLIC_APP_URL   https://your-site.netlify.app
+# Optional:
+#   ADMIN_EMAIL           email that becomes admin on sign-up (else first user)
 # Optional — Supabase Storage for uploads (omit → inline data-URI uploads):
 #   NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
 #   SUPABASE_SERVICE_ROLE_KEY, SUPABASE_STORAGE_BUCKET

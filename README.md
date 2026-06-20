@@ -108,3 +108,6 @@ prisma/                schema + seed
 
 Image storage is abstracted in `src/lib/storage.ts` (Supabase Storage with an
 inline-data-URI fallback).
+
+**First admin:** the first account to register becomes the admin automatically
+(no seeding needed in production). Set `ADMIN_EMAIL` to pin a specific address.

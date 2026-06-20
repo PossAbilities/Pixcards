@@ -60,11 +60,20 @@ export async function registerAction(
   }
 
   const username = await uniqueUsername(name);
+
+  // First-ever user becomes the admin (bootstraps production with no seed).
+  // Alternatively, any email matching ADMIN_EMAIL is granted admin.
+  const userCount = await prisma.user.count();
+  const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase();
+  const isAdmin =
+    userCount === 0 || (!!adminEmail && email.toLowerCase() === adminEmail);
+
   const user = await prisma.user.create({
     data: {
       name,
       email: email.toLowerCase(),
       passwordHash: await hashPassword(password),
+      role: isAdmin ? "ADMIN" : "USER",
       profile: {
         create: {
           username,
