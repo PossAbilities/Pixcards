@@ -79,7 +79,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           <Label htmlFor="password">Password</Label>
           {mode === "login" && (
             <Link
-              href="/login"
+              href="/forgot-password"
               className="text-xs font-semibold text-primary hover:text-primary-deep mb-1.5"
             >
               Forgot password?

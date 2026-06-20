@@ -102,13 +102,31 @@ export default async function AdminOverviewPage() {
 
   return (
     <div className="space-y-8">
-      <header>
-        <h1 className="font-display text-3xl font-extrabold text-ink">
-          Overview
-        </h1>
-        <p className="mt-1 text-muted">
-          Platform performance, orders and fulfilment at a glance.
-        </p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="font-display text-3xl font-extrabold text-ink">
+            Overview
+          </h1>
+          <p className="mt-1 text-muted">
+            Platform performance, orders and fulfilment at a glance.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/admin/orders"
+            aria-label={`Recent orders${pendingOrders > 0 ? `, ${pendingOrders} pending` : ""}`}
+            className="relative grid place-items-center w-11 h-11 rounded-xl bg-surface border border-black/5 text-muted hover:text-ink hover:bg-surface-low transition-colors"
+          >
+            <Icon name="notifications" className="text-[22px]" />
+            {pendingOrders > 0 && (
+              <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-tertiary-bright ring-2 ring-surface" />
+            )}
+          </Link>
+          <Link href="/dashboard/order" className={buttonClass("primary", "md")}>
+            <Icon name="add" className="text-[18px]" />
+            Create Order
+          </Link>
+        </div>
       </header>
 
       {/* Stat cards */}
@@ -274,8 +292,8 @@ export default async function AdminOverviewPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <Link
+            href="/admin/orders"
             className={buttonClass(
               "secondary",
               "md",
@@ -283,8 +301,8 @@ export default async function AdminOverviewPage() {
             )}
           >
             <Icon name="fact_check" className="text-[18px]" />
-            Run Logistics Audit
-          </button>
+            Review fulfilment queue
+          </Link>
         </div>
       </div>
     </div>

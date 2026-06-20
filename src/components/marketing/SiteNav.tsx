@@ -2,9 +2,11 @@ import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { buttonClass } from "@/components/ui";
 import { getSessionUser } from "@/lib/auth";
+import { MobileMenu } from "./MobileMenu";
 
 export async function SiteNav() {
   const user = await getSessionUser();
+  const dashboardHref = user?.role === "ADMIN" ? "/admin" : "/dashboard";
   return (
     <nav className="sticky top-0 z-50 h-20 glass backdrop-blur-md border-b border-black/5">
       <div className="max-w-[1200px] mx-auto h-full px-4 md:px-12 flex items-center justify-between">
@@ -22,7 +24,7 @@ export async function SiteNav() {
         </div>
         <div className="flex items-center gap-3">
           {user ? (
-            <Link href={user.role === "ADMIN" ? "/admin" : "/dashboard"} className={buttonClass("primary", "md")}>
+            <Link href={dashboardHref} className={buttonClass("primary", "md", "hidden sm:inline-flex")}>
               Dashboard
             </Link>
           ) : (
@@ -33,11 +35,12 @@ export async function SiteNav() {
               >
                 Login
               </Link>
-              <Link href="/register" className={buttonClass("primary", "md")}>
+              <Link href="/register" className={buttonClass("primary", "md", "hidden sm:inline-flex")}>
                 Get Started
               </Link>
             </>
           )}
+          <MobileMenu authed={Boolean(user)} dashboardHref={dashboardHref} />
         </div>
       </div>
     </nav>
