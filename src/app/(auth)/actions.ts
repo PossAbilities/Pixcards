@@ -52,38 +52,48 @@ export async function registerAction(
   }
   const { name, email, password } = parsed.data;
 
-  const existing = await prisma.user.findUnique({
-    where: { email: email.toLowerCase() },
-  });
-  if (existing) {
-    return { error: "An account with that email already exists." };
-  }
+  let userId: string;
+  try {
+    const existing = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+    if (existing) {
+      return { error: "An account with that email already exists." };
+    }
 
-  const username = await uniqueUsername(name);
+    const username = await uniqueUsername(name);
 
-  // First-ever user becomes the admin (bootstraps production with no seed).
-  // Alternatively, any email matching ADMIN_EMAIL is granted admin.
-  const userCount = await prisma.user.count();
-  const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase();
-  const isAdmin =
-    userCount === 0 || (!!adminEmail && email.toLowerCase() === adminEmail);
+    // First-ever user becomes the admin (bootstraps production with no seed).
+    // Alternatively, any email matching ADMIN_EMAIL is granted admin.
+    const userCount = await prisma.user.count();
+    const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase();
+    const isAdmin =
+      userCount === 0 || (!!adminEmail && email.toLowerCase() === adminEmail);
 
-  const user = await prisma.user.create({
-    data: {
-      name,
-      email: email.toLowerCase(),
-      passwordHash: await hashPassword(password),
-      role: isAdmin ? "ADMIN" : "USER",
-      profile: {
-        create: {
-          username,
-          email: email.toLowerCase(),
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email: email.toLowerCase(),
+        passwordHash: await hashPassword(password),
+        role: isAdmin ? "ADMIN" : "USER",
+        profile: {
+          create: {
+            username,
+            email: email.toLowerCase(),
+          },
         },
       },
-    },
-  });
+    });
+    userId = user.id;
+  } catch (e) {
+    console.error("registerAction: database error", e);
+    return {
+      error:
+        "We couldn't create your account — the database may be unreachable. Please try again shortly (if this persists, check the DATABASE_URL configuration).",
+    };
+  }
 
-  await createSession(user.id);
+  await createSession(userId);
   redirect("/dashboard");
 }
 
@@ -100,9 +110,18 @@ export async function loginAction(
   }
   const { email, password } = parsed.data;
 
-  const user = await prisma.user.findUnique({
-    where: { email: email.toLowerCase() },
-  });
+  let user;
+  try {
+    user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+  } catch (e) {
+    console.error("loginAction: database error", e);
+    return {
+      error:
+        "We couldn't reach the database. Please try again shortly (if this persists, check the DATABASE_URL configuration).",
+    };
+  }
   if (!user || !(await verifyPassword(password, user.passwordHash))) {
     return { error: "Incorrect email or password." };
   }
