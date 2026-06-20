@@ -29,11 +29,13 @@ demo mode so it runs with zero secrets).
 
 ```bash
 npm install
-cp .env.example .env          # defaults work out of the box (SQLite + demo mode)
-npx prisma migrate dev        # create the database
+cp .env.example .env          # set DATABASE_URL / DIRECT_URL to a Postgres (Supabase)
+npm run db:push               # sync the schema to the database
 npm run db:seed               # demo users + sample orders + analytics
 npm run dev                   # http://localhost:3000
 ```
+
+Any PostgreSQL works; **Supabase** is the intended target.
 
 ### Demo accounts
 
@@ -88,10 +90,21 @@ src/
 prisma/                schema + seed
 ```
 
-### Going to production
+## Deploying to Netlify + Supabase
 
-- Swap SQLite for Postgres: change the `datasource` in `prisma/schema.prisma`
-  and `DATABASE_URL`, then `prisma migrate deploy`.
-- Set a strong `AUTH_SECRET` and real Stripe keys.
-- Move uploads from local `public/uploads` to object storage (S3/R2) — see
-  `src/app/api/upload/route.ts`.
+1. **Database (Supabase):** Project Settings → Database → Connection string.
+   - `DATABASE_URL` → the **Transaction pooler** URL (port `6543`) + `?pgbouncer=true`
+   - `DIRECT_URL` → the **direct/session** URL (port `5432`) — used by `prisma db push`
+2. **Storage (Supabase, optional):** Project Settings → API. Set
+   `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+   `SUPABASE_SERVICE_ROLE_KEY`. A public bucket (`pixcards-media`) is created
+   automatically on first upload. Without these, uploads fall back to inline
+   data URIs. The **service-role key is secret** — set it in Netlify env, never
+   commit it.
+3. **Netlify:** connect the repo. `netlify.toml` builds with
+   `prisma generate && prisma db push && next build` on Node 22. Set the env
+   vars above plus `AUTH_SECRET` and `NEXT_PUBLIC_APP_URL`. Stripe keys optional
+   (omit → demo mode).
+
+Image storage is abstracted in `src/lib/storage.ts` (Supabase Storage with an
+inline-data-URI fallback).

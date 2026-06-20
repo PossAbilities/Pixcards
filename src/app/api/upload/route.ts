@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
+import { storeImage } from "@/lib/storage";
 
-const MAX_BYTES = 2 * 1024 * 1024; // 2MB (stored inline as a data URI)
+const MAX_BYTES = 5 * 1024 * 1024; // 5MB
 const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 /**
- * Accepts an image and returns it as a data URI. Storing images inline keeps
- * the app free of a separate object-storage dependency, so uploads work the
- * same in local dev and on serverless hosts (Netlify) with a read-only
- * filesystem. For high-volume production, swap this for S3/R2/Netlify Blobs.
+ * Uploads an image. Uses Supabase Storage when configured, otherwise returns
+ * an inline data URI (see src/lib/storage.ts).
  */
 export async function POST(req: NextRequest) {
   const user = await getSessionUser();
@@ -29,12 +28,17 @@ export async function POST(req: NextRequest) {
   }
   if (file.size > MAX_BYTES) {
     return NextResponse.json(
-      { error: "File too large (max 2MB)." },
+      { error: "File too large (max 5MB)." },
       { status: 400 },
     );
   }
 
-  const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
-  const url = `data:${file.type};base64,${base64}`;
-  return NextResponse.json({ url });
+  try {
+    const bytes = Buffer.from(await file.arrayBuffer());
+    const url = await storeImage(bytes, file.type, user.id);
+    return NextResponse.json({ url });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Upload failed";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

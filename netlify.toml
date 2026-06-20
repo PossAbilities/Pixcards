@@ -11,9 +11,13 @@
   NEXT_TELEMETRY_DISABLED = "1"
 
 # Required environment variables (set in Netlify UI → Site settings → Environment):
-#   DATABASE_URL          Postgres connection string (use the Neon DB integration)
+#   DATABASE_URL          Supabase pooled URL (port 6543, ?pgbouncer=true)
+#   DIRECT_URL            Supabase direct URL (port 5432) — used by db push
 #   AUTH_SECRET           openssl rand -base64 32
 #   NEXT_PUBLIC_APP_URL   https://your-site.netlify.app
-# Optional (Stripe — omit to run in demo mode):
+# Optional — Supabase Storage for uploads (omit → inline data-URI uploads):
+#   NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
+#   SUPABASE_SERVICE_ROLE_KEY, SUPABASE_STORAGE_BUCKET
+# Optional — Stripe (omit → demo mode):
 #   STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET,
 #   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, STRIPE_PRO_PRICE_ID
