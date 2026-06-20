@@ -28,8 +28,7 @@ async function uniqueUsername(base: string): Promise<string> {
   const root = slugify(base) || "user";
   let candidate = root;
   let n = 0;
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
+  for (;;) {
     const exists = await prisma.profile.findUnique({
       where: { username: candidate },
     });
