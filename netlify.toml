@@ -1,5 +1,8 @@
 # Netlify configuration for Pixcards (Next.js)
-# The official Next.js runtime is auto-detected and enabled by Netlify.
+# Explicitly enable the Next.js runtime — a custom build command can suppress
+# Netlify's framework auto-detection, which otherwise leaves routes unserved.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
 
 [build]
   # Generate the Prisma client; sync the schema only when a database is
