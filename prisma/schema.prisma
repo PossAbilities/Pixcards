@@ -1,0 +1,139 @@
+// Pixcards data model
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // Pooled connection for the app at runtime (Supabase pooler / pgbouncer).
+  url       = env("DATABASE_URL")
+  // Direct connection for migrations / `prisma db push`. Falls back to the
+  // same value for non-pooled Postgres (set DIRECT_URL = DATABASE_URL).
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Plan {
+  FREE
+  PRO
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role     @default(USER)
+  plan         Plan     @default(FREE)
+
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  proSince             DateTime?
+
+  profile Profile?
+  orders  Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Profile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  username  String  @unique // public slug: pixcards.app/u/<username>
+  jobTitle  String  @default("")
+  company   String  @default("")
+  bio       String  @default("")
+  location  String  @default("")
+  phone     String  @default("")
+  email     String  @default("")
+  avatarUrl String?
+  headerUrl String?
+
+  theme       String  @default("indigo") // indigo | midnight | ruby | slate | emerald
+  accentColor String  @default("#4f46e5")
+  published   Boolean @default(true)
+
+  links  Link[]
+  events AnalyticsEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Link {
+  id        String  @id @default(cuid())
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  platform String // linkedin | website | instagram | twitter | github | phone | email | custom
+  label    String
+  url      String
+  icon     String  @default("link")
+  position Int     @default(0)
+  active   Boolean @default(true)
+
+  events    AnalyticsEvent[]
+  createdAt DateTime         @default(now())
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PRINTING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model Order {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  status     OrderStatus @default(PENDING)
+  cardName   String      @default("") // name printed on card
+  material   String      @default("matte-black") // matte-black | metal-indigo | bio-plastic | white-gloss
+  finish     String      @default("standard")
+  quantity   Int         @default(1)
+  priceCents Int         @default(2900)
+  design     String      @default("{}") // JSON: colors, logo, layout choices
+
+  shipName    String @default("")
+  shipAddress String @default("")
+  shipCity    String @default("")
+  shipPostal  String @default("")
+  shipCountry String @default("United Kingdom")
+
+  stripeSessionId String?
+  trackingNumber  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum EventType {
+  VIEW
+  TAP
+  LINK_CLICK
+  SAVE_CONTACT
+}
+
+model AnalyticsEvent {
+  id        String  @id @default(cuid())
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  linkId String?
+  link   Link?   @relation(fields: [linkId], references: [id], onDelete: SetNull)
+
+  type      EventType
+  referrer  String?
+  createdAt DateTime  @default(now())
+}

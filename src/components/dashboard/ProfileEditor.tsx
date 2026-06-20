@@ -1,0 +1,796 @@
+"use client";
+
+import { useCallback, useMemo, useRef, useState, useTransition } from "react";
+import { Icon } from "@/components/Icon";
+import {
+  Card,
+  Label,
+  ProBadge,
+  SectionHeading,
+  buttonClass,
+  inputClass,
+} from "@/components/ui";
+import { DigitalCard, type CardLink } from "@/components/DigitalCard";
+import { Toast, type ToastState } from "@/components/dashboard/Toast";
+import { PLATFORMS, THEMES, platform, theme as getTheme } from "@/lib/constants";
+import { cn } from "@/lib/utils";
+import {
+  addLink,
+  deleteLink,
+  setTheme,
+  updateImages,
+  updateLink,
+  updateProfile,
+  type ActionResult,
+} from "@/lib/actions/profile";
+import type { Plan } from "@prisma/client";
+
+const FREE_LINK_LIMIT = 5;
+
+type ProfileState = {
+  name: string;
+  username: string;
+  jobTitle: string;
+  company: string;
+  bio: string;
+  location: string;
+  phone: string;
+  email: string;
+  avatarUrl: string | null;
+  headerUrl: string | null;
+  theme: string;
+};
+
+type LinkDraft = { platform: string; label: string; url: string };
+
+export function ProfileEditor({
+  plan,
+  shareUrl,
+  profile,
+  links: initialLinks,
+}: {
+  plan: Plan;
+  shareUrl: string;
+  profile: ProfileState;
+  links: CardLink[];
+}) {
+  const isPro = plan === "PRO";
+
+  const [form, setForm] = useState<ProfileState>(profile);
+  const [links, setLinks] = useState<CardLink[]>(initialLinks);
+  const [toast, setToast] = useState<ToastState>(null);
+  const [isPending, startTransition] = useTransition();
+
+  const showToast = useCallback((message: string, kind: "success" | "error") => {
+    setToast({ message, kind });
+  }, []);
+
+  function handleResult(res: ActionResult, success: string) {
+    if (res.ok) showToast(success, "success");
+    else showToast(res.error ?? "Something went wrong", "error");
+  }
+
+  /* ----------------------------- Live preview ---------------------------- */
+  const liveData = useMemo(
+    () => ({
+      name: form.name,
+      jobTitle: form.jobTitle,
+      company: form.company,
+      bio: form.bio,
+      location: form.location,
+      phone: form.phone,
+      email: form.email,
+      avatarUrl: form.avatarUrl,
+      headerUrl: form.headerUrl,
+      themeId: form.theme,
+      links,
+    }),
+    [form, links],
+  );
+
+  /* ------------------------------- Details ------------------------------- */
+  function set<K extends keyof ProfileState>(key: K, value: ProfileState[K]) {
+    setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  function saveDetails() {
+    const fd = new FormData();
+    fd.set("name", form.name);
+    fd.set("jobTitle", form.jobTitle);
+    fd.set("company", form.company);
+    fd.set("bio", form.bio);
+    fd.set("location", form.location);
+    fd.set("phone", form.phone);
+    fd.set("email", form.email);
+    fd.set("username", form.username);
+    startTransition(async () => {
+      handleResult(await updateProfile(fd), "Profile saved");
+    });
+  }
+
+  /* ------------------------------- Theme --------------------------------- */
+  function chooseTheme(themeId: string, pro: boolean) {
+    if (pro && !isPro) {
+      showToast("Pro feature — upgrade to unlock this theme", "error");
+      return;
+    }
+    const prev = form.theme;
+    set("theme", themeId);
+    startTransition(async () => {
+      const res = await setTheme(themeId);
+      if (!res.ok) {
+        set("theme", prev);
+        showToast(res.error ?? "Could not change theme", "error");
+      } else {
+        showToast("Theme updated", "success");
+      }
+    });
+  }
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* ------------------------------ LEFT ------------------------------- */}
+      <div className="lg:col-span-8 flex flex-col gap-6">
+        <ImagesCard
+          headerUrl={form.headerUrl}
+          avatarUrl={form.avatarUrl}
+          name={form.name}
+          themeId={form.theme}
+          onUploaded={(field, url) => {
+            set(field, url);
+            startTransition(async () => {
+              handleResult(
+                await updateImages({ [field]: url }),
+                field === "avatarUrl" ? "Avatar updated" : "Header updated",
+              );
+            });
+          }}
+          onError={(m) => showToast(m, "error")}
+        />
+
+        {/* Personal details */}
+        <Card className="p-6">
+          <SectionHeading icon="person" title="Personal Details" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Full Name">
+              <input
+                className={inputClass}
+                value={form.name}
+                onChange={(e) => set("name", e.target.value)}
+                placeholder="Jane Doe"
+              />
+            </Field>
+            <Field label="Job Title">
+              <input
+                className={inputClass}
+                value={form.jobTitle}
+                onChange={(e) => set("jobTitle", e.target.value)}
+                placeholder="Product Designer"
+              />
+            </Field>
+            <Field label="Company">
+              <input
+                className={inputClass}
+                value={form.company}
+                onChange={(e) => set("company", e.target.value)}
+                placeholder="Acme Inc."
+              />
+            </Field>
+            <Field label="Location">
+              <input
+                className={inputClass}
+                value={form.location}
+                onChange={(e) => set("location", e.target.value)}
+                placeholder="London, UK"
+              />
+            </Field>
+            <div className="sm:col-span-2">
+              <Field label="Bio">
+                <textarea
+                  className={cn(inputClass, "min-h-24 resize-y")}
+                  value={form.bio}
+                  onChange={(e) => set("bio", e.target.value)}
+                  maxLength={300}
+                  placeholder="A short introduction about yourself."
+                />
+              </Field>
+            </div>
+            <Field label="Public Email">
+              <input
+                className={inputClass}
+                type="email"
+                value={form.email}
+                onChange={(e) => set("email", e.target.value)}
+                placeholder="you@email.com"
+              />
+            </Field>
+            <Field label="Phone">
+              <input
+                className={inputClass}
+                value={form.phone}
+                onChange={(e) => set("phone", e.target.value)}
+                placeholder="+44 1234 567890"
+              />
+            </Field>
+            <div className="sm:col-span-2">
+              <Field label="Username">
+                <div className="flex items-stretch rounded-lg border border-outline overflow-hidden focus-within:ring-2 focus-within:ring-primary/40 focus-within:border-primary">
+                  <span className="grid place-items-center px-3 bg-surface-low text-xs font-semibold text-muted border-r border-outline whitespace-nowrap">
+                    pixcards.app/u/
+                  </span>
+                  <input
+                    className="flex-1 px-3 py-2.5 bg-surface text-ink outline-none min-w-0"
+                    value={form.username}
+                    onChange={(e) => set("username", e.target.value)}
+                    placeholder="janedoe"
+                  />
+                </div>
+              </Field>
+            </div>
+          </div>
+          <div className="mt-5 flex justify-end">
+            <button
+              type="button"
+              onClick={saveDetails}
+              disabled={isPending}
+              className={buttonClass("primary", "md")}
+            >
+              <Icon name="save" className="text-[18px]" />
+              Save Changes
+            </button>
+          </div>
+        </Card>
+
+        {/* Links */}
+        <LinksCard
+          links={links}
+          setLinks={setLinks}
+          isPro={isPro}
+          startTransition={startTransition}
+          isPending={isPending}
+          showToast={showToast}
+        />
+
+        {/* Appearance */}
+        <Card className="p-6">
+          <SectionHeading icon="palette" title="Custom Appearance" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {THEMES.map((t) => {
+              const active = form.theme === t.id;
+              const locked = t.pro && !isPro;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => chooseTheme(t.id, t.pro)}
+                  className={cn(
+                    "relative rounded-2xl overflow-hidden border-2 text-left transition-all",
+                    active
+                      ? "border-primary ring-2 ring-primary/30"
+                      : "border-black/5 hover:border-primary/40",
+                  )}
+                >
+                  <div className="h-16" style={{ background: t.header }} />
+                  <div className="flex items-center justify-between px-3 py-2 bg-surface">
+                    <span className="text-xs font-semibold text-ink truncate">
+                      {t.name}
+                    </span>
+                    {active && (
+                      <Icon
+                        name="check_circle"
+                        fill
+                        className="text-primary text-[18px]"
+                      />
+                    )}
+                  </div>
+                  {t.pro && (
+                    <span className="absolute top-2 right-2">
+                      <ProBadge />
+                    </span>
+                  )}
+                  {locked && (
+                    <span className="absolute top-2 left-2 grid place-items-center w-6 h-6 rounded-full bg-black/40 text-white">
+                      <Icon name="lock" className="text-[14px]" />
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+      </div>
+
+      {/* ------------------------------ RIGHT ------------------------------ */}
+      <div className="lg:col-span-4">
+        <div className="lg:sticky lg:top-8 flex flex-col items-center gap-5">
+          <span className="text-xs font-semibold uppercase tracking-widest text-muted">
+            Live Preview
+          </span>
+          <div className="w-[280px] max-w-full border-8 border-ink rounded-[32px] overflow-hidden shadow-xl bg-surface">
+            <div className="h-[560px] overflow-y-auto">
+              <DigitalCard data={liveData} />
+            </div>
+          </div>
+          <PreviewActions shareUrl={shareUrl} accent={getTheme(form.theme).accent} />
+        </div>
+      </div>
+
+      <Toast toast={toast} onClose={() => setToast(null)} />
+    </div>
+  );
+}
+
+/* ----------------------------- Sub-components ---------------------------- */
+
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <Label>{label}</Label>
+      {children}
+    </div>
+  );
+}
+
+async function uploadFile(file: File): Promise<string> {
+  const fd = new FormData();
+  fd.set("file", file);
+  const res = await fetch("/api/upload", { method: "POST", body: fd });
+  const json = (await res.json()) as { url?: string; error?: string };
+  if (!res.ok || !json.url) {
+    throw new Error(json.error ?? "Upload failed");
+  }
+  return json.url;
+}
+
+function ImagesCard({
+  headerUrl,
+  avatarUrl,
+  name,
+  themeId,
+  onUploaded,
+  onError,
+}: {
+  headerUrl: string | null;
+  avatarUrl: string | null;
+  name: string;
+  themeId: string;
+  onUploaded: (field: "avatarUrl" | "headerUrl", url: string) => void;
+  onError: (msg: string) => void;
+}) {
+  const t = getTheme(themeId);
+  const [busy, setBusy] = useState<"avatarUrl" | "headerUrl" | null>(null);
+  const headerInput = useRef<HTMLInputElement>(null);
+  const avatarInput = useRef<HTMLInputElement>(null);
+
+  async function handle(field: "avatarUrl" | "headerUrl", file?: File) {
+    if (!file) return;
+    setBusy(field);
+    try {
+      const url = await uploadFile(file);
+      onUploaded(field, url);
+    } catch (e) {
+      onError(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <Card className="p-6">
+      <SectionHeading icon="image" title="Images" />
+
+      {/* Header banner */}
+      <div className="relative h-32 rounded-xl overflow-hidden">
+        <div
+          className="absolute inset-0"
+          style={{
+            background: headerUrl
+              ? `center/cover no-repeat url(${headerUrl})`
+              : t.header,
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => headerInput.current?.click()}
+          className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-lg bg-black/50 text-white px-3 py-1.5 text-xs font-semibold backdrop-blur hover:bg-black/60"
+        >
+          {busy === "headerUrl" ? (
+            <Icon name="progress_activity" className="text-[16px] animate-spin" />
+          ) : (
+            <Icon name="upload" className="text-[16px]" />
+          )}
+          Upload header
+        </button>
+        <input
+          ref={headerInput}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => handle("headerUrl", e.target.files?.[0])}
+        />
+      </div>
+
+      {/* Avatar */}
+      <div className="mt-4 flex items-center gap-4">
+        <div className="relative">
+          <div
+            className="w-20 h-20 rounded-full overflow-hidden grid place-items-center text-white font-bold text-xl shadow"
+            style={{ background: t.accent }}
+          >
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={avatarUrl}
+                alt={name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span>{(name || "P").slice(0, 1).toUpperCase()}</span>
+            )}
+          </div>
+          {busy === "avatarUrl" && (
+            <div className="absolute inset-0 grid place-items-center rounded-full bg-black/40 text-white">
+              <Icon name="progress_activity" className="animate-spin text-[20px]" />
+            </div>
+          )}
+        </div>
+        <div>
+          <button
+            type="button"
+            onClick={() => avatarInput.current?.click()}
+            className={buttonClass("outline", "sm")}
+          >
+            <Icon name="add_a_photo" className="text-[16px]" />
+            Upload avatar
+          </button>
+          <p className="text-xs text-faint mt-1.5">JPG, PNG or WEBP. Max 5MB.</p>
+          <input
+            ref={avatarInput}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handle("avatarUrl", e.target.files?.[0])}
+          />
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function LinksCard({
+  links,
+  setLinks,
+  isPro,
+  startTransition,
+  isPending,
+  showToast,
+}: {
+  links: CardLink[];
+  setLinks: React.Dispatch<React.SetStateAction<CardLink[]>>;
+  isPro: boolean;
+  startTransition: React.TransitionStartFunction;
+  isPending: boolean;
+  showToast: (m: string, k: "success" | "error") => void;
+}) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+
+  const atLimit = !isPro && links.length >= FREE_LINK_LIMIT;
+
+  function reload() {
+    // Server actions revalidate; we keep local state optimistic via re-fetch
+    // by simply trusting the action result. Router refresh keeps SSR in sync.
+    window.location.reload();
+  }
+
+  function submitAdd(draft: LinkDraft) {
+    const fd = new FormData();
+    fd.set("platform", draft.platform);
+    fd.set("label", draft.label);
+    fd.set("url", draft.url);
+    startTransition(async () => {
+      const res = await addLink(fd);
+      if (res.ok) {
+        showToast("Link added", "success");
+        setAdding(false);
+        reload();
+      } else {
+        showToast(res.error ?? "Could not add link", "error");
+      }
+    });
+  }
+
+  function submitEdit(id: string, draft: LinkDraft) {
+    const fd = new FormData();
+    fd.set("platform", draft.platform);
+    fd.set("label", draft.label);
+    fd.set("url", draft.url);
+    startTransition(async () => {
+      const res = await updateLink(id, fd);
+      if (res.ok) {
+        showToast("Link updated", "success");
+        setEditingId(null);
+        setLinks((ls) =>
+          ls.map((l) =>
+            l.id === id
+              ? {
+                  ...l,
+                  platform: draft.platform,
+                  label: draft.label,
+                  url: draft.url,
+                  icon: platform(draft.platform).icon,
+                }
+              : l,
+          ),
+        );
+      } else {
+        showToast(res.error ?? "Could not update link", "error");
+      }
+    });
+  }
+
+  function remove(id: string) {
+    startTransition(async () => {
+      const res = await deleteLink(id);
+      if (res.ok) {
+        setLinks((ls) => ls.filter((l) => l.id !== id));
+        showToast("Link removed", "success");
+      } else {
+        showToast(res.error ?? "Could not delete link", "error");
+      }
+    });
+  }
+
+  return (
+    <Card className="p-6">
+      <SectionHeading
+        icon="link"
+        title="Active Links"
+        action={
+          atLimit ? (
+            <a
+              href="/pricing"
+              className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1"
+            >
+              <Icon name="lock" className="text-[14px]" />
+              Upgrade for unlimited
+            </a>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setAdding((v) => !v);
+                setEditingId(null);
+              }}
+              className={buttonClass("secondary", "sm")}
+            >
+              <Icon name="add" className="text-[18px]" />
+              Add New Link
+            </button>
+          )
+        }
+      />
+
+      {adding && (
+        <LinkForm
+          onSubmit={submitAdd}
+          onCancel={() => setAdding(false)}
+          disabled={isPending}
+        />
+      )}
+
+      <div className="flex flex-col gap-2 mt-1">
+        {links.length === 0 && !adding && (
+          <p className="text-sm text-muted py-4 text-center">
+            No links yet. Add your first one above.
+          </p>
+        )}
+        {links.map((link) =>
+          editingId === link.id ? (
+            <LinkForm
+              key={link.id}
+              initial={{
+                platform: link.platform,
+                label: link.label,
+                url: link.url,
+              }}
+              onSubmit={(d) => submitEdit(link.id, d)}
+              onCancel={() => setEditingId(null)}
+              disabled={isPending}
+            />
+          ) : (
+            <div
+              key={link.id}
+              className="flex items-center gap-3 p-3 rounded-xl border border-black/5 bg-surface-low"
+            >
+              <span className="grid place-items-center w-9 h-9 rounded-lg bg-primary-soft text-primary-deep shrink-0">
+                <Icon name={link.icon} className="text-[18px]" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-ink truncate">
+                  {link.label}
+                </p>
+                <p className="text-xs text-faint truncate">{link.url}</p>
+              </div>
+              <button
+                type="button"
+                aria-label="Edit link"
+                onClick={() => {
+                  setEditingId(link.id);
+                  setAdding(false);
+                }}
+                className="grid place-items-center w-8 h-8 rounded-lg text-muted hover:bg-surface-high hover:text-ink"
+              >
+                <Icon name="edit" className="text-[18px]" />
+              </button>
+              <button
+                type="button"
+                aria-label="Delete link"
+                onClick={() => remove(link.id)}
+                disabled={isPending}
+                className="grid place-items-center w-8 h-8 rounded-lg text-muted hover:bg-red-50 hover:text-red-600"
+              >
+                <Icon name="delete" className="text-[18px]" />
+              </button>
+            </div>
+          ),
+        )}
+      </div>
+
+      {atLimit && (
+        <p className="text-xs text-amber-600 mt-3 flex items-center gap-1">
+          <Icon name="info" className="text-[14px]" />
+          Free plan allows up to {FREE_LINK_LIMIT} links.
+        </p>
+      )}
+    </Card>
+  );
+}
+
+function LinkForm({
+  initial,
+  onSubmit,
+  onCancel,
+  disabled,
+}: {
+  initial?: LinkDraft;
+  onSubmit: (draft: LinkDraft) => void;
+  onCancel: () => void;
+  disabled?: boolean;
+}) {
+  const [draft, setDraft] = useState<LinkDraft>(
+    initial ?? { platform: "website", label: "Website", url: "" },
+  );
+  const p = platform(draft.platform);
+
+  function pickPlatform(id: string) {
+    const meta = platform(id);
+    setDraft((d) => ({
+      platform: id,
+      // auto-fill label if empty or matched previous platform label
+      label: d.label && d.label !== platform(d.platform).label ? d.label : meta.label,
+      url: d.url,
+    }));
+  }
+
+  return (
+    <div className="rounded-xl border border-primary/30 bg-primary-soft/30 p-4 mb-2 flex flex-col gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <Label>Platform</Label>
+          <select
+            className={inputClass}
+            value={draft.platform}
+            onChange={(e) => pickPlatform(e.target.value)}
+          >
+            {PLATFORMS.map((pl) => (
+              <option key={pl.id} value={pl.id}>
+                {pl.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <Label>Label</Label>
+          <input
+            className={inputClass}
+            value={draft.label}
+            onChange={(e) => setDraft((d) => ({ ...d, label: e.target.value }))}
+            placeholder={p.label}
+          />
+        </div>
+      </div>
+      <div>
+        <Label>URL</Label>
+        <input
+          className={inputClass}
+          value={draft.url}
+          onChange={(e) => setDraft((d) => ({ ...d, url: e.target.value }))}
+          placeholder={p.placeholder}
+        />
+      </div>
+      <div className="flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className={buttonClass("ghost", "sm")}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          disabled={disabled || !draft.label.trim() || !draft.url.trim()}
+          onClick={() => onSubmit(draft)}
+          className={buttonClass("primary", "sm")}
+        >
+          <Icon name="check" className="text-[16px]" />
+          Save
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function PreviewActions({
+  shareUrl,
+  accent,
+}: {
+  shareUrl: string;
+  accent: string;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  async function downloadQr() {
+    const url = `/api/qr?data=${encodeURIComponent(shareUrl)}&color=${encodeURIComponent(accent)}`;
+    try {
+      const res = await fetch(url);
+      const svg = await res.text();
+      const blob = new Blob([svg], { type: "image/svg+xml" });
+      const href = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = href;
+      a.download = "pixcards-qr.svg";
+      a.click();
+      URL.revokeObjectURL(href);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return (
+    <div className="w-full flex flex-col gap-2">
+      <button
+        type="button"
+        onClick={downloadQr}
+        className={buttonClass("dark", "md", "w-full")}
+      >
+        <Icon name="qr_code_2" className="text-[18px]" />
+        Download QR Code
+      </button>
+      <button
+        type="button"
+        onClick={copy}
+        className={buttonClass("outline", "md", "w-full")}
+      >
+        <Icon name={copied ? "check" : "content_copy"} className="text-[18px]" />
+        {copied ? "Copied!" : "Copy Profile Link"}
+      </button>
+    </div>
+  );
+}

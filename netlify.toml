@@ -1,0 +1,26 @@
+# Netlify configuration for Pixcards (Next.js)
+# The official Next.js runtime is auto-detected and enabled by Netlify.
+
+[build]
+  # Generate the Prisma client; sync the schema only when a database is
+  # configured (so the site still deploys before env vars are set); then build.
+  command = "prisma generate && (if [ -n \"$DATABASE_URL\" ]; then prisma db push --skip-generate; else echo 'DATABASE_URL not set — skipping prisma db push'; fi) && next build"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # Prisma + Next on Netlify
+  NEXT_TELEMETRY_DISABLED = "1"
+
+# Required environment variables (set in Netlify UI → Site settings → Environment):
+#   DATABASE_URL          Supabase pooled URL (port 6543, ?pgbouncer=true)
+#   DIRECT_URL            Supabase direct URL (port 5432) — used by db push
+#   AUTH_SECRET           openssl rand -base64 32
+#   NEXT_PUBLIC_APP_URL   https://your-site.netlify.app
+# Optional:
+#   ADMIN_EMAIL           email that becomes admin on sign-up (else first user)
+# Optional — Supabase Storage for uploads (omit → inline data-URI uploads):
+#   NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
+#   SUPABASE_SERVICE_ROLE_KEY, SUPABASE_STORAGE_BUCKET
+# Optional — Stripe (omit → demo mode):
+#   STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET,
+#   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, STRIPE_PRO_PRICE_ID
