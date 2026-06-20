@@ -2,8 +2,9 @@
 # The official Next.js runtime is auto-detected and enabled by Netlify.
 
 [build]
-  # Generate the Prisma client, sync the schema to the database, then build.
-  command = "prisma generate && prisma db push --skip-generate && next build"
+  # Generate the Prisma client; sync the schema only when a database is
+  # configured (so the site still deploys before env vars are set); then build.
+  command = "prisma generate && (if [ -n \"$DATABASE_URL\" ]; then prisma db push --skip-generate; else echo 'DATABASE_URL not set — skipping prisma db push'; fi) && next build"
 
 [build.environment]
   NODE_VERSION = "22"
