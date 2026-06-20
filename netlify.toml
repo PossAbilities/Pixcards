@@ -5,9 +5,9 @@
   package = "@netlify/plugin-nextjs"
 
 [build]
-  # Generate the Prisma client; sync the schema only when a database is
-  # configured (so the site still deploys before env vars are set); then build.
-  command = "prisma generate && (if [ -n \"$DATABASE_URL\" ]; then prisma db push --skip-generate; else echo 'DATABASE_URL not set — skipping prisma db push'; fi) && next build"
+  # Generate the Prisma client; sync the schema (and optionally seed demo data
+  # when SEED_DEMO=true) only when a database is configured; then build.
+  command = "prisma generate && bash scripts/netlify-db.sh && next build"
   # The Next.js runtime requires the publish dir to be .next (not the repo root).
   publish = ".next"
 
@@ -23,6 +23,8 @@
 #   NEXT_PUBLIC_APP_URL   https://your-site.netlify.app
 # Optional:
 #   ADMIN_EMAIL           email that becomes admin on sign-up (else first user)
+#   SEED_DEMO=true        seed demo/test accounts + sample data on deploy
+#                         (alex@pixcards.app / admin@pixcards.app, password123)
 # Optional — Supabase Storage for uploads (omit → inline data-URI uploads):
 #   NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
 #   SUPABASE_SERVICE_ROLE_KEY, SUPABASE_STORAGE_BUCKET
