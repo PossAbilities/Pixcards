@@ -390,6 +390,54 @@ export function DigitalCard({
     );
   }
 
+  /* --- MINIMAL --------------------------------------------------------- */
+  if (template === "minimal") {
+    return (
+      <div className={wrapperCls} style={wrapperStyle}>
+        <div className="pt-10 px-5 flex flex-col items-center text-center gap-1.5">
+          {avatarNode(96)}
+          <h1 className="font-display text-2xl font-bold leading-tight mt-3">
+            {data.name || "Your Name"}
+          </h1>
+          {(data.jobTitle || data.company) && (
+            <span
+              className="inline-block text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full"
+              style={{ background: `${t.accent}1a`, color: t.accent }}
+            >
+              {[data.jobTitle, data.company].filter(Boolean).join(" · ")}
+            </span>
+          )}
+          {data.bio && (
+            <p
+              className="text-sm leading-relaxed mt-2 max-w-xs"
+              style={{ color: dark ? "#cbd5e1" : "#464555" }}
+            >
+              {data.bio}
+            </p>
+          )}
+          {data.location && (
+            <span
+              className="inline-flex items-center gap-1 text-xs mt-1"
+              style={{ color: mutedColor }}
+            >
+              <Icon name="location_on" className="text-[16px]" />
+              {data.location}
+            </span>
+          )}
+        </div>
+
+        {actionButtons}
+
+        <div className="px-5 mt-6 flex flex-col gap-3 flex-1">
+          {sectionLabel}
+          {linkRows}
+        </div>
+
+        {footer}
+      </div>
+    );
+  }
+
   /* --- CLASSIC (default) ----------------------------------------------- */
   return (
     <div className={wrapperCls} style={wrapperStyle}>

@@ -965,6 +965,22 @@ function TemplateThumb({ id, accent }: { id: string; accent: string }) {
       </div>
     );
   }
+  if (id === "minimal") {
+    return (
+      <div className="flex h-full w-full flex-col items-center bg-white pt-3">
+        <div
+          className="h-7 w-7 rounded-full"
+          style={{ background: accent }}
+        />
+        <div className="mt-1 h-1.5 w-1/2 rounded-full bg-black/20" />
+        <div className="mt-3 flex w-full flex-col gap-1.5 px-2">
+          <div className="h-1.5 w-4/5 rounded-full bg-black/10" />
+          <div className="h-1.5 w-11/12 rounded-full bg-black/10" />
+          <div className="h-1.5 w-3/4 rounded-full bg-black/10" />
+        </div>
+      </div>
+    );
+  }
   // classic
   return (
     <div className="flex h-full w-full flex-col bg-white">

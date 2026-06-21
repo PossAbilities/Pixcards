@@ -115,10 +115,17 @@ export const CARD_TEMPLATES: CardTemplate[] = [
     icon: "view_agenda",
   },
   {
+    id: "minimal",
+    name: "Minimal",
+    description: "Clean and simple — no header, just you and your links.",
+    pro: false,
+    icon: "crop_portrait",
+  },
+  {
     id: "grid",
     name: "Grid",
     description: "Links shown as tappable app-style icon tiles.",
-    pro: false,
+    pro: true,
     icon: "grid_view",
   },
   {
