@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
 import { ORDER_STATUSES } from "@/lib/constants";
 import { generateCardCode } from "@/lib/cards";
+import { sendOrderShipped } from "@/lib/email/dispatch";
 import type { OrderStatus, Plan, Role } from "@prisma/client";
 
 async function requireAdminUser() {
@@ -24,6 +25,10 @@ export async function updateOrderStatus(
   if (!ORDER_STATUSES.includes(status as (typeof ORDER_STATUSES)[number])) {
     return { ok: false, error: "Invalid status" };
   }
+  const prev = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: { status: true },
+  });
   await prisma.order.update({
     where: { id: orderId },
     data: {
@@ -31,6 +36,10 @@ export async function updateOrderStatus(
       ...(trackingNumber !== undefined ? { trackingNumber } : {}),
     },
   });
+  // Email the customer the first time an order is marked shipped.
+  if (status === "SHIPPED" && prev?.status !== "SHIPPED") {
+    await sendOrderShipped(orderId);
+  }
   revalidatePath("/admin/orders");
   revalidatePath("/admin");
   revalidatePath("/dashboard/orders");

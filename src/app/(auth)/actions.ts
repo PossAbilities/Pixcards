@@ -10,6 +10,7 @@ import {
   destroySession,
 } from "@/lib/auth";
 import { slugify } from "@/lib/utils";
+import { sendWelcomeEmail } from "@/lib/email/dispatch";
 
 const registerSchema = z.object({
   name: z.string().min(2, "Please enter your name").max(60),
@@ -101,6 +102,7 @@ export async function registerAction(
   }
 
   await createSession(userId);
+  await sendWelcomeEmail(userId);
   redirect(safeNext(formData.get("next")) ?? "/dashboard");
 }
 

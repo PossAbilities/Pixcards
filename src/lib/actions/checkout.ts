@@ -7,6 +7,7 @@ import { getSessionUser } from "@/lib/auth";
 import { stripe, stripeEnabled } from "@/lib/stripe";
 import { material, appUrl, PRO_PRICE_CENTS, APP_NAME } from "@/lib/constants";
 import { validateDiscount, recordRedemption } from "@/lib/discounts";
+import { sendOrderReceipt, sendProWelcome } from "@/lib/email/dispatch";
 
 const orderSchema = z.object({
   material: z.string().min(1),
@@ -107,6 +108,7 @@ export async function createCardOrder(formData: FormData): Promise<{ error: stri
   if (redemption) {
     await recordRedemption(redemption.codeId, user.id, "order", redemption.amountOffCents);
   }
+  await sendOrderReceipt(order.id);
   redirect("/dashboard/orders?success=1");
 }
 
@@ -136,6 +138,7 @@ export async function upgradeToPro(
     if (redemption) {
       await recordRedemption(redemption.codeId, user!.id, "pro", redemption.amountOffCents);
     }
+    await sendProWelcome(user!.id);
   }
 
   // Free via a 100% code → grant immediately, no payment.

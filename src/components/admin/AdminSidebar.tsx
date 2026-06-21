@@ -15,6 +15,7 @@ const NAV: NavItem[] = [
   { href: "/admin/cards", label: "Cards", icon: "contactless" },
   { href: "/admin/users", label: "Users", icon: "group" },
   { href: "/admin/discounts", label: "Discounts", icon: "sell" },
+  { href: "/admin/emails", label: "Emails", icon: "mail" },
   { href: "/admin/settings", label: "Settings", icon: "settings" },
 ];
 
