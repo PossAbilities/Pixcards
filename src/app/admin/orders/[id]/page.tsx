@@ -5,8 +5,10 @@ import { Badge, Card, buttonClass, SectionHeading } from "@/components/ui";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/guards";
 import { material, money } from "@/lib/constants";
+import { cardTapUrl } from "@/lib/cards";
 import { formatDate } from "@/lib/utils";
 import { OrderStatusForm } from "@/components/admin/OrderStatusForm";
+import { OrderNfcPanel } from "@/components/admin/OrderNfcPanel";
 
 const STATUS_COLOR: Record<
   string,
@@ -99,10 +101,20 @@ export default async function AdminOrderDetailPage({
 
   const order = await prisma.order.findUnique({
     where: { id },
-    include: { user: { include: { profile: true } } },
+    include: {
+      user: { include: { profile: true } },
+      cards: { orderBy: { createdAt: "asc" } },
+    },
   });
 
   if (!order) notFound();
+
+  const fulfilCards = order.cards.map((c) => ({
+    id: c.id,
+    code: c.code,
+    tapUrl: cardTapUrl(c.code),
+    encoded: c.encoded,
+  }));
 
   const design = parseDesign(order.design);
   const hasArtwork = Boolean(design.frontImage || design.backImage);
@@ -291,6 +303,16 @@ export default async function AdminOrderDetailPage({
           </dl>
         </Card>
       </div>
+
+      {/* NFC card activation / fulfilment */}
+      <Card className="p-6">
+        <SectionHeading icon="contactless" title="NFC card activation" />
+        <OrderNfcPanel
+          orderId={order.id}
+          quantity={order.quantity}
+          cards={fulfilCards}
+        />
+      </Card>
 
       {/* Update status */}
       <Card className="p-6">

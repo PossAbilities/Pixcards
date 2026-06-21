@@ -10,7 +10,12 @@ const features: { icon: string; text: string }[] = [
   { icon: "monitoring", text: "Analytics on views, taps and saved contacts" },
 ];
 
-export default function RegisterPage() {
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next } = await searchParams;
   return (
     <main className="min-h-screen flex bg-background">
       {/* Brand panel */}
@@ -85,7 +90,7 @@ export default function RegisterPage() {
               No card required to start. Build your digital profile in minutes.
             </p>
 
-            <AuthForm mode="register" />
+            <AuthForm mode="register" next={next} />
           </div>
 
           <p className="mt-5 text-center text-xs text-faint">

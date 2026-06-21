@@ -24,6 +24,13 @@ const loginSchema = z.object({
 
 export type AuthState = { error?: string } | undefined;
 
+/** Only allow same-site relative redirects (e.g. "/c/ABC123"). */
+function safeNext(raw: FormDataEntryValue | null): string | null {
+  if (typeof raw !== "string") return null;
+  if (!raw.startsWith("/") || raw.startsWith("//")) return null;
+  return raw;
+}
+
 async function uniqueUsername(base: string): Promise<string> {
   const root = slugify(base) || "user";
   let candidate = root;
@@ -94,7 +101,7 @@ export async function registerAction(
   }
 
   await createSession(userId);
-  redirect("/dashboard");
+  redirect(safeNext(formData.get("next")) ?? "/dashboard");
 }
 
 export async function loginAction(
@@ -127,7 +134,8 @@ export async function loginAction(
   }
 
   await createSession(user.id);
-  redirect(user.role === "ADMIN" ? "/admin" : "/dashboard");
+  const next = safeNext(formData.get("next"));
+  redirect(next ?? (user.role === "ADMIN" ? "/admin" : "/dashboard"));
 }
 
 export async function logoutAction(): Promise<void> {

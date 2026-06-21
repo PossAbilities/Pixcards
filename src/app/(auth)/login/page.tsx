@@ -10,7 +10,12 @@ const trust = [
   "Built-in analytics on every view and tap",
 ];
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next } = await searchParams;
   return (
     <main className="min-h-screen flex bg-background">
       {/* Brand panel */}
@@ -85,7 +90,7 @@ export default function LoginPage() {
               Enter your credentials to access your dashboard.
             </p>
 
-            <AuthForm mode="login" />
+            <AuthForm mode="login" next={next} />
 
             <div className="mt-6 rounded-xl border border-primary-soft bg-primary-soft/30 px-4 py-3 text-xs text-muted">
               <p className="flex items-center gap-1.5 font-semibold text-primary-deep">

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
 import { ORDER_STATUSES } from "@/lib/constants";
+import { generateCardCode } from "@/lib/cards";
 import type { OrderStatus, Plan, Role } from "@prisma/client";
 
 async function requireAdminUser() {
@@ -106,5 +107,94 @@ export async function deleteUser(userId: string): Promise<AdminResult> {
   }
   await prisma.user.delete({ where: { id: userId } });
   revalidatePath("/admin/users");
+  return { ok: true };
+}
+
+/* ------------------------------------------------------------------ */
+/*  NFC cards                                                          */
+/* ------------------------------------------------------------------ */
+
+/** Create `count` cards with guaranteed-unique codes. */
+async function createUniqueCards(
+  count: number,
+  data: { userId?: string; orderId?: string; material?: string },
+): Promise<number> {
+  let made = 0;
+  for (let i = 0; i < count; i++) {
+    // Retry on the (extremely unlikely) code collision.
+    for (let attempt = 0; attempt < 6; attempt++) {
+      try {
+        await prisma.card.create({
+          data: {
+            code: generateCardCode(),
+            userId: data.userId ?? null,
+            orderId: data.orderId ?? null,
+            material: data.material ?? "",
+            claimedAt: data.userId ? new Date() : null,
+          },
+        });
+        made++;
+        break;
+      } catch {
+        // unique constraint hit — try a fresh code
+      }
+    }
+  }
+  return made;
+}
+
+/**
+ * Generate the NFC card(s) for an order. They are pre-assigned to the order's
+ * customer so a tap immediately opens their profile (no claim step needed).
+ */
+export async function generateCardsForOrder(
+  orderId: string,
+  count: number,
+): Promise<AdminResult> {
+  await requireAdminUser();
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order) return { ok: false, error: "Order not found." };
+
+  const n = Math.max(1, Math.min(50, Math.floor(count)));
+  const made = await createUniqueCards(n, {
+    userId: order.userId,
+    orderId: order.id,
+    material: order.material,
+  });
+  if (!made) return { ok: false, error: "Could not generate cards." };
+
+  revalidatePath(`/admin/orders/${orderId}`);
+  revalidatePath("/admin/cards");
+  return { ok: true };
+}
+
+/** Generate blank stock cards (unassigned — customers self-activate). */
+export async function generateBlankCards(count: number): Promise<AdminResult> {
+  await requireAdminUser();
+  const n = Math.max(1, Math.min(200, Math.floor(count)));
+  const made = await createUniqueCards(n, {});
+  if (!made) return { ok: false, error: "Could not generate cards." };
+  revalidatePath("/admin/cards");
+  return { ok: true };
+}
+
+export async function setCardEncoded(
+  cardId: string,
+  encoded: boolean,
+): Promise<AdminResult> {
+  await requireAdminUser();
+  await prisma.card.update({ where: { id: cardId }, data: { encoded } });
+  revalidatePath("/admin/cards");
+  const card = await prisma.card.findUnique({ where: { id: cardId } });
+  if (card?.orderId) revalidatePath(`/admin/orders/${card.orderId}`);
+  return { ok: true };
+}
+
+export async function adminDeleteCard(cardId: string): Promise<AdminResult> {
+  await requireAdminUser();
+  const card = await prisma.card.findUnique({ where: { id: cardId } });
+  await prisma.card.delete({ where: { id: cardId } });
+  revalidatePath("/admin/cards");
+  if (card?.orderId) revalidatePath(`/admin/orders/${card.orderId}`);
   return { ok: true };
 }

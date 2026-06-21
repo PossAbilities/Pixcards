@@ -12,6 +12,7 @@ type NavItem = { href: string; label: string; icon: string };
 const NAV: NavItem[] = [
   { href: "/admin", label: "Overview", icon: "dashboard" },
   { href: "/admin/orders", label: "Orders", icon: "inventory_2" },
+  { href: "/admin/cards", label: "Cards", icon: "contactless" },
   { href: "/admin/users", label: "Users", icon: "group" },
   { href: "/admin/discounts", label: "Discounts", icon: "sell" },
   { href: "/admin/settings", label: "Settings", icon: "settings" },

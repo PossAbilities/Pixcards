@@ -30,15 +30,24 @@ function SubmitButton({ mode }: { mode: "login" | "register" }) {
   );
 }
 
-export function AuthForm({ mode }: { mode: "login" | "register" }) {
+export function AuthForm({
+  mode,
+  next,
+}: {
+  mode: "login" | "register";
+  next?: string;
+}) {
   const action = mode === "login" ? loginAction : registerAction;
   const [state, formAction] = useActionState<AuthState, FormData>(
     action,
     undefined,
   );
+  const altHref = (target: string) =>
+    next ? `${target}?next=${encodeURIComponent(next)}` : target;
 
   return (
     <form action={formAction} className="space-y-4">
+      {next && <input type="hidden" name="next" value={next} />}
       {state?.error && (
         <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
           <Icon name="error" fill className="text-[18px] mt-0.5 shrink-0" />
@@ -104,7 +113,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           <>
             New to Pixcards?{" "}
             <Link
-              href="/register"
+              href={altHref("/register")}
               className="font-semibold text-primary hover:text-primary-deep"
             >
               Create an account
@@ -114,7 +123,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           <>
             Already have an account?{" "}
             <Link
-              href="/login"
+              href={altHref("/login")}
               className="font-semibold text-primary hover:text-primary-deep"
             >
               Log in

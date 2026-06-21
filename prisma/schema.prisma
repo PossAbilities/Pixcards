@@ -38,6 +38,7 @@ model User {
 
   profile     Profile?
   orders      Order[]
+  cards       Card[]
   redemptions DiscountRedemption[]
 
   createdAt DateTime @default(now())
@@ -118,8 +119,41 @@ model Order {
   stripeSessionId String?
   trackingNumber  String?
 
+  cards Card[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+/// A physical NFC card. The chip stores the URL pixcards.co.uk/c/<code>.
+/// A card is "unclaimed" until a user activates it (userId null), after
+/// which a tap redirects to that user's public profile.
+model Card {
+  id   String @id @default(cuid())
+  code String @unique // short public token written onto the chip
+
+  // Owner — null until the card is claimed/assigned.
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // The order this card was produced for (admin reference), if any.
+  orderId String?
+  order   Order?  @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  label    String  @default("") // user-facing nickname, e.g. "Work card"
+  material String  @default("") // admin reference only
+  active   Boolean @default(true) // owner can disable a lost/stolen card
+  encoded  Boolean @default(false) // admin flagged the chip as written + shipped
+
+  claimedAt DateTime?
+  lastTapAt DateTime?
+  tapCount  Int       @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([orderId])
 }
 
 enum EventType {
