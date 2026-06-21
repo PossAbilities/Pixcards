@@ -71,7 +71,6 @@ export async function updateProfile(formData: FormData): Promise<ActionResult> {
     }),
   ]);
 
-  revalidatePath("/dashboard");
   revalidatePath(`/u/${username}`);
   return { ok: true };
 }
@@ -88,7 +87,7 @@ export async function updateImages(input: {
       ...(input.headerUrl !== undefined ? { headerUrl: input.headerUrl } : {}),
     },
   });
-  revalidatePath("/dashboard");
+  revalidatePath(`/u/${profile.username}`);
   return { ok: true };
 }
 
@@ -105,7 +104,6 @@ export async function setTheme(themeId: string): Promise<ActionResult> {
     where: { id: profile.id },
     data: { theme: themeId, accentColor: t.accent },
   });
-  revalidatePath("/dashboard");
   revalidatePath(`/u/${profile.username}`);
   return { ok: true };
 }
@@ -126,7 +124,6 @@ export async function setTemplate(templateId: string): Promise<ActionResult> {
     where: { id: profile.id },
     data: { template: templateId },
   });
-  revalidatePath("/dashboard");
   revalidatePath(`/u/${profile.username}`);
   return { ok: true };
 }
@@ -177,7 +174,6 @@ export async function addLink(formData: FormData): Promise<ActionResult> {
       position: count,
     },
   });
-  revalidatePath("/dashboard");
   revalidatePath(`/u/${profile.username}`);
   return { ok: true };
 }
@@ -205,7 +201,6 @@ export async function updateLink(
       icon: p.icon,
     },
   });
-  revalidatePath("/dashboard");
   revalidatePath(`/u/${profile.username}`);
   return { ok: true };
 }
@@ -213,7 +208,6 @@ export async function updateLink(
 export async function deleteLink(id: string): Promise<ActionResult> {
   const { profile } = await myProfile();
   await prisma.link.deleteMany({ where: { id, profileId: profile.id } });
-  revalidatePath("/dashboard");
   revalidatePath(`/u/${profile.username}`);
   return { ok: true };
 }
@@ -228,7 +222,6 @@ export async function reorderLinks(orderedIds: string[]): Promise<ActionResult> 
       }),
     ),
   );
-  revalidatePath("/dashboard");
   revalidatePath(`/u/${profile.username}`);
   return { ok: true };
 }
@@ -239,7 +232,6 @@ export async function togglePublished(published: boolean): Promise<ActionResult>
     where: { id: profile.id },
     data: { published },
   });
-  revalidatePath("/dashboard");
   revalidatePath(`/u/${profile.username}`);
   return { ok: true };
 }

@@ -10,6 +10,48 @@ import {
 export default function AdminSettingsPage() {
   const environment = process.env.NODE_ENV ?? "development";
   const stripeConfigured = Boolean(process.env.STRIPE_SECRET_KEY);
+  const has = (k: string) => Boolean(process.env[k]?.trim());
+
+  const integrations: {
+    title: string;
+    icon: string;
+    vars: string[];
+    note: string;
+  }[] = [
+    {
+      title: "Apple Wallet",
+      icon: "wallet",
+      vars: [
+        "APPLE_PASS_TYPE_ID",
+        "APPLE_TEAM_ID",
+        "APPLE_PASS_CERT_BASE64",
+        "APPLE_WWDR_BASE64",
+      ],
+      note: "All four required for the Add to Apple Wallet button.",
+    },
+    {
+      title: "Google Wallet",
+      icon: "wallet",
+      vars: [
+        "GOOGLE_WALLET_ISSUER_ID",
+        "GOOGLE_WALLET_SA_EMAIL",
+        "GOOGLE_WALLET_SA_KEY",
+      ],
+      note: "All three required for the Add to Google Wallet button.",
+    },
+    {
+      title: "Email (Resend)",
+      icon: "mail",
+      vars: ["RESEND_API_KEY", "RESEND_WEBHOOK_SECRET", "EMAIL_FROM"],
+      note: "API key sends mail; webhook secret enables open/click tracking.",
+    },
+    {
+      title: "Image storage (Supabase)",
+      icon: "cloud_upload",
+      vars: ["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"],
+      note: "Without these, uploads are stored inline as data-URIs.",
+    },
+  ];
 
   return (
     <div className="space-y-8">
@@ -21,6 +63,65 @@ export default function AdminSettingsPage() {
           Platform configuration, pricing and integrations.
         </p>
       </header>
+
+      {/* Integrations — live detection of env config (presence only, no values) */}
+      <Card className="p-6">
+        <SectionHeading icon="extension" title="Integrations status" />
+        <p className="-mt-2 mb-4 text-sm text-muted">
+          Live detection of configuration on this deploy. Only presence is shown
+          — never the secret values.
+        </p>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {integrations.map((group) => {
+            const ok = group.vars.every(has);
+            return (
+              <div
+                key={group.title}
+                className="rounded-xl border border-outline p-4"
+              >
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-sm font-semibold text-ink">
+                    <Icon
+                      name={group.icon}
+                      className="text-[18px] text-primary"
+                    />
+                    {group.title}
+                  </span>
+                  <Badge color={ok ? "success" : "warning"}>
+                    {ok ? "Active" : "Incomplete"}
+                  </Badge>
+                </div>
+                <ul className="space-y-1">
+                  {group.vars.map((v) => (
+                    <li
+                      key={v}
+                      className="flex items-center justify-between gap-2 text-xs"
+                    >
+                      <code className="font-mono text-faint">{v}</code>
+                      <span
+                        className={
+                          has(v)
+                            ? "inline-flex items-center gap-1 font-semibold text-emerald-600"
+                            : "inline-flex items-center gap-1 font-semibold text-red-500"
+                        }
+                      >
+                        <Icon
+                          name={has(v) ? "check_circle" : "cancel"}
+                          className="text-[14px]"
+                        />
+                        {has(v) ? "set" : "missing"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-[11px] leading-snug text-faint">
+                  {group.note}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Platform */}
