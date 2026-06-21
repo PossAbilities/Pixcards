@@ -135,8 +135,8 @@ function renderElementContent(el: CardElement) {
     );
   }
   if (el.type === "image" || el.type === "qr") {
-    // eslint-disable-next-line @next/next/no-img-element
     return (
+      // eslint-disable-next-line @next/next/no-img-element
       <img
         src={el.src ?? ""}
         alt=""

@@ -687,30 +687,42 @@ function LinkForm({
           appear on your card — it updates automatically when you pick a platform.
         </p>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <Label>Platform</Label>
-          <select
-            className={inputClass}
-            value={draft.platform}
-            onChange={(e) => pickPlatform(e.target.value)}
-          >
-            {PLATFORMS.map((pl) => (
-              <option key={pl.id} value={pl.id}>
-                {pl.label}
-              </option>
-            ))}
-          </select>
+      <div>
+        <Label>Platform</Label>
+        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 mt-1">
+          {PLATFORMS.map((pl) => {
+            const active = pl.id === draft.platform;
+            return (
+              <button
+                key={pl.id}
+                type="button"
+                onClick={() => pickPlatform(pl.id)}
+                aria-pressed={active}
+                title={pl.label}
+                className={cn(
+                  "flex flex-col items-center gap-1 rounded-xl border p-2 transition",
+                  active
+                    ? "border-primary bg-primary-soft/50 ring-2 ring-primary/30"
+                    : "border-black/5 bg-surface-low hover:bg-surface-high",
+                )}
+              >
+                <BrandTile platform={pl.id} size={32} radius={9} />
+                <span className="text-[10px] font-medium text-muted text-center leading-tight w-full truncate">
+                  {pl.label}
+                </span>
+              </button>
+            );
+          })}
         </div>
-        <div>
-          <Label>Label</Label>
-          <input
-            className={inputClass}
-            value={draft.label}
-            onChange={(e) => setDraft((d) => ({ ...d, label: e.target.value }))}
-            placeholder={p.label}
-          />
-        </div>
+      </div>
+      <div>
+        <Label>Label</Label>
+        <input
+          className={inputClass}
+          value={draft.label}
+          onChange={(e) => setDraft((d) => ({ ...d, label: e.target.value }))}
+          placeholder={p.label}
+        />
       </div>
       <div>
         <Label>URL</Label>

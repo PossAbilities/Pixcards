@@ -4,6 +4,17 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
+  // Only seed an empty database. This makes the seed a safe one-time bootstrap:
+  // leaving SEED_DEMO=true on the host won't keep re-adding demo data once the
+  // database has real users. Force a re-seed locally with `prisma db push --force-reset`.
+  const existingUsers = await prisma.user.count();
+  if (existingUsers > 0) {
+    console.log(
+      `Database already has ${existingUsers} user(s) — skipping demo seed.`,
+    );
+    return;
+  }
+
   const pw = await bcrypt.hash("password123", 10);
 
   // Admin
