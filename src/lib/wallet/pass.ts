@@ -1,5 +1,6 @@
 import "server-only";
 import { PKPass } from "passkit-generator";
+import forge from "node-forge";
 import { theme as getTheme } from "@/lib/constants";
 import { ICON_PNG_BASE64, LOGO_PNG_BASE64 } from "./assets";
 import { isWalletConfigured } from "./config";
@@ -10,8 +11,47 @@ function env(name: string): string {
   return process.env[name] || "";
 }
 
-function b64Env(name: string): Buffer {
-  return Buffer.from(env(name), "base64");
+/** Wrap base64-encoded DER certificate bytes into a PEM string. */
+function derBase64ToPem(b64: string): string {
+  const clean = b64.replace(/\s+/g, "");
+  const lines = clean.match(/.{1,64}/g)?.join("\n") ?? clean;
+  return `-----BEGIN CERTIFICATE-----\n${lines}\n-----END CERTIFICATE-----\n`;
+}
+
+/** Extract the signer cert + private key (as PEM) from a base64 .p12 bundle. */
+function loadSignerFromP12(
+  p12Base64: string,
+  password: string,
+): { cert: string; key: string } {
+  const der = forge.util.decode64(p12Base64.replace(/\s+/g, ""));
+  const p12 = forge.pkcs12.pkcs12FromAsn1(forge.asn1.fromDer(der), password);
+
+  const keyBags =
+    p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag })[
+      forge.pki.oids.pkcs8ShroudedKeyBag
+    ] ?? [];
+  const certBags =
+    p12.getBags({ bagType: forge.pki.oids.certBag })[
+      forge.pki.oids.certBag
+    ] ?? [];
+
+  const keyObj = keyBags[0]?.key;
+  // Prefer the leaf (non-CA) certificate if the bundle carries a chain.
+  const certObj =
+    certBags.find((b) => {
+      const bc = b.cert?.getExtension("basicConstraints") as
+        | { cA?: boolean }
+        | undefined;
+      return !bc?.cA;
+    })?.cert ?? certBags[0]?.cert;
+
+  if (!keyObj || !certObj) {
+    throw new Error("Apple Wallet .p12 is missing a certificate or private key.");
+  }
+  return {
+    cert: forge.pki.certificateToPem(certObj),
+    key: forge.pki.privateKeyToPem(keyObj),
+  };
 }
 
 function hexToRgb(hex: string): string {
@@ -101,11 +141,15 @@ export async function buildWalletPass(input: WalletPassInput): Promise<Buffer> {
     files["thumbnail@2x.png"] = input.thumbnail;
   }
 
+  const { cert, key } = loadSignerFromP12(
+    env("APPLE_PASS_CERT_BASE64"),
+    env("APPLE_PASS_CERT_PASSWORD"),
+  );
+
   const pass = new PKPass(files, {
-    wwdr: b64Env("APPLE_WWDR_CERT"),
-    signerCert: b64Env("APPLE_PASS_CERT"),
-    signerKey: b64Env("APPLE_PASS_KEY"),
-    signerKeyPassphrase: env("APPLE_PASS_KEY_PASSWORD") || undefined,
+    wwdr: derBase64ToPem(env("APPLE_WWDR_BASE64")),
+    signerCert: cert,
+    signerKey: key,
   });
 
   return pass.getAsBuffer();
