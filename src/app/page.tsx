@@ -34,8 +34,8 @@ export default function LandingPage() {
                   <Icon name="contactless" className="text-[20px] fill" />
                   Order Your Pixcard
                 </Link>
-                <Link href="/u/alex" className={buttonClass("outline", "lg")}>
-                  View Live Demo
+                <Link href="/pricing" className={buttonClass("outline", "lg")}>
+                  View Pricing
                 </Link>
               </div>
               <div className="mt-8 flex items-center gap-6 justify-center md:justify-start text-sm text-muted">
@@ -51,7 +51,7 @@ export default function LandingPage() {
             </div>
             <div className="relative">
               <div className="relative z-10 max-w-sm mx-auto transform rotate-6 hover:rotate-3 transition-transform duration-500">
-                <CardMockup name="Alex Sterling" title="Senior Product Designer" materialId="matte-black" />
+                <CardMockup name="Alex Sterling" title="Senior Product Designer" materialId="white-gloss" />
               </div>
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-primary/10 rounded-full blur-3xl -z-0" />
             </div>

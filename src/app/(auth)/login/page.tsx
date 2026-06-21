@@ -51,7 +51,7 @@ export default async function LoginPage({
             <CardMockup
               name="Alex Morgan"
               title="Product Designer"
-              materialId="matte-black"
+              materialId="white-gloss"
             />
           </div>
         </div>
@@ -91,18 +91,6 @@ export default async function LoginPage({
             </p>
 
             <AuthForm mode="login" next={next} />
-
-            <div className="mt-6 rounded-xl border border-primary-soft bg-primary-soft/30 px-4 py-3 text-xs text-muted">
-              <p className="flex items-center gap-1.5 font-semibold text-primary-deep">
-                <Icon name="key" fill className="text-[15px]" />
-                Demo credentials
-              </p>
-              <p className="mt-1.5 font-mono text-[11px] leading-relaxed">
-                User: alex@pixcards.app / password123
-                <br />
-                Admin: admin@pixcards.app / password123
-              </p>
-            </div>
           </div>
         </div>
       </section>

@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   title: "Pixcards — The Last Business Card You'll Ever Need",
   description:
     "Share your professional identity instantly with NFC and QR. Build a digital business card, order a premium physical card, and grow your network with Pixcards.",
-  metadataBase: new URL("https://pixcards.example"),
+  metadataBase: new URL("https://pixcards.co.uk"),
   openGraph: {
     title: "Pixcards — Smart Digital Business Cards",
     description:

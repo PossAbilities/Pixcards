@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 export function CardMockup({
   name = "Your Name",
   title = "Your Title",
-  materialId = "matte-black",
+  materialId = "white-gloss",
   className,
 }: {
   name?: string;
@@ -15,7 +15,7 @@ export function CardMockup({
   className?: string;
 }) {
   const mat = getMaterial(materialId);
-  const light = materialId === "white-gloss" || materialId === "bio-plastic";
+  const light = materialId !== "matte-black" && materialId !== "metal-indigo";
   const ink = light ? "#191c1e" : "#ffffff";
   const sub = light ? "#475569" : "rgba(255,255,255,0.7)";
 

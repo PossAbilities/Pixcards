@@ -153,35 +153,12 @@ export type CardMaterial = {
 export const CARD_MATERIALS: CardMaterial[] = [
   {
     id: "white-gloss",
-    name: "White Gloss",
-    description: "Classic glossy white PVC with crisp colour print.",
+    name: "White CR80 Card",
+    description:
+      "Premium printed white PVC card — standard CR80 (credit-card) size.",
     priceCents: 2900,
     swatch: "linear-gradient(135deg,#ffffff,#e6e8ea)",
     pro: false,
-  },
-  {
-    id: "matte-black",
-    name: "Matte Black Classic",
-    description: "Premium soft-touch matte black. Always in style.",
-    priceCents: 2900,
-    swatch: "linear-gradient(135deg,#2b2b2b,#0a0a0a)",
-    pro: false,
-  },
-  {
-    id: "bio-plastic",
-    name: "Bio-Plastic Eco",
-    description: "Sustainable plant-based card. Kind to the planet.",
-    priceCents: 3400,
-    swatch: "linear-gradient(135deg,#a7f3d0,#10b981)",
-    pro: false,
-  },
-  {
-    id: "metal-indigo",
-    name: "Metal Indigo Pro",
-    description: "Brushed stainless steel with laser-etched detail.",
-    priceCents: 5900,
-    swatch: "linear-gradient(135deg,#6366f1,#312e81)",
-    pro: true,
   },
 ];
 

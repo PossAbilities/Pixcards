@@ -23,7 +23,7 @@ export function SiteFooter() {
             <li><Link href="/#features" className="hover:text-primary">Features</Link></li>
             <li><Link href="/pricing" className="hover:text-primary">Pricing</Link></li>
             <li><Link href="/register" className="hover:text-primary">Get started</Link></li>
-            <li><Link href="/u/alex" className="hover:text-primary">Live demo card</Link></li>
+            <li><Link href="/login" className="hover:text-primary">Sign in</Link></li>
           </ul>
         </div>
         <div>

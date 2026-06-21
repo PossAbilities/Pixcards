@@ -222,7 +222,7 @@ export function CardStudio({
   avatarUrl,
 }: Props) {
   /* ----- order state ----- */
-  const [materialId, setMaterialId] = useState<string>("matte-black");
+  const [materialId, setMaterialId] = useState<string>("white-gloss");
   const [cardName, setCardName] = useState<string>(defaultName);
   const [quantity, setQuantity] = useState<number>(1);
   const [shipName, setShipName] = useState<string>(defaultName);
@@ -561,9 +561,6 @@ export function CardStudio({
     if (!shipCity.trim()) return "Enter a city.";
     if (!shipPostal.trim()) return "Enter a postcode.";
     if (!shipCountry.trim()) return "Enter a country.";
-    if (materialId === "metal-indigo" && plan === "FREE") {
-      return "The Metal Indigo card is a Pro material. Upgrade to order it.";
-    }
     return null;
   }
 
@@ -1241,9 +1238,6 @@ export function CardStudio({
                 Secure checkout. Your NFC card will be pre-linked to your
                 account.
               </p>
-              <div className="flex justify-center">
-                <Badge color="info">Demo mode — no real charge</Badge>
-              </div>
             </div>
           </div>
         </Card>

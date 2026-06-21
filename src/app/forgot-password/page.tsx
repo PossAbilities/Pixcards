@@ -54,7 +54,7 @@ export default function ForgotPasswordPage() {
             <CardMockup
               name="Alex Morgan"
               title="Product Designer"
-              materialId="matte-black"
+              materialId="white-gloss"
             />
           </div>
         </div>

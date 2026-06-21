@@ -23,10 +23,10 @@
 #   DATABASE_URL          Supabase pooled URL (port 6543, ?pgbouncer=true)
 #   DIRECT_URL            Supabase direct URL (port 5432) — used by db push
 #   AUTH_SECRET           openssl rand -base64 32
-#   NEXT_PUBLIC_APP_URL   https://your-site.netlify.app
+#   NEXT_PUBLIC_APP_URL   https://pixcards.co.uk  (your live domain — used for
+#                         QR codes, share links, emails and wallet passes)
 # Optional:
 #   ADMIN_EMAIL           email that becomes admin on sign-up (else first user)
-#   SEED_DEMO=true        seed demo/test accounts + sample data on deploy
 #                         (alex@pixcards.app / admin@pixcards.app, password123)
 # Optional — Supabase Storage for uploads (omit → inline data-URI uploads):
 #   NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,

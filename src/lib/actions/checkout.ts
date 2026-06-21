@@ -32,9 +32,6 @@ export async function createCardOrder(formData: FormData): Promise<{ error: stri
   }
   const d = parsed.data;
   const mat = material(d.material);
-  if (mat.pro && user.plan !== "PRO") {
-    return { error: "The Metal Indigo card is a Pro material. Upgrade to order it." };
-  }
   let priceCents = mat.priceCents * d.quantity;
 
   // Optional discount code

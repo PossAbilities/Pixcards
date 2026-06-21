@@ -4,6 +4,7 @@ import {
   APP_NAME,
   CARD_MATERIALS,
   PRO_PRICE_CENTS,
+  appUrl,
   money,
 } from "@/lib/constants";
 
@@ -138,6 +139,12 @@ export default function AdminSettingsPage() {
                 <Badge color={environment === "production" ? "success" : "info"}>
                   {environment}
                 </Badge>
+              </dd>
+            </div>
+            <div className="flex items-center justify-between gap-3 py-2.5">
+              <dt className="text-sm text-muted">Public URL</dt>
+              <dd className="truncate text-sm font-semibold text-ink">
+                {appUrl()}
               </dd>
             </div>
             <div className="flex items-center justify-between py-2.5">
