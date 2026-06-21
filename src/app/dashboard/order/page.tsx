@@ -1,7 +1,8 @@
 import { requireUser } from "@/lib/guards";
 import { prisma } from "@/lib/db";
 import { Icon } from "@/components/Icon";
-import { CardDesigner } from "@/components/dashboard/CardDesigner";
+import { CardStudio } from "@/components/dashboard/CardStudio";
+import { appUrl } from "@/lib/constants";
 
 export default async function OrderPage({
   searchParams,
@@ -13,12 +14,15 @@ export default async function OrderPage({
 
   const profile = await prisma.profile.findUnique({
     where: { userId: user.id },
-    select: { jobTitle: true },
+    select: { jobTitle: true, username: true, avatarUrl: true },
   });
   const defaultTitle =
     profile?.jobTitle && profile.jobTitle.trim().length > 0
       ? profile.jobTitle
       : "Pixcards Member";
+  const shareUrl = profile?.username
+    ? `${appUrl()}/u/${profile.username}`
+    : appUrl();
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -39,10 +43,12 @@ export default async function OrderPage({
         </div>
       )}
 
-      <CardDesigner
+      <CardStudio
         plan={user.plan}
         defaultName={user.name}
         defaultTitle={defaultTitle}
+        shareUrl={shareUrl}
+        avatarUrl={profile?.avatarUrl ?? null}
       />
     </div>
   );

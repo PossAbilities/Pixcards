@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Icon } from "@/components/Icon";
 import { Badge } from "@/components/ui";
@@ -106,14 +107,23 @@ export function OrderRow({ order }: { order: AdminOrder }) {
           {formatDate(order.createdAt)}
         </td>
         <td className="px-4 py-3 text-right">
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            className={buttonClass("outline", "sm")}
-          >
-            <Icon name={open ? "close" : "edit"} className="text-[16px]" />
-            {open ? "Close" : "Update"}
-          </button>
+          <div className="inline-flex items-center gap-2">
+            <Link
+              href={`/admin/orders/${order.id}`}
+              className={buttonClass("outline", "sm")}
+            >
+              <Icon name="visibility" className="text-[16px]" />
+              View
+            </Link>
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              className={buttonClass("outline", "sm")}
+            >
+              <Icon name={open ? "close" : "edit"} className="text-[16px]" />
+              {open ? "Close" : "Update"}
+            </button>
+          </div>
         </td>
       </tr>
 
