@@ -17,6 +17,20 @@ enum Role {
   ADMIN
 }
 
+/// Single-use, time-limited password reset tokens. Only the SHA-256 hash of
+/// the token is stored, so a DB leak can't be used to reset anyone's password.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
 enum Plan {
   FREE
   PRO
@@ -40,6 +54,7 @@ model User {
   orders      Order[]
   cards       Card[]
   redemptions DiscountRedemption[]
+  resetTokens PasswordResetToken[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

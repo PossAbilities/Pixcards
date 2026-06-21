@@ -7,7 +7,21 @@ import {
   orderReceiptEmail,
   proWelcomeEmail,
   orderShippedEmail,
+  passwordResetEmail,
 } from "./templates";
+
+export async function sendPasswordReset(
+  email: string,
+  name: string,
+  resetUrl: string,
+): Promise<void> {
+  try {
+    const built = passwordResetEmail({ name, resetUrl });
+    await sendEmail({ to: email, ...built });
+  } catch (e) {
+    console.error("sendPasswordReset failed", e);
+  }
+}
 
 /**
  * High-level "notify" helpers. Each loads what it needs and sends. They never

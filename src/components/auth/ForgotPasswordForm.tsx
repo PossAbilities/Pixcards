@@ -1,21 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { buttonClass, inputClass, Label } from "@/components/ui";
 import { Icon } from "@/components/Icon";
+import { requestPasswordReset } from "@/lib/actions/password";
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [sentTo, setSentTo] = useState("");
+  const [isPending, startTransition] = useTransition();
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    // No email provider is configured yet, so we simply show the standard
-    // privacy-preserving success state without revealing whether the account
-    // exists.
-    setSentTo(email.trim());
-    setSubmitted(true);
+    const address = email.trim();
+    startTransition(async () => {
+      await requestPasswordReset(address);
+      // Always show the same privacy-preserving result, whether or not the
+      // account exists.
+      setSentTo(address);
+      setSubmitted(true);
+    });
   }
 
   if (submitted) {
@@ -29,10 +34,9 @@ export function ForgotPasswordForm() {
             we&rsquo;ve sent password reset instructions.
           </span>
         </div>
-        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-800">
-          <Icon name="info" className="mr-1 align-[-3px] text-[15px]" />
-          Demo note: this is a placeholder flow. Email delivery requires
-          configuring an email provider, so no message is actually sent.
+        <p className="px-1 text-xs leading-relaxed text-muted">
+          The link expires in 60 minutes. Check your spam folder if it
+          doesn&rsquo;t arrive within a few minutes.
         </p>
         <button
           type="button"
@@ -65,9 +69,22 @@ export function ForgotPasswordForm() {
         />
       </div>
 
-      <button type="submit" className={buttonClass("primary", "lg", "w-full mt-1")}>
-        Send reset link
-        <Icon name="arrow_forward" className="text-[20px]" />
+      <button
+        type="submit"
+        disabled={isPending}
+        className={buttonClass("primary", "lg", "w-full mt-1")}
+      >
+        {isPending ? (
+          <>
+            <Icon name="progress_activity" className="text-[20px] animate-spin" />
+            Sending…
+          </>
+        ) : (
+          <>
+            Send reset link
+            <Icon name="arrow_forward" className="text-[20px]" />
+          </>
+        )}
       </button>
     </form>
   );
