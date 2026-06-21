@@ -4,7 +4,30 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
+import { validateDiscount } from "@/lib/discounts";
 import type { DiscountScope, DiscountType } from "@prisma/client";
+
+/** Live preview of a code for the checkout UI (no redemption recorded). */
+export async function previewDiscount(
+  code: string,
+  scope: "PRO" | "CARD",
+  amountCents: number,
+): Promise<{
+  ok: boolean;
+  reason?: string;
+  amountOffCents?: number;
+  finalCents?: number;
+}> {
+  const user = await getSessionUser();
+  if (!user) return { ok: false, reason: "Please log in to use a code." };
+  const res = await validateDiscount(code, scope, amountCents, user.id);
+  if (!res.valid) return { ok: false, reason: res.reason };
+  return {
+    ok: true,
+    amountOffCents: res.amountOffCents,
+    finalCents: res.finalCents,
+  };
+}
 
 async function requireAdminUser() {
   const user = await getSessionUser();

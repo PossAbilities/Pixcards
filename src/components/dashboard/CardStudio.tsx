@@ -2,6 +2,7 @@
 
 import {
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -29,6 +30,7 @@ import {
 } from "@/components/ui";
 import { CARD_MATERIALS, material, money } from "@/lib/constants";
 import { createCardOrder } from "@/lib/actions/checkout";
+import { previewDiscount } from "@/lib/actions/discounts";
 import { cn } from "@/lib/utils";
 
 /* -------------------------------------------------------------------------- */
@@ -219,6 +221,15 @@ export function CardStudio({
   const [shipPostal, setShipPostal] = useState<string>("");
   const [shipCountry, setShipCountry] = useState<string>("United Kingdom");
   const [discountCode, setDiscountCode] = useState<string>("");
+  const [appliedDiscount, setAppliedDiscount] = useState<{
+    code: string;
+    amountOffCents: number;
+  } | null>(null);
+  const [discountMsg, setDiscountMsg] = useState<{
+    ok: boolean;
+    text: string;
+  } | null>(null);
+  const [checkingDiscount, startDiscountCheck] = useTransition();
 
   /* ----- designer state ----- */
   const [front, setFront] = useState<SideState>(() => ({
@@ -289,8 +300,36 @@ export function CardStudio({
 
   /* ----- derived ----- */
   const selectedMaterial = material(materialId);
-  const totalCents = selectedMaterial.priceCents * quantity;
+  const baseCents = selectedMaterial.priceCents * quantity;
+  const discountOff = appliedDiscount
+    ? Math.min(appliedDiscount.amountOffCents, baseCents)
+    : 0;
+  const totalCents = Math.max(0, baseCents - discountOff);
   const total = money(totalCents);
+
+  // Re-applying needed if the order amount changes — clear a stale discount.
+  useEffect(() => {
+    setAppliedDiscount(null);
+    setDiscountMsg(null);
+  }, [materialId, quantity]);
+
+  function applyDiscount() {
+    const code = discountCode.trim();
+    if (!code) {
+      setDiscountMsg({ ok: false, text: "Enter a code first." });
+      return;
+    }
+    startDiscountCheck(async () => {
+      const res = await previewDiscount(code, "CARD", baseCents);
+      if (res.ok && res.amountOffCents !== undefined) {
+        setAppliedDiscount({ code, amountOffCents: res.amountOffCents });
+        setDiscountMsg({ ok: true, text: `Code applied — you save ${money(res.amountOffCents)}.` });
+      } else {
+        setAppliedDiscount(null);
+        setDiscountMsg({ ok: false, text: res.reason ?? "That code isn't valid." });
+      }
+    });
+  }
 
   const sideState = activeSide === "front" ? front : back;
   const setSideState = activeSide === "front" ? setFront : setBack;
@@ -1056,6 +1095,12 @@ export function CardStudio({
                   <dt className="text-muted">Quantity</dt>
                   <dd className="font-medium text-ink">× {quantity}</dd>
                 </div>
+                {appliedDiscount && discountOff > 0 && (
+                  <div className="flex items-center justify-between text-emerald-600">
+                    <dt>Discount ({appliedDiscount.code})</dt>
+                    <dd className="font-semibold">− {money(discountOff)}</dd>
+                  </div>
+                )}
                 <div className="flex items-center justify-between border-t border-outline pt-3 mt-1">
                   <dt className="font-semibold text-ink">Total</dt>
                   <dd className="font-display text-lg font-bold text-primary-deep">
@@ -1072,13 +1117,41 @@ export function CardStudio({
               >
                 Discount code (optional)
               </label>
-              <input
-                id="cardDiscount"
-                value={discountCode}
-                onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
-                className={`${inputClass} uppercase tracking-wide`}
-                placeholder="e.g. SAVE20"
-              />
+              <div className="flex gap-2">
+                <input
+                  id="cardDiscount"
+                  value={discountCode}
+                  onChange={(e) => {
+                    setDiscountCode(e.target.value.toUpperCase());
+                    setDiscountMsg(null);
+                    setAppliedDiscount(null);
+                  }}
+                  className={`${inputClass} uppercase tracking-wide`}
+                  placeholder="e.g. SAVE20"
+                />
+                <button
+                  type="button"
+                  onClick={applyDiscount}
+                  disabled={checkingDiscount || !discountCode.trim()}
+                  className={buttonClass("outline", "md", "shrink-0")}
+                >
+                  {checkingDiscount ? "…" : "Apply"}
+                </button>
+              </div>
+              {discountMsg && (
+                <p
+                  className={cn(
+                    "mt-1.5 flex items-center gap-1 text-xs font-medium",
+                    discountMsg.ok ? "text-emerald-600" : "text-red-600",
+                  )}
+                >
+                  <Icon
+                    name={discountMsg.ok ? "check_circle" : "error"}
+                    className="text-[14px]"
+                  />
+                  {discountMsg.text}
+                </p>
+              )}
             </div>
 
             {error && (
