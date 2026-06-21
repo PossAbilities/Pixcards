@@ -4,7 +4,12 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
-import { platform, theme as getTheme, THEMES } from "@/lib/constants";
+import {
+  platform,
+  theme as getTheme,
+  THEMES,
+  CARD_TEMPLATES,
+} from "@/lib/constants";
 import { slugify } from "@/lib/utils";
 
 async function myProfile() {
@@ -99,6 +104,27 @@ export async function setTheme(themeId: string): Promise<ActionResult> {
   await prisma.profile.update({
     where: { id: profile.id },
     data: { theme: themeId, accentColor: t.accent },
+  });
+  revalidatePath("/dashboard");
+  revalidatePath(`/u/${profile.username}`);
+  return { ok: true };
+}
+
+export async function setTemplate(templateId: string): Promise<ActionResult> {
+  const { user, profile } = await myProfile();
+  const tpl = CARD_TEMPLATES.find((x) => x.id === templateId);
+  if (!tpl) {
+    return { ok: false, error: "Unknown template." };
+  }
+  if (tpl.pro && user.plan !== "PRO") {
+    return {
+      ok: false,
+      error: "This template is a Pro feature. Upgrade to unlock.",
+    };
+  }
+  await prisma.profile.update({
+    where: { id: profile.id },
+    data: { template: templateId },
   });
   revalidatePath("/dashboard");
   revalidatePath(`/u/${profile.username}`);

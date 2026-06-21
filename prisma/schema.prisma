@@ -60,6 +60,7 @@ model Profile {
   headerUrl String?
 
   theme       String  @default("indigo") // indigo | midnight | ruby | slate | emerald
+  template    String  @default("classic") // classic | spotlight | grid
   accentColor String  @default("#4f46e5")
   published   Boolean @default(true)
 

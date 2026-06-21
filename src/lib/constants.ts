@@ -97,6 +97,43 @@ export function theme(id: string): Theme {
   return THEMES.find((t) => t.id === id) ?? THEMES[0];
 }
 
+/* Profile layout templates (distinct from colour themes). */
+export type CardTemplate = {
+  id: string;
+  name: string;
+  description: string;
+  pro: boolean;
+  icon: string;
+};
+
+export const CARD_TEMPLATES: CardTemplate[] = [
+  {
+    id: "classic",
+    name: "Classic",
+    description: "Header banner with your links in a clean list.",
+    pro: false,
+    icon: "view_agenda",
+  },
+  {
+    id: "grid",
+    name: "Grid",
+    description: "Links shown as tappable app-style icon tiles.",
+    pro: false,
+    icon: "grid_view",
+  },
+  {
+    id: "spotlight",
+    name: "Spotlight",
+    description: "Full-bleed photo hero — bold and modern.",
+    pro: true,
+    icon: "wallpaper",
+  },
+];
+
+export function cardTemplate(id: string): CardTemplate {
+  return CARD_TEMPLATES.find((tpl) => tpl.id === id) ?? CARD_TEMPLATES[0];
+}
+
 export type CardMaterial = {
   id: string;
   name: string;

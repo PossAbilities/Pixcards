@@ -95,6 +95,7 @@ export default async function PublicCardPage({
     avatarUrl: profile.avatarUrl,
     headerUrl: profile.headerUrl,
     themeId: profile.theme,
+    templateId: profile.template,
     links: profile.links.map((l) => ({
       id: l.id,
       platform: l.platform,

@@ -41,6 +41,7 @@ export default async function ProfilePage() {
           avatarUrl: profile.avatarUrl,
           headerUrl: profile.headerUrl,
           theme: profile.theme,
+          template: profile.template,
         }}
         links={profile.links.map((l) => ({
           id: l.id,

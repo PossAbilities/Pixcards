@@ -14,12 +14,19 @@ import { DigitalCard, type CardLink } from "@/components/DigitalCard";
 import { BrandTile } from "@/components/BrandIcon";
 import { ImageCropperModal } from "./ImageCropperModal";
 import { Toast, type ToastState } from "@/components/dashboard/Toast";
-import { PLATFORMS, THEMES, platform, theme as getTheme } from "@/lib/constants";
+import {
+  PLATFORMS,
+  THEMES,
+  CARD_TEMPLATES,
+  platform,
+  theme as getTheme,
+} from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import {
   addLink,
   deleteLink,
   setTheme,
+  setTemplate,
   updateImages,
   updateLink,
   updateProfile,
@@ -41,6 +48,7 @@ type ProfileState = {
   avatarUrl: string | null;
   headerUrl: string | null;
   theme: string;
+  template: string;
 };
 
 type LinkDraft = { platform: string; label: string; url: string };
@@ -85,6 +93,7 @@ export function ProfileEditor({
       avatarUrl: form.avatarUrl,
       headerUrl: form.headerUrl,
       themeId: form.theme,
+      templateId: form.template,
       links,
     }),
     [form, links],
@@ -125,6 +134,25 @@ export function ProfileEditor({
         showToast(res.error ?? "Could not change theme", "error");
       } else {
         showToast("Theme updated", "success");
+      }
+    });
+  }
+
+  /* ------------------------------ Template ------------------------------- */
+  function chooseTemplate(templateId: string, pro: boolean) {
+    if (pro && !isPro) {
+      showToast("Pro feature — upgrade to unlock this template", "error");
+      return;
+    }
+    const prev = form.template;
+    set("template", templateId);
+    startTransition(async () => {
+      const res = await setTemplate(templateId);
+      if (!res.ok) {
+        set("template", prev);
+        showToast(res.error ?? "Could not change template", "error");
+      } else {
+        showToast("Template updated", "success");
       }
     });
   }
@@ -252,6 +280,59 @@ export function ProfileEditor({
           isPending={isPending}
           showToast={showToast}
         />
+
+        {/* Layout template */}
+        <Card className="p-6">
+          <SectionHeading icon="dashboard_customize" title="Card layout" />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {CARD_TEMPLATES.map((tpl) => {
+              const active = form.template === tpl.id;
+              const locked = tpl.pro && !isPro;
+              return (
+                <button
+                  key={tpl.id}
+                  type="button"
+                  onClick={() => chooseTemplate(tpl.id, tpl.pro)}
+                  className={cn(
+                    "relative rounded-2xl border-2 p-3 text-left transition-all",
+                    active
+                      ? "border-primary ring-2 ring-primary/30"
+                      : "border-black/5 hover:border-primary/40",
+                  )}
+                >
+                  <div className="mb-2 aspect-[3/4] overflow-hidden rounded-xl ring-1 ring-black/5">
+                    <TemplateThumb id={tpl.id} accent={getTheme(form.theme).accent} />
+                  </div>
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-sm font-semibold text-ink">
+                      {tpl.name}
+                    </span>
+                    {active && (
+                      <Icon
+                        name="check_circle"
+                        fill
+                        className="text-primary text-[18px]"
+                      />
+                    )}
+                  </div>
+                  <p className="mt-0.5 text-[11px] leading-snug text-muted">
+                    {tpl.description}
+                  </p>
+                  {tpl.pro && (
+                    <span className="absolute top-2 right-2">
+                      <ProBadge />
+                    </span>
+                  )}
+                  {locked && (
+                    <span className="absolute top-2 left-2 grid h-6 w-6 place-items-center rounded-full bg-black/40 text-white">
+                      <Icon name="lock" className="text-[14px]" />
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </Card>
 
         {/* Appearance */}
         <Card className="p-6">
@@ -848,6 +929,55 @@ function PreviewActions({
         <Icon name={copied ? "check" : "content_copy"} className="text-[18px]" />
         {copied ? "Copied!" : "Copy Profile Link"}
       </button>
+    </div>
+  );
+}
+
+/** Small schematic preview of a card layout for the template picker. */
+function TemplateThumb({ id, accent }: { id: string; accent: string }) {
+  if (id === "spotlight") {
+    return (
+      <div
+        className="relative h-full w-full"
+        style={{ background: `linear-gradient(160deg, ${accent}, ${accent}aa)` }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
+        <div className="absolute bottom-2 left-2 right-2 flex flex-col gap-1">
+          <div className="h-2 w-2/3 rounded bg-white/90" />
+          <div className="h-1.5 w-1/2 rounded bg-white/60" />
+        </div>
+      </div>
+    );
+  }
+  if (id === "grid") {
+    return (
+      <div className="flex h-full w-full flex-col bg-white">
+        <div className="h-6" style={{ background: accent }} />
+        <div
+          className="-mt-3 mx-auto h-6 w-6 rounded-full border-2 border-white"
+          style={{ background: accent }}
+        />
+        <div className="mt-1 grid grid-cols-3 gap-1 p-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="aspect-square rounded-md bg-black/10" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+  // classic
+  return (
+    <div className="flex h-full w-full flex-col bg-white">
+      <div className="h-7" style={{ background: accent }} />
+      <div
+        className="-mt-4 mx-auto h-7 w-7 rounded-full border-2 border-white"
+        style={{ background: accent }}
+      />
+      <div className="mt-1 flex flex-col gap-1.5 p-2">
+        <div className="h-1.5 w-4/5 rounded-full bg-black/10" />
+        <div className="h-1.5 w-11/12 rounded-full bg-black/10" />
+        <div className="h-1.5 w-3/4 rounded-full bg-black/10" />
+      </div>
     </div>
   );
 }
