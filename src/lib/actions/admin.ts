@@ -52,6 +52,40 @@ export async function setUserPlan(
   return { ok: true };
 }
 
+/** Manually grant Pro. durationDays = null → lifetime; complimentary → free grant. */
+export async function grantPro(
+  userId: string,
+  durationDays: number | null,
+  complimentary: boolean,
+): Promise<AdminResult> {
+  await requireAdminUser();
+  const proUntil =
+    durationDays && durationDays > 0
+      ? new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000)
+      : null;
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      plan: "PRO",
+      proSince: new Date(),
+      proUntil,
+      proComplimentary: complimentary,
+    },
+  });
+  revalidatePath("/admin/users");
+  return { ok: true };
+}
+
+export async function revokePro(userId: string): Promise<AdminResult> {
+  await requireAdminUser();
+  await prisma.user.update({
+    where: { id: userId },
+    data: { plan: "FREE", proUntil: null, proComplimentary: false },
+  });
+  revalidatePath("/admin/users");
+  return { ok: true };
+}
+
 export async function setUserRole(
   userId: string,
   role: Role,

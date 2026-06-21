@@ -218,6 +218,7 @@ export function CardStudio({
   const [shipCity, setShipCity] = useState<string>("");
   const [shipPostal, setShipPostal] = useState<string>("");
   const [shipCountry, setShipCountry] = useState<string>("United Kingdom");
+  const [discountCode, setDiscountCode] = useState<string>("");
 
   /* ----- designer state ----- */
   const [front, setFront] = useState<SideState>(() => ({
@@ -551,6 +552,7 @@ export function CardStudio({
       fd.append("shipCity", shipCity);
       fd.append("shipPostal", shipPostal);
       fd.append("shipCountry", shipCountry);
+      fd.append("discountCode", discountCode);
       fd.append(
         "design",
         JSON.stringify({
@@ -575,6 +577,7 @@ export function CardStudio({
     shipCity,
     shipPostal,
     shipCountry,
+    discountCode,
     front,
     back,
     plan,
@@ -1060,6 +1063,22 @@ export function CardStudio({
                   </dd>
                 </div>
               </dl>
+            </div>
+
+            <div>
+              <label
+                htmlFor="cardDiscount"
+                className="mb-1 block text-xs font-semibold text-muted"
+              >
+                Discount code (optional)
+              </label>
+              <input
+                id="cardDiscount"
+                value={discountCode}
+                onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                className={`${inputClass} uppercase tracking-wide`}
+                placeholder="e.g. SAVE20"
+              />
             </div>
 
             {error && (

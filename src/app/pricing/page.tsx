@@ -1,25 +1,13 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { SiteNav } from "@/components/marketing/SiteNav";
 import { SiteFooter } from "@/components/marketing/SiteFooter";
 import { Reveal } from "@/components/marketing/Reveal";
 import { Icon } from "@/components/Icon";
 import { buttonClass, ProBadge, Badge } from "@/components/ui";
-import { UpgradeButton } from "@/components/public/UpgradeButton";
-import { upgradeToPro } from "@/lib/actions/checkout";
+import { UpgradePanel } from "@/components/public/UpgradePanel";
 import { getSessionUser } from "@/lib/auth";
 import { money, PRO_PRICE_CENTS, CARD_MATERIALS, APP_NAME } from "@/lib/constants";
-
-// Form-action wrapper: upgradeToPro redirects on success and only returns an
-// error object on failure, which we surface by redirecting back with a flag.
-async function upgradePro(): Promise<void> {
-  "use server";
-  const result = await upgradeToPro();
-  if (result?.error) {
-    redirect("/pricing?cancelled=1");
-  }
-}
 
 export const metadata: Metadata = {
   title: `Pricing | ${APP_NAME}`,
@@ -180,12 +168,7 @@ export default async function PricingPage({
                 </div>
               ) : (
                 <>
-                  <form action={upgradePro} className="mt-7">
-                    <UpgradeButton />
-                  </form>
-                  <p className="mt-3 text-center text-xs text-faint">
-                    Secure checkout · One-time payment
-                  </p>
+                  <UpgradePanel />
                 </>
               )}
             </Reveal>

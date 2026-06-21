@@ -2,9 +2,15 @@
 
 import { useState, useTransition } from "react";
 import { Icon } from "@/components/Icon";
-import { Badge, ProBadge } from "@/components/ui";
-import { setUserPlan, setUserRole, deleteUser } from "@/lib/actions/admin";
-import { colorFromString, formatDate, initials } from "@/lib/utils";
+import { Badge, ProBadge, buttonClass } from "@/components/ui";
+import {
+  setUserPlan,
+  setUserRole,
+  deleteUser,
+  grantPro,
+  revokePro,
+} from "@/lib/actions/admin";
+import { cn, colorFromString, formatDate, initials } from "@/lib/utils";
 
 export type AdminUser = {
   id: string;
@@ -12,10 +18,20 @@ export type AdminUser = {
   email: string;
   username: string | null;
   plan: "FREE" | "PRO";
+  proUntil: string | null;
+  proComplimentary: boolean;
   role: "USER" | "ADMIN";
   ordersCount: number;
   createdAt: string;
 };
+
+const PRO_DURATIONS: { label: string; days: number | null }[] = [
+  { label: "1 month", days: 30 },
+  { label: "3 months", days: 90 },
+  { label: "6 months", days: 180 },
+  { label: "1 year", days: 365 },
+  { label: "Lifetime", days: null },
+];
 
 export function UserRow({
   user,
@@ -25,9 +41,13 @@ export function UserRow({
   currentAdminId: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [proOpen, setProOpen] = useState(false);
+  const [durationDays, setDurationDays] = useState<number | null>(30);
+  const [complimentary, setComplimentary] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const isSelf = user.id === currentAdminId;
+  const isPro = user.plan === "PRO";
 
   function run(fn: () => Promise<{ ok: boolean; error?: string }>) {
     setError(null);
@@ -44,6 +64,36 @@ export function UserRow({
 
   function togglePlan() {
     run(() => setUserPlan(user.id, user.plan === "PRO" ? "FREE" : "PRO"));
+  }
+
+  function grant() {
+    setError(null);
+    startTransition(async () => {
+      const res = await grantPro(user.id, durationDays, complimentary);
+      if (!res.ok) {
+        setError(res.error ?? "Action failed");
+        if (res.error) alert(res.error);
+      } else {
+        setProOpen(false);
+        setOpen(false);
+      }
+    });
+  }
+
+  function revoke() {
+    if (!confirm(`Revoke Pro from ${user.name}? They will return to Free.`))
+      return;
+    setError(null);
+    startTransition(async () => {
+      const res = await revokePro(user.id);
+      if (!res.ok) {
+        setError(res.error ?? "Action failed");
+        if (res.error) alert(res.error);
+      } else {
+        setProOpen(false);
+        setOpen(false);
+      }
+    });
   }
 
   function toggleRole() {
@@ -79,11 +129,23 @@ export function UserRow({
         {user.email}
       </td>
       <td className="px-4 py-3">
-        {user.plan === "PRO" ? <ProBadge /> : <Badge color="neutral">Free</Badge>}
-        {user.role === "ADMIN" && (
-          <Badge color="primary" className="ml-1.5">
-            Admin
-          </Badge>
+        <div className="flex items-center gap-1.5">
+          {isPro ? <ProBadge /> : <Badge color="neutral">Free</Badge>}
+          {user.role === "ADMIN" && <Badge color="primary">Admin</Badge>}
+          {isPro && user.proComplimentary && (
+            <Badge color="success">Comp</Badge>
+          )}
+        </div>
+        {isPro && (
+          <p className="mt-1 text-[11px] text-faint whitespace-nowrap">
+            {user.proUntil === null
+              ? "Lifetime"
+              : `Until ${new Date(user.proUntil).toLocaleDateString("en-GB", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                })}`}
+          </p>
         )}
       </td>
       <td className="px-4 py-3 text-sm text-ink text-center tabular-nums">
@@ -112,10 +174,13 @@ export function UserRow({
               type="button"
               aria-hidden
               tabIndex={-1}
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                setOpen(false);
+                setProOpen(false);
+              }}
               className="fixed inset-0 z-10 cursor-default"
             />
-            <div className="absolute right-4 top-12 z-20 w-52 rounded-xl border border-black/5 bg-surface shadow-lg p-1 text-left">
+            <div className="absolute right-4 top-12 z-20 w-60 rounded-xl border border-black/5 bg-surface shadow-lg p-1 text-left">
               <button
                 type="button"
                 onClick={togglePlan}
@@ -125,6 +190,78 @@ export function UserRow({
                 <Icon name="bolt" className="text-[18px] text-tertiary" />
                 {user.plan === "PRO" ? "Downgrade to Free" : "Upgrade to Pro"}
               </button>
+              <button
+                type="button"
+                onClick={() => setProOpen((v) => !v)}
+                disabled={isPending}
+                aria-expanded={proOpen}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-ink hover:bg-surface-low transition-colors disabled:opacity-50"
+              >
+                <Icon name="workspace_premium" className="text-[18px] text-tertiary" />
+                Manage Pro
+                <Icon
+                  name={proOpen ? "expand_less" : "expand_more"}
+                  className="text-[18px] text-faint ml-auto"
+                />
+              </button>
+              {proOpen && (
+                <div className="mx-1 mb-1 rounded-lg bg-surface-low/70 p-3 space-y-2.5">
+                  <label className="block">
+                    <span className="text-[11px] font-semibold text-muted">
+                      Duration
+                    </span>
+                    <select
+                      value={durationDays === null ? "lifetime" : String(durationDays)}
+                      onChange={(e) =>
+                        setDurationDays(
+                          e.target.value === "lifetime"
+                            ? null
+                            : Number(e.target.value),
+                        )
+                      }
+                      disabled={isPending}
+                      className="mt-1 w-full rounded-lg border border-outline bg-surface px-2.5 py-1.5 text-sm text-ink outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 disabled:opacity-50"
+                    >
+                      {PRO_DURATIONS.map((d) => (
+                        <option
+                          key={d.label}
+                          value={d.days === null ? "lifetime" : String(d.days)}
+                        >
+                          {d.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-ink">
+                    <input
+                      type="checkbox"
+                      checked={complimentary}
+                      onChange={(e) => setComplimentary(e.target.checked)}
+                      disabled={isPending}
+                      className="h-4 w-4 rounded border-outline text-primary focus:ring-primary/40"
+                    />
+                    Complimentary (free grant)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={grant}
+                    disabled={isPending}
+                    className={buttonClass("primary", "sm", "w-full")}
+                  >
+                    {isPending ? "Saving…" : "Grant Pro"}
+                  </button>
+                  {isPro && (
+                    <button
+                      type="button"
+                      onClick={revoke}
+                      disabled={isPending}
+                      className={cn(buttonClass("outline", "sm", "w-full"), "text-red-600")}
+                    >
+                      Revoke Pro
+                    </button>
+                  )}
+                </div>
+              )}
               <button
                 type="button"
                 onClick={toggleRole}

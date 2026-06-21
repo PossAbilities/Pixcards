@@ -33,9 +33,12 @@ model User {
   stripeCustomerId     String?
   stripeSubscriptionId String?
   proSince             DateTime?
+  proUntil             DateTime? // null while PRO = lifetime; past date = expired
+  proComplimentary     Boolean   @default(false) // granted free by an admin
 
-  profile Profile?
-  orders  Order[]
+  profile     Profile?
+  orders      Order[]
+  redemptions DiscountRedemption[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -136,4 +139,48 @@ model AnalyticsEvent {
   type      EventType
   referrer  String?
   createdAt DateTime  @default(now())
+}
+
+enum DiscountType {
+  PERCENT // value = 1..100 (% off)
+  FIXED   // value = amount off in pence
+}
+
+enum DiscountScope {
+  ALL  // applies to Pro upgrade and card orders
+  PRO  // Pro upgrade only
+  CARD // physical card orders only
+}
+
+model DiscountCode {
+  id          String        @id @default(cuid())
+  code        String        @unique // stored uppercase
+  description String        @default("")
+  type        DiscountType  @default(PERCENT)
+  value       Int // percent (1-100) or pence depending on type
+  scope       DiscountScope @default(ALL)
+
+  maxRedemptions Int? // null = unlimited
+  timesRedeemed  Int  @default(0)
+  expiresAt      DateTime?
+  active         Boolean   @default(true)
+
+  redemptions DiscountRedemption[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DiscountRedemption {
+  id     String @id @default(cuid())
+  codeId String
+  code   DiscountCode @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  context        String // "pro" | "order"
+  amountOffCents Int
+  createdAt      DateTime @default(now())
+
+  @@unique([codeId, userId]) // one redemption per user per code
 }

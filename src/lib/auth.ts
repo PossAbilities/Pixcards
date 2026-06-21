@@ -63,9 +63,43 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     if (!uid) return null;
     const user = await prisma.user.findUnique({
       where: { id: uid },
-      select: { id: true, email: true, name: true, role: true, plan: true },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        plan: true,
+        proUntil: true,
+      },
     });
-    return user;
+    if (!user) return null;
+
+    // Lazily expire timed Pro grants (no cron needed on serverless).
+    if (
+      user.plan === "PRO" &&
+      user.proUntil &&
+      user.proUntil.getTime() < Date.now()
+    ) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { plan: "FREE", proUntil: null, proComplimentary: false },
+      });
+      return {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        plan: "FREE",
+      };
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      plan: user.plan,
+    };
   } catch {
     return null;
   }

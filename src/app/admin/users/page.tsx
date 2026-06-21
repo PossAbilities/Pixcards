@@ -20,6 +20,8 @@ export default async function AdminUsersPage() {
     email: u.email,
     username: u.profile?.username ?? null,
     plan: u.plan,
+    proUntil: u.proUntil ? u.proUntil.toISOString() : null,
+    proComplimentary: u.proComplimentary,
     role: u.role,
     ordersCount: u._count.orders,
     createdAt: u.createdAt.toISOString(),
