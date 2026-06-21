@@ -31,6 +31,7 @@ import {
 import { CARD_MATERIALS, material, money } from "@/lib/constants";
 import { createCardOrder } from "@/lib/actions/checkout";
 import { previewDiscount } from "@/lib/actions/discounts";
+import { ImageCropperModal } from "./ImageCropperModal";
 import { cn } from "@/lib/utils";
 
 /* -------------------------------------------------------------------------- */
@@ -76,6 +77,14 @@ type SideKey = "front" | "back";
 
 const CARD_W = 460;
 const CARD_H = 290;
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve) => {
+    const r = new FileReader();
+    r.onload = () => resolve(typeof r.result === "string" ? r.result : "");
+    r.readAsDataURL(blob);
+  });
+}
 
 const BG_PRESETS: { id: string; label: string; value: string }[] = [
   { id: "white", label: "White", value: "#ffffff" },
@@ -285,6 +294,10 @@ export function CardStudio({
   const [activeSide, setActiveSide] = useState<SideKey>("front");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showBgPanel, setShowBgPanel] = useState(false);
+  const [studioCrop, setStudioCrop] = useState<{
+    src: string;
+    kind: "image" | "bg";
+  } | null>(null);
 
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState<"idle" | "export" | "order">("idle");
@@ -415,50 +428,53 @@ export function CardStudio({
     imageInputRef.current?.click();
   }, []);
 
-  const handleImageFile = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      e.target.value = "";
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        const src = typeof reader.result === "string" ? reader.result : "";
-        if (!src) return;
-        addElement({
-          id: uid(),
-          type: "image",
-          x: CARD_W / 2 - 70,
-          y: CARD_H / 2 - 70,
-          w: 140,
-          h: 140,
-          src,
-        });
-      };
-      reader.readAsDataURL(file);
-    },
-    [addElement],
-  );
+  const handleImageFile = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const src = typeof reader.result === "string" ? reader.result : "";
+      if (src) setStudioCrop({ src, kind: "image" });
+    };
+    reader.readAsDataURL(file);
+  }, []);
 
   const handleBgImageClick = useCallback(() => {
     bgInputRef.current?.click();
   }, []);
 
-  const handleBgFile = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      e.target.value = "";
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        const src = typeof reader.result === "string" ? reader.result : "";
-        if (!src) return;
-        updateSide((s) => ({ ...s, bg: `url("${src}")` }));
-        setShowBgPanel(false);
-      };
-      reader.readAsDataURL(file);
-    },
-    [updateSide],
-  );
+  const handleBgFile = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const src = typeof reader.result === "string" ? reader.result : "";
+      if (src) setStudioCrop({ src, kind: "bg" });
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
+  async function onStudioCropSave(blob: Blob) {
+    if (!studioCrop) return;
+    const src = await blobToDataUrl(blob);
+    if (studioCrop.kind === "image") {
+      addElement({
+        id: uid(),
+        type: "image",
+        x: CARD_W / 2 - 70,
+        y: CARD_H / 2 - 70,
+        w: 140,
+        h: 140,
+        src,
+      });
+    } else {
+      updateSide((s) => ({ ...s, bg: `url("${src}")` }));
+      setShowBgPanel(false);
+    }
+    setStudioCrop(null);
+  }
 
   const handleSetBg = useCallback(
     (value: string) => {
@@ -1207,6 +1223,18 @@ export function CardStudio({
         <StaticCard side={front} cardRef={frontExportRef} />
         <StaticCard side={back} cardRef={backExportRef} />
       </div>
+
+      {studioCrop && (
+        <ImageCropperModal
+          src={studioCrop.src}
+          title={
+            studioCrop.kind === "bg" ? "Crop background image" : "Crop image"
+          }
+          aspect={studioCrop.kind === "bg" ? CARD_W / CARD_H : 1}
+          onCancel={() => setStudioCrop(null)}
+          onSave={onStudioCropSave}
+        />
+      )}
     </div>
   );
 }
