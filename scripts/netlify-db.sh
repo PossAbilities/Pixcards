@@ -12,9 +12,12 @@ fi
 echo "→ Syncing schema to database (prisma db push)…"
 npx prisma db push --skip-generate
 
+echo "→ Ensuring the owner account is admin (and purging demo accounts in prod)…"
+npx tsx prisma/ensure-admin.ts
+
 if [ "$SEED_DEMO" = "true" ]; then
-  echo "→ SEED_DEMO=true — seeding demo data (idempotent)…"
+  echo "→ SEED_DEMO=true — seeding demo data (auto-skipped in production)…"
   npx tsx prisma/seed.ts
 else
-  echo "→ SEED_DEMO not 'true' — skipping demo seed (register an account to become admin)."
+  echo "→ SEED_DEMO not 'true' — skipping demo seed."
 fi

@@ -4,6 +4,14 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
+  // Safeguard: never create demo/test accounts on a production deploy, even if
+  // SEED_DEMO=true is left set. Demo accounts ship with a public password and
+  // must never exist on the live site.
+  if (process.env.NODE_ENV === "production") {
+    console.log("Production environment — refusing to seed demo accounts.");
+    return;
+  }
+
   // Only seed an empty database. This makes the seed a safe one-time bootstrap:
   // leaving SEED_DEMO=true on the host won't keep re-adding demo data once the
   // database has real users. Force a re-seed locally with `prisma db push --force-reset`.
@@ -109,7 +117,7 @@ async function main() {
 
   // Sample orders for fulfilment dashboard
   const allUsers = await prisma.user.findMany({ take: 6 });
-  const materials = ["metal-indigo", "matte-black", "bio-plastic", "white-gloss"];
+  const materials = ["white-gloss"];
   const statuses = ["PENDING", "PRINTING", "SHIPPED", "DELIVERED", "PAID"] as const;
   const existingOrders = await prisma.order.count();
   if (existingOrders === 0) {
