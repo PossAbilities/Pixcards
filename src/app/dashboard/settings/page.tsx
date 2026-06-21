@@ -6,6 +6,7 @@ import { appUrl } from "@/lib/constants";
 import { Card, ProBadge, SectionHeading, buttonClass, inputClass, Label } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import { PublishToggle } from "@/components/dashboard/PublishToggle";
+import { DeleteAccount } from "@/components/dashboard/DeleteAccount";
 import { updateProfile } from "@/lib/actions/profile";
 import { logoutAction } from "@/app/(auth)/actions";
 import { formatDate } from "@/lib/utils";
@@ -173,6 +174,27 @@ export default async function SettingsPage() {
           )}
         </Card>
 
+        {/* Privacy & your data */}
+        <Card className="p-6">
+          <SectionHeading icon="shield" title="Privacy & your data" />
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-ink">Export my data</p>
+              <p className="mt-1 text-xs text-muted">
+                Download everything we hold about you (profile, links, orders,
+                cards and email history) as a JSON file.
+              </p>
+            </div>
+            <a
+              href="/dashboard/settings/export"
+              className={buttonClass("outline", "md")}
+            >
+              <Icon name="download" className="text-[18px]" />
+              Export
+            </a>
+          </div>
+        </Card>
+
         {/* Danger zone */}
         <Card className="p-6 border-red-200">
           <SectionHeading icon="warning" title="Danger Zone" />
@@ -189,6 +211,10 @@ export default async function SettingsPage() {
                 Log out
               </button>
             </form>
+          </div>
+
+          <div className="mt-5 border-t border-red-200 pt-5">
+            <DeleteAccount />
           </div>
         </Card>
       </div>

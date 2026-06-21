@@ -14,10 +14,11 @@ export async function sendPasswordReset(
   email: string,
   name: string,
   resetUrl: string,
+  userId?: string,
 ): Promise<void> {
   try {
     const built = passwordResetEmail({ name, resetUrl });
-    await sendEmail({ to: email, ...built });
+    await sendEmail({ to: email, ...built, type: "PASSWORD_RESET", userId });
   } catch (e) {
     console.error("sendPasswordReset failed", e);
   }
@@ -40,7 +41,7 @@ export async function sendWelcomeEmail(userId: string): Promise<void> {
       shareUrl: `${appUrl()}/u/${user.profile.username}`,
       dashboardUrl: `${appUrl()}/dashboard`,
     });
-    await sendEmail({ to: user.email, ...built });
+    await sendEmail({ to: user.email, ...built, type: "WELCOME", userId: user.id });
   } catch (e) {
     console.error("sendWelcomeEmail failed", e);
   }
@@ -72,7 +73,12 @@ export async function sendOrderReceipt(orderId: string): Promise<void> {
       ],
       orderUrl: `${appUrl()}/dashboard/orders`,
     });
-    await sendEmail({ to: order.user.email, ...built });
+    await sendEmail({
+      to: order.user.email,
+      ...built,
+      type: "ORDER_RECEIPT",
+      userId: order.userId,
+    });
   } catch (e) {
     console.error("sendOrderReceipt failed", e);
   }
@@ -90,7 +96,7 @@ export async function sendProWelcome(
       amountPaidCents,
       dashboardUrl: `${appUrl()}/dashboard`,
     });
-    await sendEmail({ to: user.email, ...built });
+    await sendEmail({ to: user.email, ...built, type: "PRO_WELCOME", userId: user.id });
   } catch (e) {
     console.error("sendProWelcome failed", e);
   }
@@ -109,7 +115,12 @@ export async function sendOrderShipped(orderId: string): Promise<void> {
       trackingNumber: order.trackingNumber ?? undefined,
       orderUrl: `${appUrl()}/dashboard/orders`,
     });
-    await sendEmail({ to: order.user.email, ...built });
+    await sendEmail({
+      to: order.user.email,
+      ...built,
+      type: "ORDER_SHIPPED",
+      userId: order.userId,
+    });
   } catch (e) {
     console.error("sendOrderShipped failed", e);
   }

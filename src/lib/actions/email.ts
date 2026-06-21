@@ -52,8 +52,8 @@ export async function sendBroadcast(input: {
         .join("");
 
   const recipients = input.testOnly
-    ? [{ name: admin.name, email: admin.email }]
-    : await prisma.user.findMany({ select: { name: true, email: true } });
+    ? [{ id: admin.id, name: admin.name, email: admin.email }]
+    : await prisma.user.findMany({ select: { id: true, name: true, email: true } });
 
   const unsubscribeUrl = `${appUrl()}/dashboard/settings`;
   let sent = 0;
@@ -71,6 +71,8 @@ export async function sendBroadcast(input: {
       subject: input.subject.trim() || heading,
       html: built.html,
       text: built.text,
+      type: "MARKETING",
+      userId: r.id,
     });
     if (res.ok) sent++;
   }

@@ -23,7 +23,7 @@ export async function requestPasswordReset(email: string): Promise<{ ok: true }>
       try {
         const token = await createResetToken(user.id);
         const resetUrl = `${appUrl()}/reset-password?token=${encodeURIComponent(token)}`;
-        await sendPasswordReset(user.email, user.name, resetUrl);
+        await sendPasswordReset(user.email, user.name, resetUrl, user.id);
       } catch (e) {
         console.error("requestPasswordReset failed", e);
       }

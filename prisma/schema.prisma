@@ -55,6 +55,7 @@ model User {
   cards       Card[]
   redemptions DiscountRedemption[]
   resetTokens PasswordResetToken[]
+  emails      EmailMessage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -189,6 +190,43 @@ model AnalyticsEvent {
   type      EventType
   referrer  String?
   createdAt DateTime  @default(now())
+}
+
+enum EmailType {
+  WELCOME
+  ORDER_RECEIPT
+  PRO_WELCOME
+  ORDER_SHIPPED
+  PASSWORD_RESET
+  MARKETING
+  OTHER
+}
+
+/// One sent email. Updated in place by the Resend webhook as the message is
+/// delivered, opened and clicked. Cascade-deleted with the user (GDPR erasure).
+model EmailMessage {
+  id       String  @id @default(cuid())
+  resendId String? @unique // Resend's email id, used to match webhook events
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  to      String
+  type    EmailType @default(OTHER)
+  subject String    @default("")
+  // sent | delivered | opened | clicked | bounced | complained | failed | demo
+  status  String    @default("sent")
+
+  opens     Int       @default(0)
+  clicks    Int       @default(0)
+  openedAt  DateTime?
+  clickedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([type])
+  @@index([createdAt])
 }
 
 enum DiscountType {
