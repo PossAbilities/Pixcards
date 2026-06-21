@@ -8,6 +8,7 @@ import { Icon } from "@/components/Icon";
 import { buttonClass, ProBadge, Badge } from "@/components/ui";
 import { UpgradeButton } from "@/components/public/UpgradeButton";
 import { upgradeToPro } from "@/lib/actions/checkout";
+import { getSessionUser } from "@/lib/auth";
 import { money, PRO_PRICE_CENTS, CARD_MATERIALS, APP_NAME } from "@/lib/constants";
 
 // Form-action wrapper: upgradeToPro redirects on success and only returns an
@@ -67,6 +68,8 @@ export default async function PricingPage({
   searchParams: Promise<{ cancelled?: string }>;
 }) {
   const { cancelled } = await searchParams;
+  const user = await getSessionUser();
+  const isPro = user?.plan === "PRO";
 
   return (
     <>
@@ -126,10 +129,10 @@ export default async function PricingPage({
                 <Perk>Advanced analytics &amp; branding</Perk>
               </ul>
               <Link
-                href="/register"
+                href={user ? "/dashboard" : "/register"}
                 className={buttonClass("outline", "lg", "mt-7 w-full")}
               >
-                Get started free
+                {user ? "Go to your dashboard" : "Get started free"}
               </Link>
             </Reveal>
 
@@ -162,12 +165,29 @@ export default async function PricingPage({
                 <Perk ok>Custom branding</Perk>
                 <Perk ok>Priority support</Perk>
               </ul>
-              <form action={upgradePro} className="mt-7">
-                <UpgradeButton />
-              </form>
-              <p className="mt-3 text-center text-xs text-faint">
-                Secure checkout · One-time payment
-              </p>
+              {isPro ? (
+                <div className="mt-7">
+                  <div className="flex items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+                    <Icon name="verified" fill className="text-[20px]" />
+                    You&apos;re on Pro — everything&apos;s unlocked
+                  </div>
+                  <Link
+                    href="/dashboard"
+                    className={buttonClass("outline", "lg", "mt-3 w-full")}
+                  >
+                    Go to your dashboard
+                  </Link>
+                </div>
+              ) : (
+                <>
+                  <form action={upgradePro} className="mt-7">
+                    <UpgradeButton />
+                  </form>
+                  <p className="mt-3 text-center text-xs text-faint">
+                    Secure checkout · One-time payment
+                  </p>
+                </>
+              )}
             </Reveal>
           </div>
         </section>
