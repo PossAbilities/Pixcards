@@ -306,7 +306,20 @@ export default async function AdminOrderDetailPage({
 
       {/* NFC card activation / fulfilment */}
       <Card className="p-6">
-        <SectionHeading icon="contactless" title="NFC card activation" />
+        <SectionHeading
+          icon="contactless"
+          title="NFC card activation"
+          action={
+            <Link
+              href={`/print/card-insert/${order.id}`}
+              target="_blank"
+              className={buttonClass("outline", "sm")}
+            >
+              <Icon name="print" className="text-[16px]" />
+              Print card insert
+            </Link>
+          }
+        />
         <OrderNfcPanel
           orderId={order.id}
           quantity={order.quantity}
