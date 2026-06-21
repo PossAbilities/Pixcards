@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   useTransition,
+  memo,
 } from "react";
 import type {
   CSSProperties,
@@ -171,7 +172,7 @@ function renderElementContent(el: CardElement) {
 /*  Static (off-screen) card renderer — used for PNG export                   */
 /* -------------------------------------------------------------------------- */
 
-function StaticCard({
+const StaticCard = memo(function StaticCard({
   side,
   cardRef,
 }: {
@@ -207,7 +208,7 @@ function StaticCard({
       ))}
     </div>
   );
-}
+});
 
 /* -------------------------------------------------------------------------- */
 /*  Main component                                                            */
@@ -301,6 +302,10 @@ export function CardStudio({
 
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState<"idle" | "export" | "order">("idle");
+  // The off-screen full-size renderers are heavy (two cards holding the
+  // uploaded artwork). Mount them only while exporting so mobile browsers
+  // don't keep duplicate bitmaps in memory the whole time.
+  const [mountExport, setMountExport] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   /* ----- hidden file inputs ----- */
@@ -310,6 +315,19 @@ export function CardStudio({
   /* ----- off-screen export refs ----- */
   const frontExportRef = useRef<HTMLDivElement>(null);
   const backExportRef = useRef<HTMLDivElement>(null);
+
+  /* ----- responsive canvas scaling (fit the 460px stage to the screen) ----- */
+  const stageWrapRef = useRef<HTMLDivElement>(null);
+  const [stageW, setStageW] = useState(CARD_W);
+  useEffect(() => {
+    const el = stageWrapRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => setStageW(el.clientWidth));
+    ro.observe(el);
+    setStageW(el.clientWidth);
+    return () => ro.disconnect();
+  }, []);
+  const scale = Math.min(1, stageW / CARD_W);
 
   /* ----- derived ----- */
   const selectedMaterial = material(materialId);
@@ -582,6 +600,12 @@ export function CardStudio({
       // 1) Export + upload artwork (failures handled here).
       try {
         setPhase("export");
+        // Mount the off-screen renderers and wait for them to paint before
+        // we snapshot them to PNG.
+        setMountExport(true);
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        );
         const frontNode = frontExportRef.current;
         const backNode = backExportRef.current;
         if (!frontNode || !backNode) {
@@ -589,7 +613,9 @@ export function CardStudio({
         }
         frontImage = await exportSide(frontNode, "card-front.png");
         backImage = await exportSide(backNode, "card-back.png");
+        setMountExport(false);
       } catch {
+        setMountExport(false);
         setPhase("idle");
         setError("We couldn't prepare your artwork — please try again.");
         return;
@@ -691,21 +717,27 @@ export function CardStudio({
             </div>
 
             {/* Canvas + toolbar */}
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1" ref={stageWrapRef}>
               <div className="flex justify-center">
-                <div className="relative" style={{ width: CARD_W }}>
-                  {/* Interactive card */}
-                  <div
-                    onMouseDown={deselect}
-                    className="relative overflow-hidden rounded-2xl shadow-xl"
-                    style={{
-                      width: CARD_W,
-                      height: CARD_H,
-                      background: sideState.bg,
-                      backgroundSize: "cover",
-                      backgroundPosition: "center",
-                    }}
-                  >
+                <div
+                  className="relative mx-auto"
+                  style={{ width: CARD_W * scale }}
+                >
+                  {/* scaled reserve box keeps layout height correct */}
+                  <div style={{ width: CARD_W * scale, height: CARD_H * scale }}>
+                    {/* Interactive card (rendered at full size, visually scaled) */}
+                    <div
+                      onMouseDown={deselect}
+                      className="relative overflow-hidden rounded-2xl shadow-xl origin-top-left"
+                      style={{
+                        width: CARD_W,
+                        height: CARD_H,
+                        transform: `scale(${scale})`,
+                        background: sideState.bg,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                      }}
+                    >
                     {/* bleed hint */}
                     <div
                       className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-black/10"
@@ -724,6 +756,7 @@ export function CardStudio({
                         <Rnd
                           key={el.id}
                           bounds="parent"
+                          scale={scale}
                           size={{ width: el.w, height: el.h }}
                           position={{ x: el.x, y: el.y }}
                           onDragStop={makeDragStop(el.id)}
@@ -769,6 +802,7 @@ export function CardStudio({
                         </Rnd>
                       );
                     })}
+                    </div>
                   </div>
 
                   {/* Safe-area / bleed caption */}
@@ -1216,13 +1250,15 @@ export function CardStudio({
       </div>
 
       {/* ---------- Off-screen static renderers for PNG export ---------- */}
-      <div
-        aria-hidden
-        style={{ position: "fixed", left: -99999, top: 0 }}
-      >
-        <StaticCard side={front} cardRef={frontExportRef} />
-        <StaticCard side={back} cardRef={backExportRef} />
-      </div>
+      {mountExport && (
+        <div
+          aria-hidden
+          style={{ position: "fixed", left: -99999, top: 0 }}
+        >
+          <StaticCard side={front} cardRef={frontExportRef} />
+          <StaticCard side={back} cardRef={backExportRef} />
+        </div>
+      )}
 
       {studioCrop && (
         <ImageCropperModal
