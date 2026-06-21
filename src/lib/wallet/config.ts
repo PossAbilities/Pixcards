@@ -10,3 +10,12 @@ export function isWalletConfigured(): boolean {
       process.env.APPLE_WWDR_CERT,
   );
 }
+
+/** True only when every Google Wallet credential is present. */
+export function isGoogleWalletConfigured(): boolean {
+  return Boolean(
+    process.env.GOOGLE_WALLET_ISSUER_ID &&
+      process.env.GOOGLE_WALLET_SA_EMAIL &&
+      process.env.GOOGLE_WALLET_SA_KEY,
+  );
+}

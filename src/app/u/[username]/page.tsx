@@ -3,10 +3,10 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { DigitalCard, type CardData } from "@/components/DigitalCard";
 import { SharePanel } from "@/components/public/SharePanel";
-import { AddToWallet } from "@/components/AddToWallet";
+import { WalletButtons } from "@/components/WalletButtons";
 import { prisma } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
-import { isWalletConfigured } from "@/lib/wallet/config";
+import { isWalletConfigured, isGoogleWalletConfigured } from "@/lib/wallet/config";
 import { appUrl, theme as getTheme, APP_NAME } from "@/lib/constants";
 
 async function getProfile(username: string) {
@@ -82,7 +82,8 @@ export default async function PublicCardPage({
   const shareUrl = `${appUrl()}/u/${username}`;
   const t = getTheme(profile.theme);
   const accent = profile.accentColor || t.accent;
-  const walletEnabled = isWalletConfigured();
+  const appleWallet = isWalletConfigured();
+  const googleWallet = isGoogleWalletConfigured();
 
   const data: CardData = {
     name: profile.user.name || username,
@@ -136,11 +137,11 @@ export default async function PublicCardPage({
           name={data.name}
         />
 
-        {walletEnabled && (
-          <div className="flex justify-center">
-            <AddToWallet username={username} />
-          </div>
-        )}
+        <WalletButtons
+          username={username}
+          apple={appleWallet}
+          google={googleWallet}
+        />
 
         {/* CTA + powered-by footer */}
         <div className="flex flex-col items-center gap-3 pt-2 text-center">
