@@ -12,6 +12,7 @@ import {
 } from "@/components/ui";
 import { DigitalCard, type CardLink } from "@/components/DigitalCard";
 import { BrandTile } from "@/components/BrandIcon";
+import { ImageCropperModal } from "./ImageCropperModal";
 import { Toast, type ToastState } from "@/components/dashboard/Toast";
 import { PLATFORMS, THEMES, platform, theme as getTheme } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -366,13 +367,30 @@ function ImagesCard({
 }) {
   const t = getTheme(themeId);
   const [busy, setBusy] = useState<"avatarUrl" | "headerUrl" | null>(null);
+  const [cropState, setCropState] = useState<{
+    src: string;
+    field: "avatarUrl" | "headerUrl";
+  } | null>(null);
   const headerInput = useRef<HTMLInputElement>(null);
   const avatarInput = useRef<HTMLInputElement>(null);
 
-  async function handle(field: "avatarUrl" | "headerUrl", file?: File) {
+  // Open the cropper with the chosen file (read as a data URL — avoids CORS).
+  function handle(field: "avatarUrl" | "headerUrl", file?: File) {
     if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () =>
+      setCropState({ src: reader.result as string, field });
+    reader.readAsDataURL(file);
+  }
+
+  // Upload the cropped result.
+  async function uploadCropped(blob: Blob) {
+    if (!cropState) return;
+    const field = cropState.field;
+    setCropState(null);
     setBusy(field);
     try {
+      const file = new File([blob], `${field}.jpg`, { type: "image/jpeg" });
       const url = await uploadFile(file);
       onUploaded(field, url);
     } catch (e) {
@@ -413,7 +431,10 @@ function ImagesCard({
           type="file"
           accept="image/*"
           className="hidden"
-          onChange={(e) => handle("headerUrl", e.target.files?.[0])}
+          onChange={(e) => {
+            handle("headerUrl", e.target.files?.[0]);
+            e.target.value = "";
+          }}
         />
       </div>
 
@@ -456,10 +477,28 @@ function ImagesCard({
             type="file"
             accept="image/*"
             className="hidden"
-            onChange={(e) => handle("avatarUrl", e.target.files?.[0])}
+            onChange={(e) => {
+              handle("avatarUrl", e.target.files?.[0]);
+              e.target.value = "";
+            }}
           />
         </div>
       </div>
+
+      {cropState && (
+        <ImageCropperModal
+          src={cropState.src}
+          title={
+            cropState.field === "avatarUrl"
+              ? "Adjust your profile photo"
+              : "Adjust your header image"
+          }
+          aspect={cropState.field === "avatarUrl" ? 1 : 3}
+          round={cropState.field === "avatarUrl"}
+          onCancel={() => setCropState(null)}
+          onSave={uploadCropped}
+        />
+      )}
     </Card>
   );
 }
