@@ -15,6 +15,9 @@
   NODE_VERSION = "22"
   # Prisma + Next on Netlify
   NEXT_TELEMETRY_DISABLED = "1"
+  # These env vars are NOT secrets (a bucket name + public URLs that are meant
+  # to ship in the client bundle), so exclude them from Netlify's secret scan.
+  SECRETS_SCAN_OMIT_KEYS = "SUPABASE_STORAGE_BUCKET,NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_APP_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY"
 
 # Required environment variables (set in Netlify UI → Site settings → Environment):
 #   DATABASE_URL          Supabase pooled URL (port 6543, ?pgbouncer=true)
