@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Icon } from "./Icon";
+import { BrandTile } from "./BrandIcon";
 import { theme as getTheme } from "@/lib/constants";
 import { buildVCard, initials, cn } from "@/lib/utils";
 
@@ -206,12 +207,7 @@ export function DigitalCard({
         {data.links.map((link) => {
           const Inner = (
             <>
-              <span
-                className="grid place-items-center w-10 h-10 rounded-lg shrink-0"
-                style={{ background: `${t.accent}1a`, color: t.accent }}
-              >
-                <Icon name={link.icon} className="text-[20px]" />
-              </span>
+              <BrandTile platform={link.platform} size={40} radius={10} dark={dark} />
               <span className="flex-1 text-left font-semibold text-sm truncate">
                 {link.label}
               </span>

@@ -11,6 +11,7 @@ import {
   inputClass,
 } from "@/components/ui";
 import { DigitalCard, type CardLink } from "@/components/DigitalCard";
+import { BrandTile } from "@/components/BrandIcon";
 import { Toast, type ToastState } from "@/components/dashboard/Toast";
 import { PLATFORMS, THEMES, platform, theme as getTheme } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -609,9 +610,7 @@ function LinksCard({
               key={link.id}
               className="flex items-center gap-3 p-3 rounded-xl border border-black/5 bg-surface-low"
             >
-              <span className="grid place-items-center w-9 h-9 rounded-lg bg-primary-soft text-primary-deep shrink-0">
-                <Icon name={link.icon} className="text-[18px]" />
-              </span>
+              <BrandTile platform={link.platform} size={36} radius={10} />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-ink truncate">
                   {link.label}
@@ -681,6 +680,13 @@ function LinkForm({
 
   return (
     <div className="rounded-xl border border-primary/30 bg-primary-soft/30 p-4 mb-2 flex flex-col gap-3">
+      <div className="flex items-center gap-3">
+        <BrandTile platform={draft.platform} size={44} />
+        <p className="text-xs text-muted">
+          The <span className="font-semibold text-ink">{p.label}</span> icon will
+          appear on your card — it updates automatically when you pick a platform.
+        </p>
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <Label>Platform</Label>
