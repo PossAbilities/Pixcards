@@ -157,6 +157,20 @@ export function DigitalCard({
     </div>
   );
 
+  // Full-bleed cover image. Rendered as <img> (not a CSS background) so iOS
+  // Safari can downscale-decode it and reuse the decoded bitmap shared with
+  // the avatar — a CSS cover-background of a large data-URI here is what
+  // crashes the live preview on mobile.
+  const coverImg = (url: string, alt: string) => (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={url}
+      alt={alt}
+      decoding="async"
+      className="absolute inset-0 h-full w-full object-cover"
+    />
+  );
+
   const actionButtons = (
     <div className="px-5 mt-5 grid grid-cols-2 gap-3">
       <button
@@ -275,16 +289,13 @@ export function DigitalCard({
     return (
       <div className={wrapperCls} style={wrapperStyle}>
         <div className="relative shrink-0" style={{ height: 340 }}>
-          <div
-            className="absolute inset-0"
-            style={{
-              background: data.avatarUrl
-                ? `center/cover no-repeat url("${data.avatarUrl}")`
-                : t.header,
-            }}
-          />
-          {!data.avatarUrl && (
-            <div className="absolute inset-0 grid place-items-center text-white/90 font-display font-bold text-6xl">
+          {data.avatarUrl ? (
+            coverImg(data.avatarUrl, data.name)
+          ) : (
+            <div
+              className="absolute inset-0 grid place-items-center text-white/90 font-display font-bold text-6xl"
+              style={{ background: t.header }}
+            >
               {initials(data.name || "P")}
             </div>
           )}
@@ -339,14 +350,11 @@ export function DigitalCard({
     return (
       <div className={wrapperCls} style={wrapperStyle}>
         <div className="relative h-28 shrink-0">
-          <div
-            className="absolute inset-0"
-            style={{
-              background: data.headerUrl
-                ? `center/cover no-repeat url("${data.headerUrl}")`
-                : t.header,
-            }}
-          />
+          {data.headerUrl ? (
+            coverImg(data.headerUrl, "")
+          ) : (
+            <div className="absolute inset-0" style={{ background: t.header }} />
+          )}
           <div className="absolute -bottom-10 left-1/2 -translate-x-1/2">
             {avatarNode(80)}
           </div>
@@ -442,14 +450,11 @@ export function DigitalCard({
   return (
     <div className={wrapperCls} style={wrapperStyle}>
       <div className="relative h-36 shrink-0">
-        <div
-          className="absolute inset-0"
-          style={{
-            background: data.headerUrl
-              ? `center/cover no-repeat url("${data.headerUrl}")`
-              : t.header,
-          }}
-        />
+        {data.headerUrl ? (
+          coverImg(data.headerUrl, "")
+        ) : (
+          <div className="absolute inset-0" style={{ background: t.header }} />
+        )}
         <div className="absolute -bottom-12 left-1/2 -translate-x-1/2">
           {avatarNode(96)}
         </div>
