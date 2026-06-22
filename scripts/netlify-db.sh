@@ -12,12 +12,13 @@ fi
 echo "→ Syncing schema to database (prisma db push)…"
 npx prisma db push --skip-generate
 
+# Non-fatal: a hiccup here must never block the deploy.
 echo "→ Ensuring the owner account is admin (and purging demo accounts in prod)…"
-npx tsx prisma/ensure-admin.ts
+npx tsx prisma/ensure-admin.ts || echo "  (ensure-admin skipped — continuing build)"
 
 if [ "$SEED_DEMO" = "true" ]; then
   echo "→ SEED_DEMO=true — seeding demo data (auto-skipped in production)…"
-  npx tsx prisma/seed.ts
+  npx tsx prisma/seed.ts || echo "  (seed skipped — continuing build)"
 else
   echo "→ SEED_DEMO not 'true' — skipping demo seed."
 fi
