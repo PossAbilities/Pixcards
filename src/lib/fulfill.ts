@@ -2,6 +2,7 @@ import "server-only";
 import { prisma } from "./db";
 import { recordRedemption } from "./discounts";
 import { sendOrderReceipt, sendProWelcome } from "./email/dispatch";
+import { recordEvent } from "./events";
 
 type Meta = Record<string, string | null | undefined> | null | undefined;
 
@@ -29,7 +30,14 @@ export async function fulfillCheckout(meta: Meta): Promise<void> {
       data: { status: "PAID" },
     });
     if (codeId) await recordRedemption(codeId, order.userId, "order", amountOff);
-    if (firstTransition) await sendOrderReceipt(meta.orderId);
+    if (firstTransition) {
+      await recordEvent({
+        type: "ORDER_PAID",
+        title: "Card order paid",
+        meta: { orderId: meta.orderId, userId: order.userId },
+      });
+      await sendOrderReceipt(meta.orderId);
+    }
     return;
   }
 
@@ -45,6 +53,13 @@ export async function fulfillCheckout(meta: Meta): Promise<void> {
       data: { plan: "PRO", proSince: new Date(), proUntil: null },
     });
     if (codeId) await recordRedemption(codeId, meta.userId, "pro", amountOff);
-    if (firstTransition) await sendProWelcome(meta.userId);
+    if (firstTransition) {
+      await recordEvent({
+        type: "PRO_UPGRADE",
+        title: "User upgraded to Pro",
+        meta: { userId: meta.userId },
+      });
+      await sendProWelcome(meta.userId);
+    }
   }
 }

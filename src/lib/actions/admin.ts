@@ -6,6 +6,7 @@ import { getSessionUser } from "@/lib/auth";
 import { ORDER_STATUSES } from "@/lib/constants";
 import { generateCardCode } from "@/lib/cards";
 import { sendOrderShipped } from "@/lib/email/dispatch";
+import { recordEvent } from "@/lib/events";
 import type { OrderStatus, Plan, Role } from "@prisma/client";
 
 async function requireAdminUser() {
@@ -39,6 +40,13 @@ export async function updateOrderStatus(
   // Email the customer the first time an order is marked shipped.
   if (status === "SHIPPED" && prev?.status !== "SHIPPED") {
     await sendOrderShipped(orderId);
+  }
+  if (prev && prev.status !== status) {
+    await recordEvent({
+      type: "ORDER_STATUS",
+      title: `Order ${orderId.slice(-8).toUpperCase()} → ${status}`,
+      meta: { orderId, from: prev.status, to: status },
+    });
   }
   revalidatePath("/admin/orders");
   revalidatePath("/admin");
@@ -105,6 +113,13 @@ export async function setUserRole(
     return { ok: false, error: "You cannot remove your own admin access." };
   }
   await prisma.user.update({ where: { id: userId }, data: { role } });
+  await recordEvent({
+    type: "SECURITY",
+    severity: "warning",
+    title: `Role changed to ${role}`,
+    message: `by admin ${admin.email}`,
+    meta: { userId, role, byAdmin: admin.id },
+  });
   revalidatePath("/admin/users");
   return { ok: true };
 }
@@ -115,6 +130,13 @@ export async function deleteUser(userId: string): Promise<AdminResult> {
     return { ok: false, error: "You cannot delete your own account." };
   }
   await prisma.user.delete({ where: { id: userId } });
+  await recordEvent({
+    type: "SECURITY",
+    severity: "warning",
+    title: "User account deleted",
+    message: `by admin ${admin.email}`,
+    meta: { userId, byAdmin: admin.id },
+  });
   revalidatePath("/admin/users");
   return { ok: true };
 }

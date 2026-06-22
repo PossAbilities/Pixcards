@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
 import { normaliseCardCode } from "@/lib/cards";
+import { recordEvent } from "@/lib/events";
 
 export type CardResult = { ok: boolean; error?: string; code?: string };
 
@@ -34,6 +35,12 @@ export async function claimCard(rawCode: string): Promise<CardResult> {
     await prisma.card.update({
       where: { id: card.id },
       data: { userId: user.id, active: true, claimedAt: new Date() },
+    });
+    await recordEvent({
+      type: "CARD_ACTIVATED",
+      title: `${user.name} activated a card`,
+      message: code,
+      meta: { cardId: card.id, code, userId: user.id },
     });
   }
 

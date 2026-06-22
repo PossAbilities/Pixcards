@@ -17,6 +17,43 @@ enum Role {
   ADMIN
 }
 
+/// API key for the external monitoring platform. Only the SHA-256 hash is
+/// stored; the raw key is shown once at creation.
+model ApiKey {
+  id         String    @id @default(cuid())
+  name       String    @default("Monitoring")
+  keyHash    String    @unique
+  prefix     String // first chars, for display (e.g. "pix_live_ab12")
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+}
+
+enum SystemEventType {
+  ORDER_PLACED
+  ORDER_PAID
+  ORDER_STATUS
+  USER_REGISTERED
+  PRO_UPGRADE
+  CARD_ACTIVATED
+  SECURITY
+  ERROR
+}
+
+/// Append-only feed of noteworthy events, polled by the monitoring API.
+model SystemEvent {
+  id        String          @id @default(cuid())
+  type      SystemEventType
+  severity  String          @default("info") // info | warning | critical
+  title     String
+  message   String          @default("")
+  meta      String          @default("{}") // JSON string
+  createdAt DateTime        @default(now())
+
+  @@index([createdAt])
+  @@index([type])
+}
+
 /// Single-use, time-limited password reset tokens. Only the SHA-256 hash of
 /// the token is stored, so a DB leak can't be used to reset anyone's password.
 model PasswordResetToken {

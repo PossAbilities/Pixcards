@@ -8,6 +8,7 @@ import { stripe, stripeEnabled } from "@/lib/stripe";
 import { material, appUrl, PRO_PRICE_CENTS, APP_NAME } from "@/lib/constants";
 import { validateDiscount, recordRedemption } from "@/lib/discounts";
 import { sendOrderReceipt, sendProWelcome } from "@/lib/email/dispatch";
+import { recordEvent } from "@/lib/events";
 
 const orderSchema = z.object({
   material: z.string().min(1),
@@ -60,6 +61,13 @@ export async function createCardOrder(formData: FormData): Promise<{ error: stri
     },
   });
 
+  await recordEvent({
+    type: "ORDER_PLACED",
+    title: `New card order from ${user.name}`,
+    message: `${d.quantity} × ${mat.name} — ${(priceCents / 100).toFixed(2)} GBP`,
+    meta: { orderId: order.id, userId: user.id, email: user.email, quantity: d.quantity, priceCents },
+  });
+
   if (stripeEnabled && stripe && priceCents > 0) {
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -105,6 +113,12 @@ export async function createCardOrder(formData: FormData): Promise<{ error: stri
   if (redemption) {
     await recordRedemption(redemption.codeId, user.id, "order", redemption.amountOffCents);
   }
+  await recordEvent({
+    type: "ORDER_PAID",
+    title: `Order paid by ${user.name}`,
+    message: `${(priceCents / 100).toFixed(2)} GBP`,
+    meta: { orderId: order.id, userId: user.id, priceCents },
+  });
   await sendOrderReceipt(order.id);
   redirect("/dashboard/orders?success=1");
 }
@@ -135,6 +149,11 @@ export async function upgradeToPro(
     if (redemption) {
       await recordRedemption(redemption.codeId, user!.id, "pro", redemption.amountOffCents);
     }
+    await recordEvent({
+      type: "PRO_UPGRADE",
+      title: `${user!.name} upgraded to Pro`,
+      meta: { userId: user!.id, email: user!.email, priceCents },
+    });
     await sendProWelcome(user!.id);
   }
 

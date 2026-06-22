@@ -11,6 +11,7 @@ import {
 } from "@/lib/auth";
 import { slugify } from "@/lib/utils";
 import { sendWelcomeEmail } from "@/lib/email/dispatch";
+import { recordEvent } from "@/lib/events";
 
 const registerSchema = z.object({
   name: z.string().min(2, "Please enter your name").max(60),
@@ -104,6 +105,12 @@ export async function registerAction(
   }
 
   await createSession(userId);
+  await recordEvent({
+    type: "USER_REGISTERED",
+    title: `New sign-up: ${name}`,
+    message: email.toLowerCase(),
+    meta: { userId, email: email.toLowerCase() },
+  });
   await sendWelcomeEmail(userId);
   redirect(safeNext(formData.get("next")) ?? "/dashboard");
 }
