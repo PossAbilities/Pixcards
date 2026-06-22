@@ -7,11 +7,27 @@ import {
   appUrl,
   money,
 } from "@/lib/constants";
+import { prisma } from "@/lib/db";
+import { storageProvider } from "@/lib/storage";
+import { MigrateImages } from "@/components/admin/MigrateImages";
 
-export default function AdminSettingsPage() {
+export default async function AdminSettingsPage() {
   const environment = process.env.NODE_ENV ?? "development";
   const stripeConfigured = Boolean(process.env.STRIPE_SECRET_KEY);
   const has = (k: string) => Boolean(process.env[k]?.trim());
+
+  const [pendingProfiles, pendingOrders] = await Promise.all([
+    prisma.profile.count({
+      where: {
+        OR: [
+          { avatarUrl: { startsWith: "data:" } },
+          { headerUrl: { startsWith: "data:" } },
+        ],
+      },
+    }),
+    prisma.order.count({ where: { design: { contains: "data:" } } }),
+  ]);
+  const pendingImages = pendingProfiles + pendingOrders;
 
   const integrations: {
     title: string;
@@ -122,6 +138,30 @@ export default function AdminSettingsPage() {
             );
           })}
         </div>
+      </Card>
+
+      {/* Image storage */}
+      <Card className="p-6">
+        <SectionHeading icon="cloud_upload" title="Image storage" />
+        {storageProvider === "supabase" ? (
+          <div className="space-y-3">
+            <p className="flex items-center gap-1.5 text-sm font-semibold text-emerald-600">
+              <Icon name="check_circle" className="text-[16px]" />
+              Supabase Storage is active — new uploads are saved to the CDN.
+            </p>
+            <MigrateImages pending={pendingImages} />
+          </div>
+        ) : (
+          <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <Icon name="info" fill className="mt-0.5 text-[18px]" />
+            <span>
+              Uploads are currently stored inline as data-URIs (heavier pages).
+              Set <code>NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
+              <code>SUPABASE_SERVICE_ROLE_KEY</code> to switch to Supabase
+              Storage. {pendingImages > 0 && `${pendingImages} image record(s) are currently inline.`}
+            </span>
+          </div>
+        )}
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
