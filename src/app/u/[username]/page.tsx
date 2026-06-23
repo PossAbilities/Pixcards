@@ -36,6 +36,13 @@ export async function generateMetadata({
     [profile.jobTitle, profile.company].filter(Boolean).join(" at ") ||
     `${name}'s digital business card on ${APP_NAME}.`;
   const url = `${appUrl()}/u/${username}`;
+  // Use the image endpoint (never a raw data-URI) for the social preview, so
+  // megabytes of base64 don't end up inside the page <head>.
+  const ogImage = profile.avatarUrl
+    ? profile.avatarUrl.startsWith("data:")
+      ? `${appUrl()}/api/img/avatar/${profile.id}`
+      : profile.avatarUrl
+    : undefined;
   return {
     title: `${titleBits} | ${APP_NAME}`,
     description,
@@ -44,7 +51,7 @@ export async function generateMetadata({
       description,
       url,
       type: "profile",
-      images: profile.avatarUrl ? [{ url: profile.avatarUrl }] : undefined,
+      images: ogImage ? [{ url: ogImage }] : undefined,
     },
     twitter: {
       card: "summary",
@@ -85,6 +92,15 @@ export default async function PublicCardPage({
   const appleWallet = isWalletConfigured();
   const googleWallet = isGoogleWalletConfigured();
 
+  // Serve saved images via the image endpoint instead of inlining big data-URIs
+  // into the page (which crashes mobile Safari on image-heavy cards).
+  const imgUrl = (kind: "avatar" | "header", value: string | null) =>
+    value
+      ? value.startsWith("data:")
+        ? `/api/img/${kind}/${profile.id}`
+        : value
+      : undefined;
+
   const data: CardData = {
     name: profile.user.name || username,
     jobTitle: profile.jobTitle || undefined,
@@ -93,8 +109,8 @@ export default async function PublicCardPage({
     location: profile.location || undefined,
     phone: profile.phone || undefined,
     email: profile.email || undefined,
-    avatarUrl: profile.avatarUrl,
-    headerUrl: profile.headerUrl,
+    avatarUrl: imgUrl("avatar", profile.avatarUrl),
+    headerUrl: imgUrl("header", profile.headerUrl),
     themeId: profile.theme,
     templateId: profile.template,
     links: profile.links.map((l) => ({
