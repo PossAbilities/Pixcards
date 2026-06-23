@@ -13,6 +13,16 @@ export function isWalletConfigured(): boolean {
   );
 }
 
+/** Names of any missing Apple Wallet env vars (empty = fully configured). */
+export function appleWalletMissing(): string[] {
+  return [
+    "APPLE_PASS_TYPE_ID",
+    "APPLE_TEAM_ID",
+    "APPLE_PASS_CERT_BASE64",
+    "APPLE_WWDR_BASE64",
+  ].filter((k) => !process.env[k]?.trim());
+}
+
 /** True only when every Google Wallet credential is present. */
 export function isGoogleWalletConfigured(): boolean {
   return Boolean(
