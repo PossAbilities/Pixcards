@@ -118,6 +118,14 @@ export default async function AdminOrderDetailPage({
 
   const design = parseDesign(order.design);
   const hasArtwork = Boolean(design.frontImage || design.backImage);
+  // Serve artwork via the image endpoint when it's an inline data-URI, so the
+  // page stays light (a multi-MB inline PNG crashes the tab on re-render).
+  const artworkUrl = (side: "front" | "back", value?: string) =>
+    value
+      ? value.startsWith("data:")
+        ? `/api/img/order/${order.id}/${side}`
+        : value
+      : undefined;
   const mat = material(order.material);
   const cardNameText = design.spec?.cardName || order.cardName;
   const username = order.user.profile?.username;
@@ -161,12 +169,12 @@ export default async function AdminOrderDetailPage({
             <div className="flex flex-col gap-6 sm:flex-row">
               <ArtworkPanel
                 side="front"
-                image={design.frontImage}
+                image={artworkUrl("front", design.frontImage)}
                 orderId={order.id}
               />
               <ArtworkPanel
                 side="back"
-                image={design.backImage}
+                image={artworkUrl("back", design.backImage)}
                 orderId={order.id}
               />
             </div>

@@ -51,15 +51,23 @@ function CardItem({ card }: { card: FulfilCard }) {
     const next = !encoded;
     setEncoded(next);
     startTransition(async () => {
-      const res = await setCardEncoded(card.id, next);
-      if (!res.ok) setEncoded(!next);
+      try {
+        const res = await setCardEncoded(card.id, next);
+        if (!res.ok) setEncoded(!next);
+      } catch {
+        setEncoded(!next);
+      }
     });
   }
 
   function remove() {
     if (!confirm("Delete this card code? This cannot be undone.")) return;
     startTransition(async () => {
-      await adminDeleteCard(card.id);
+      try {
+        await adminDeleteCard(card.id);
+      } catch {
+        /* ignore — revalidation will reconcile */
+      }
     });
   }
 
