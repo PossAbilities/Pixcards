@@ -13,9 +13,15 @@ const features: { icon: string; text: string }[] = [
 export default async function RegisterPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; from?: string }>;
 }) {
-  const { next } = await searchParams;
+  const { next, from } = await searchParams;
+  // Where the back button goes — the page they came from (e.g. a profile),
+  // falling back to the home page. Only same-site relative paths are allowed.
+  const safeFrom =
+    from && from.startsWith("/") && !from.startsWith("//") ? from : null;
+  const backHref = safeFrom ?? "/";
+  const backLabel = safeFrom ? "Back" : "Back to home";
   return (
     <main className="min-h-screen flex bg-background">
       {/* Brand panel */}
@@ -74,11 +80,11 @@ export default async function RegisterPage({
           <div className="mb-8 flex items-center justify-between">
             <Logo />
             <Link
-              href="/"
+              href={backHref}
               className="inline-flex items-center gap-1 text-sm font-medium text-muted hover:text-ink transition"
             >
               <Icon name="arrow_back" className="text-[16px]" />
-              Back to home
+              {backLabel}
             </Link>
           </div>
 

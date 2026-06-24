@@ -149,17 +149,17 @@ export default async function PublicCardPage({
         />
 
 
-        {/* CTA + powered-by footer */}
-        <div className="flex flex-col items-center gap-3 pt-2 text-center">
+        {/* CTA + powered-by footer (kept subtle) */}
+        <div className="flex flex-col items-center gap-1.5 pt-1 text-center">
           <Link
-            href="/register"
-            className="text-sm font-semibold text-primary hover:text-primary-deep transition-colors"
+            href={`/register?from=${encodeURIComponent(`/u/${username}`)}`}
+            className="text-xs font-medium text-faint hover:text-primary transition-colors"
           >
             Create your own free card →
           </Link>
           <Link
             href="/"
-            className="text-xs font-medium tracking-wide text-faint hover:text-muted transition-colors"
+            className="text-[10px] font-medium uppercase tracking-wider text-faint/70 hover:text-faint transition-colors"
           >
             Powered by {APP_NAME}
           </Link>
