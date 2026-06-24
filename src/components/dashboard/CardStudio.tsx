@@ -79,6 +79,22 @@ type SideKey = "front" | "back";
 const CARD_W = 460;
 const CARD_H = 290;
 
+/** Resolve once a ref is populated (off-screen node mounted), or null on timeout. */
+function waitForRef(
+  ref: { current: HTMLDivElement | null },
+  tries = 90,
+): Promise<HTMLDivElement | null> {
+  return new Promise((resolve) => {
+    let n = 0;
+    const tick = () => {
+      if (ref.current) return resolve(ref.current);
+      if (n++ >= tries) return resolve(null);
+      requestAnimationFrame(tick);
+    };
+    tick();
+  });
+}
+
 function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve) => {
     const r = new FileReader();
@@ -794,23 +810,20 @@ export function CardStudio({
       return;
     }
 
+    // Mount the off-screen renderers with an URGENT update (outside the
+    // transition) so they're committed to the DOM before we read their refs.
+    setPhase("export");
+    setMountExport(true);
+
     startTransition(async () => {
       let frontImage: string;
       let backImage: string;
 
       // 1) Export + upload artwork (failures handled here).
       try {
-        setPhase("export");
-        // Mount the off-screen renderers and wait for them to paint before
-        // we snapshot them to PNG.
-        setMountExport(true);
-        await new Promise<void>((resolve) =>
-          requestAnimationFrame(() =>
-            requestAnimationFrame(() => setTimeout(resolve, 120)),
-          ),
-        );
-        const frontNode = frontExportRef.current;
-        const backNode = backExportRef.current;
+        // Wait until the off-screen nodes are actually in the DOM + decoded.
+        const frontNode = await waitForRef(frontExportRef);
+        const backNode = await waitForRef(backExportRef);
         if (!frontNode || !backNode) {
           throw new Error("Artwork not ready");
         }
