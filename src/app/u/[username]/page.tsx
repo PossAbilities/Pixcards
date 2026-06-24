@@ -3,14 +3,8 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { DigitalCard, type CardData } from "@/components/DigitalCard";
 import { SharePanel } from "@/components/public/SharePanel";
-import { WalletButtons } from "@/components/WalletButtons";
 import { prisma } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
-import {
-  isWalletConfigured,
-  isGoogleWalletConfigured,
-  appleWalletMissing,
-} from "@/lib/wallet/config";
 import { appUrl, theme as getTheme, APP_NAME } from "@/lib/constants";
 
 async function getProfile(username: string) {
@@ -93,10 +87,6 @@ export default async function PublicCardPage({
   const shareUrl = `${appUrl()}/u/${username}`;
   const t = getTheme(profile.theme);
   const accent = profile.accentColor || t.accent;
-  const appleWallet = isWalletConfigured();
-  const googleWallet = isGoogleWalletConfigured();
-  const appleMissing = appleWalletMissing();
-
   // Serve saved images via the image endpoint instead of inlining big data-URIs
   // into the page (which crashes mobile Safari on image-heavy cards).
   const imgUrl = (kind: "avatar" | "header", value: string | null) =>
@@ -158,25 +148,6 @@ export default async function PublicCardPage({
           name={data.name}
         />
 
-        <WalletButtons
-          username={username}
-          apple={appleWallet}
-          google={googleWallet}
-        />
-
-        {/* Owner-only setup hint when Apple Wallet isn't fully configured. */}
-        {isOwner && !appleWallet && (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
-            <p className="font-semibold">
-              Apple Wallet button hidden (only you can see this note)
-            </p>
-            <p className="mt-1">
-              {appleMissing.length === 5
-                ? "No Apple Wallet variables are set on the live server — the latest deploy may not be live yet."
-                : `Missing on the live server: ${appleMissing.join(", ")}. Add it in Netlify (exact name) and redeploy.`}
-            </p>
-          </div>
-        )}
 
         {/* CTA + powered-by footer */}
         <div className="flex flex-col items-center gap-3 pt-2 text-center">

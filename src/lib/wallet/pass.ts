@@ -107,7 +107,8 @@ export async function buildWalletPass(input: WalletPassInput): Promise<Buffer> {
     serialNumber: input.serial,
     logoText: "Pixcards",
     foregroundColor: "rgb(255, 255, 255)",
-    labelColor: "rgba(255, 255, 255, 0.75)",
+    // Apple Wallet only accepts #hex or rgb() — rgba() fails validation.
+    labelColor: "rgb(225, 225, 235)",
     backgroundColor: hexToRgb(t.accent),
     barcodes: [
       {
