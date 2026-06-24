@@ -550,6 +550,14 @@ export function CardStudio({
         xTargets.push(o.x, o.x + o.w / 2, o.x + o.w);
         yTargets.push(o.y, o.y + o.h / 2, o.y + o.h);
       });
+      // Even-spacing: allow snapping centred between any two other elements.
+      for (let i = 0; i < others.length; i++)
+        for (let j = i + 1; j < others.length; j++) {
+          const a = others[i];
+          const b = others[j];
+          xTargets.push((a.x + a.w / 2 + b.x + b.w / 2) / 2);
+          yTargets.push((a.y + a.h / 2 + b.y + b.h / 2) / 2);
+        }
 
       let snapX = x;
       let guideX: number | null = null;
@@ -604,17 +612,114 @@ export function CardStudio({
     [sideState.elements, computeSnap, updateElement],
   );
 
+  // Snap the edge(s) being resized to the canvas centre/edges and other
+  // elements' edges. Aspect-locked elements (QR) are left untouched.
+  const computeResizeSnap = useCallback(
+    (el: CardElement, dir: string, x: number, y: number, w: number, h: number) => {
+      if (el.type === "qr") return { x, y, w, h, guideX: null, guideY: null };
+      const others = sideState.elements.filter((e) => e.id !== el.id);
+      const xT = [0, CARD_W / 2, CARD_W];
+      const yT = [0, CARD_H / 2, CARD_H];
+      others.forEach((o) => {
+        xT.push(o.x, o.x + o.w / 2, o.x + o.w);
+        yT.push(o.y, o.y + o.h / 2, o.y + o.h);
+      });
+      const near = (val: number, targets: number[]): number | null => {
+        let best = SNAP + 1;
+        let hit: number | null = null;
+        for (const t of targets) {
+          const d = Math.abs(val - t);
+          if (d <= SNAP && d < best) {
+            best = d;
+            hit = t;
+          }
+        }
+        return hit;
+      };
+      const d = dir.toLowerCase();
+      const right = x + w;
+      const bottom = y + h;
+      let nx = x;
+      let ny = y;
+      let nw = w;
+      let nh = h;
+      let guideX: number | null = null;
+      let guideY: number | null = null;
+
+      if (d.includes("right")) {
+        const t = near(right, xT);
+        if (t !== null && t - x >= 24) {
+          nw = t - x;
+          guideX = t;
+        }
+      } else if (d.includes("left")) {
+        const t = near(x, xT);
+        if (t !== null && right - t >= 24) {
+          nx = t;
+          nw = right - t;
+          guideX = t;
+        }
+      }
+      if (d.includes("bottom")) {
+        const t = near(bottom, yT);
+        if (t !== null && t - y >= 24) {
+          nh = t - y;
+          guideY = t;
+        }
+      } else if (d.includes("top")) {
+        const t = near(y, yT);
+        if (t !== null && bottom - t >= 24) {
+          ny = t;
+          nh = bottom - t;
+          guideY = t;
+        }
+      }
+      return { x: nx, y: ny, w: nw, h: nh, guideX, guideY };
+    },
+    [sideState.elements],
+  );
+
+  const makeResize = useCallback(
+    (id: string): RndResizeCallback =>
+      (_e, dir, ref, _delta, position) => {
+        const el = sideState.elements.find((e) => e.id === id);
+        if (!el) return;
+        const s = computeResizeSnap(
+          el,
+          dir,
+          position.x,
+          position.y,
+          ref.offsetWidth,
+          ref.offsetHeight,
+        );
+        setGuides({ x: s.guideX, y: s.guideY });
+      },
+    [sideState.elements, computeResizeSnap],
+  );
+
   const makeResizeStop = useCallback(
     (id: string): RndResizeCallback =>
-      (_e, _dir, ref, _delta, position) => {
-        updateElement(id, {
-          w: ref.offsetWidth,
-          h: ref.offsetHeight,
-          x: position.x,
-          y: position.y,
-        });
+      (_e, dir, ref, _delta, position) => {
+        const el = sideState.elements.find((e) => e.id === id);
+        const s = el
+          ? computeResizeSnap(
+              el,
+              dir,
+              position.x,
+              position.y,
+              ref.offsetWidth,
+              ref.offsetHeight,
+            )
+          : {
+              x: position.x,
+              y: position.y,
+              w: ref.offsetWidth,
+              h: ref.offsetHeight,
+            };
+        updateElement(id, { w: s.w, h: s.h, x: s.x, y: s.y });
+        setGuides({ x: null, y: null });
       },
-    [updateElement],
+    [sideState.elements, computeResizeSnap, updateElement],
   );
 
   const deselect = useCallback(
@@ -858,6 +963,7 @@ export function CardStudio({
                           position={{ x: el.x, y: el.y }}
                           onDrag={makeDrag(el.id)}
                           onDragStop={makeDragStop(el.id)}
+                          onResize={makeResize(el.id)}
                           onResizeStop={makeResizeStop(el.id)}
                           onMouseDown={(ev) => {
                             ev.stopPropagation();
