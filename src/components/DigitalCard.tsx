@@ -61,8 +61,29 @@ export function DigitalCard({
     }
   }
 
-  function saveContact() {
+  async function saveContact() {
     track("SAVE_CONTACT");
+
+    // Embed the avatar as the contact photo when we can fetch it.
+    let photoBase64: string | undefined;
+    let photoType: "JPEG" | "PNG" = "JPEG";
+    if (data.avatarUrl) {
+      try {
+        const res = await fetch(data.avatarUrl);
+        const blob = await res.blob();
+        if (blob.size > 0 && blob.size < 700_000) {
+          photoType = blob.type.includes("png") ? "PNG" : "JPEG";
+          const bytes = new Uint8Array(await blob.arrayBuffer());
+          let bin = "";
+          for (let i = 0; i < bytes.length; i++)
+            bin += String.fromCharCode(bytes[i]);
+          photoBase64 = btoa(bin);
+        }
+      } catch {
+        /* no photo — still save the rest */
+      }
+    }
+
     const vcard = buildVCard({
       name: data.name,
       jobTitle: data.jobTitle,
@@ -70,6 +91,8 @@ export function DigitalCard({
       phone: data.phone,
       email: data.email,
       url: shareUrl,
+      photoBase64,
+      photoType,
     });
     const blob = new Blob([vcard], { type: "text/vcard" });
     const href = URL.createObjectURL(blob);

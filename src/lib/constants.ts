@@ -3,7 +3,11 @@
 export const APP_NAME = "Pixcards";
 
 export function appUrl(): string {
-  return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  // Strip any trailing slash so `${appUrl()}/u/...` never produces `//u/...`.
+  return (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(
+    /\/+$/,
+    "",
+  );
 }
 
 export type LinkPlatform = {

@@ -36,6 +36,18 @@ export function colorFromString(str: string): string {
 }
 
 /** Build an RFC-6350 vCard string for "Save Contact". */
+/** Fold a long vCard line to 75 octets per RFC 2426 (continuations start with a space). */
+function foldVCardLine(line: string): string {
+  if (line.length <= 75) return line;
+  const out = [line.slice(0, 75)];
+  let i = 75;
+  while (i < line.length) {
+    out.push(" " + line.slice(i, i + 74));
+    i += 74;
+  }
+  return out.join("\r\n");
+}
+
 export function buildVCard(opts: {
   name: string;
   jobTitle?: string;
@@ -43,16 +55,33 @@ export function buildVCard(opts: {
   phone?: string;
   email?: string;
   url?: string;
+  /** Raw base64 (no data: prefix) of the contact photo. */
+  photoBase64?: string;
+  photoType?: "JPEG" | "PNG";
 }): string {
+  // Escape vCard special characters.
+  const esc = (s: string) => s.replace(/\\/g, "\\\\").replace(/([,;])/g, "\\$1");
+  // Split the display name into given / family for the structured N field —
+  // iOS Contacts needs N to render the name, not just FN.
+  const parts = opts.name.trim().split(/\s+/);
+  const first = parts.shift() ?? "";
+  const last = parts.join(" ");
+
   const lines = [
     "BEGIN:VCARD",
     "VERSION:3.0",
-    `FN:${opts.name}`,
-    opts.company ? `ORG:${opts.company}` : "",
-    opts.jobTitle ? `TITLE:${opts.jobTitle}` : "",
+    `N:${esc(last)};${esc(first)};;;`,
+    `FN:${esc(opts.name)}`,
+    opts.company ? `ORG:${esc(opts.company)}` : "",
+    opts.jobTitle ? `TITLE:${esc(opts.jobTitle)}` : "",
     opts.phone ? `TEL;TYPE=CELL:${opts.phone}` : "",
     opts.email ? `EMAIL;TYPE=WORK:${opts.email}` : "",
     opts.url ? `URL:${opts.url}` : "",
+    opts.photoBase64
+      ? foldVCardLine(
+          `PHOTO;ENCODING=b;TYPE=${opts.photoType ?? "JPEG"}:${opts.photoBase64}`,
+        )
+      : "",
     "END:VCARD",
   ].filter(Boolean);
   return lines.join("\r\n");
