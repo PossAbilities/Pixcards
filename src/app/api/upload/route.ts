@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { storeImage } from "@/lib/storage";
 
-const MAX_BYTES = 5 * 1024 * 1024; // 5MB
+const MAX_BYTES = 8 * 1024 * 1024; // 8MB (card artwork PNGs can be large)
 const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 /**

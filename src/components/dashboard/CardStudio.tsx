@@ -747,15 +747,40 @@ export function CardStudio({
     node: HTMLDivElement,
     fileName: string,
   ): Promise<string> {
-    const dataUrl = await toPng(node, { pixelRatio: 4, cacheBust: true });
+    // Make sure every <img> inside the card has actually decoded — html-to-image
+    // silently drops images that aren't ready yet.
+    const imgs = Array.from(node.querySelectorAll("img"));
+    await Promise.all(
+      imgs.map((img) =>
+        img.complete && img.naturalWidth > 0
+          ? Promise.resolve()
+          : new Promise<void>((res) => {
+              img.onload = () => res();
+              img.onerror = () => res();
+            }),
+      ),
+    );
+
+    // html-to-image is far more reliable on a second pass (the first warms the
+    // image/font cache). 3x ≈ 400 DPI for an 86mm card and keeps the file small
+    // enough to upload.
+    try {
+      await toPng(node, { pixelRatio: 1, cacheBust: true });
+    } catch {
+      /* warm-up only */
+    }
+    const dataUrl = await toPng(node, { pixelRatio: 3, cacheBust: true });
+
     const blob = await (await fetch(dataUrl)).blob();
     const file = new File([blob], fileName, { type: "image/png" });
     const fd = new FormData();
     fd.append("file", file);
     const res = await fetch("/api/upload", { method: "POST", body: fd });
-    const json: { url?: string; error?: string } = await res.json();
+    const json: { url?: string; error?: string } = await res
+      .json()
+      .catch(() => ({}) as { url?: string; error?: string });
     if (!res.ok || !json.url) {
-      throw new Error(json.error ?? "Upload failed");
+      throw new Error(json.error || `Upload failed (${res.status})`);
     }
     return json.url;
   }
@@ -780,7 +805,9 @@ export function CardStudio({
         // we snapshot them to PNG.
         setMountExport(true);
         await new Promise<void>((resolve) =>
-          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() => setTimeout(resolve, 120)),
+          ),
         );
         const frontNode = frontExportRef.current;
         const backNode = backExportRef.current;
@@ -790,10 +817,15 @@ export function CardStudio({
         frontImage = await exportSide(frontNode, "card-front.png");
         backImage = await exportSide(backNode, "card-back.png");
         setMountExport(false);
-      } catch {
+      } catch (err) {
         setMountExport(false);
         setPhase("idle");
-        setError("We couldn't prepare your artwork — please try again.");
+        const reason = err instanceof Error ? err.message : "";
+        setError(
+          `We couldn't prepare your artwork — please try again.${
+            reason ? ` (${reason})` : ""
+          }`,
+        );
         return;
       }
 
