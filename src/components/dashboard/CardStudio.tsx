@@ -295,6 +295,11 @@ export function CardStudio({
   const [activeSide, setActiveSide] = useState<SideKey>("front");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showBgPanel, setShowBgPanel] = useState(false);
+  // Alignment guide lines shown while dragging (canvas coordinates).
+  const [guides, setGuides] = useState<{ x: number | null; y: number | null }>({
+    x: null,
+    y: null,
+  });
   const [studioCrop, setStudioCrop] = useState<{
     src: string;
     kind: "image" | "bg";
@@ -522,12 +527,81 @@ export function CardStudio({
   }, [shareUrl, addElement]);
 
   /* ----- rnd callbacks (curried per element so the id is captured) ----- */
+  // Snap an element's proposed position to the canvas centre/edges and to the
+  // edges/centres of the other elements. Returns the snapped position plus the
+  // guide-line coordinates to draw (null = no snap on that axis).
+  const SNAP = 6;
+  const computeSnap = useCallback(
+    (el: CardElement, x: number, y: number) => {
+      const others = sideState.elements.filter((e) => e.id !== el.id);
+      const xPts = [
+        { p: x, off: 0 },
+        { p: x + el.w / 2, off: el.w / 2 },
+        { p: x + el.w, off: el.w },
+      ];
+      const yPts = [
+        { p: y, off: 0 },
+        { p: y + el.h / 2, off: el.h / 2 },
+        { p: y + el.h, off: el.h },
+      ];
+      const xTargets = [0, CARD_W / 2, CARD_W];
+      const yTargets = [0, CARD_H / 2, CARD_H];
+      others.forEach((o) => {
+        xTargets.push(o.x, o.x + o.w / 2, o.x + o.w);
+        yTargets.push(o.y, o.y + o.h / 2, o.y + o.h);
+      });
+
+      let snapX = x;
+      let guideX: number | null = null;
+      let bestX = SNAP + 1;
+      for (const t of xTargets)
+        for (const pt of xPts) {
+          const d = Math.abs(pt.p - t);
+          if (d <= SNAP && d < bestX) {
+            bestX = d;
+            snapX = t - pt.off;
+            guideX = t;
+          }
+        }
+
+      let snapY = y;
+      let guideY: number | null = null;
+      let bestY = SNAP + 1;
+      for (const t of yTargets)
+        for (const pt of yPts) {
+          const d = Math.abs(pt.p - t);
+          if (d <= SNAP && d < bestY) {
+            bestY = d;
+            snapY = t - pt.off;
+            guideY = t;
+          }
+        }
+
+      return { x: snapX, y: snapY, guideX, guideY };
+    },
+    [sideState.elements],
+  );
+
+  const makeDrag = useCallback(
+    (id: string): RndDragCallback =>
+      (_e, d) => {
+        const el = sideState.elements.find((e) => e.id === id);
+        if (!el) return;
+        const s = computeSnap(el, d.x, d.y);
+        setGuides({ x: s.guideX, y: s.guideY });
+      },
+    [sideState.elements, computeSnap],
+  );
+
   const makeDragStop = useCallback(
     (id: string): RndDragCallback =>
       (_e, d) => {
-        updateElement(id, { x: d.x, y: d.y });
+        const el = sideState.elements.find((e) => e.id === id);
+        const s = el ? computeSnap(el, d.x, d.y) : { x: d.x, y: d.y };
+        updateElement(id, { x: s.x, y: s.y });
+        setGuides({ x: null, y: null });
       },
-    [updateElement],
+    [sideState.elements, computeSnap, updateElement],
   );
 
   const makeResizeStop = useCallback(
@@ -747,6 +821,32 @@ export function CardStudio({
                       aria-hidden
                     />
 
+                    {/* Alignment guides (shown while dragging) */}
+                    {guides.x !== null && (
+                      <div
+                        className="pointer-events-none absolute top-0 bottom-0"
+                        style={{
+                          left: guides.x,
+                          width: 1,
+                          background: "#ec4899",
+                          zIndex: 60,
+                        }}
+                        aria-hidden
+                      />
+                    )}
+                    {guides.y !== null && (
+                      <div
+                        className="pointer-events-none absolute left-0 right-0"
+                        style={{
+                          top: guides.y,
+                          height: 1,
+                          background: "#ec4899",
+                          zIndex: 60,
+                        }}
+                        aria-hidden
+                      />
+                    )}
+
                     {sideState.elements.map((el) => {
                       const isSel = el.id === selectedId;
                       return (
@@ -756,6 +856,7 @@ export function CardStudio({
                           scale={scale}
                           size={{ width: el.w, height: el.h }}
                           position={{ x: el.x, y: el.y }}
+                          onDrag={makeDrag(el.id)}
                           onDragStop={makeDragStop(el.id)}
                           onResizeStop={makeResizeStop(el.id)}
                           onMouseDown={(ev) => {
@@ -1306,6 +1407,16 @@ function SelectedToolbar({
           {el.type} element
         </span>
         <div className="flex items-center gap-1">
+          <IconBtn
+            icon="align_horizontal_center"
+            title="Centre horizontally"
+            onClick={() => onPatch({ x: Math.round(CARD_W / 2 - el.w / 2) })}
+          />
+          <IconBtn
+            icon="align_vertical_center"
+            title="Centre vertically"
+            onClick={() => onPatch({ y: Math.round(CARD_H / 2 - el.h / 2) })}
+          />
           <IconBtn icon="flip_to_front" title="Bring forward" onClick={onForward} />
           <IconBtn icon="flip_to_back" title="Send back" onClick={onBack} />
           <IconBtn icon="delete" title="Delete" onClick={onDelete} danger />
