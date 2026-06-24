@@ -24,7 +24,14 @@ function loadSignerFromP12(
   password: string,
 ): { cert: string; key: string } {
   const der = forge.util.decode64(p12Base64.replace(/\s+/g, ""));
-  const p12 = forge.pkcs12.pkcs12FromAsn1(forge.asn1.fromDer(der), password);
+  let p12;
+  try {
+    p12 = forge.pkcs12.pkcs12FromAsn1(forge.asn1.fromDer(der), password);
+  } catch {
+    throw new Error(
+      "Could not open the Apple Wallet certificate — check APPLE_PASS_CERT_PASSWORD matches the .p12 password.",
+    );
+  }
 
   const keyBags =
     p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag })[

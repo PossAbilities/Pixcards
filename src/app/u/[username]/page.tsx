@@ -171,7 +171,7 @@ export default async function PublicCardPage({
               Apple Wallet button hidden (only you can see this note)
             </p>
             <p className="mt-1">
-              {appleMissing.length === 4
+              {appleMissing.length === 5
                 ? "No Apple Wallet variables are set on the live server — the latest deploy may not be live yet."
                 : `Missing on the live server: ${appleMissing.join(", ")}. Add it in Netlify (exact name) and redeploy.`}
             </p>
