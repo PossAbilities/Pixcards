@@ -71,7 +71,9 @@ export function DigitalCard({
       try {
         const res = await fetch(data.avatarUrl);
         const blob = await res.blob();
-        if (blob.size > 0 && blob.size < 700_000) {
+        // Embed photos up to ~3MB (cropped avatars are far smaller); above
+        // that the vCard gets unwieldy so we skip the photo.
+        if (blob.size > 0 && blob.size < 3_000_000) {
           photoType = blob.type.includes("png") ? "PNG" : "JPEG";
           const bytes = new Uint8Array(await blob.arrayBuffer());
           let bin = "";
