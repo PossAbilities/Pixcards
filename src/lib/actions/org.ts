@@ -10,6 +10,7 @@ import { generateCardCode } from "@/lib/cards";
 import { stripe, stripeEnabled } from "@/lib/stripe";
 import { sendOrgInvite } from "@/lib/email/dispatch";
 import { recordEvent } from "@/lib/events";
+import { analyzeBrand, brandAnalysisEnabled, type BrandSuggestion } from "@/lib/brand-analyze";
 import type { OrgRole } from "@prisma/client";
 
 export type OrgResult = { ok: boolean; error?: string };
@@ -115,6 +116,71 @@ export async function updateOrgBranding(input: {
   await applyBranding(org.id);
   revalidatePath("/dashboard/org");
   return { ok: true };
+}
+
+/* -------------------------- AI brand analysis ---------------------------- */
+
+export type BrandAnalysisResult = {
+  ok: boolean;
+  suggestion?: BrandSuggestion;
+  error?: string;
+};
+
+/**
+ * Admin uploads brand guidelines (image / PDF / HTML) as a data URL; Claude
+ * studies them and returns a palette + closest theme/layout to pre-fill the
+ * brand template. The admin still confirms with "Save brand".
+ */
+export async function analyzeBrandGuidelines(input: {
+  dataUrl: string;
+}): Promise<BrandAnalysisResult> {
+  await requireOrg(true);
+  if (!brandAnalysisEnabled()) {
+    return {
+      ok: false,
+      error: "AI brand analysis isn't configured yet (ANTHROPIC_API_KEY).",
+    };
+  }
+
+  const m = /^data:([^;,]+)?(;base64)?,([\s\S]*)$/.exec(input.dataUrl ?? "");
+  if (!m) return { ok: false, error: "Could not read that file. Please try again." };
+  const mediaType = (m[1] || "").toLowerCase();
+  const isBase64 = Boolean(m[2]);
+  const payload = m[3] ?? "";
+
+  // Guard against oversized uploads (data URL grows ~33% over the raw bytes).
+  if (payload.length > 9_000_000) {
+    return { ok: false, error: "That file is too large — keep it under ~6 MB." };
+  }
+
+  try {
+    let suggestion: BrandSuggestion;
+    if (mediaType === "application/pdf") {
+      suggestion = await analyzeBrand({ kind: "pdf", base64: payload });
+    } else if (mediaType.startsWith("image/")) {
+      suggestion = await analyzeBrand({
+        kind: "image",
+        mediaType,
+        base64: payload,
+      });
+    } else if (mediaType.startsWith("text/") || mediaType.includes("html")) {
+      const text = isBase64
+        ? Buffer.from(payload, "base64").toString("utf8")
+        : decodeURIComponent(payload);
+      suggestion = await analyzeBrand({ kind: "html", text });
+    } else {
+      return {
+        ok: false,
+        error: "Unsupported file type. Upload a PNG, JPEG, PDF or HTML file.",
+      };
+    }
+    return { ok: true, suggestion };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "Brand analysis failed.",
+    };
+  }
 }
 
 /** Create a member account + profile directly under the org branding. */

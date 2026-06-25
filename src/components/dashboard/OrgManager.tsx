@@ -23,6 +23,7 @@ import {
   orderTeamCards,
   startOrgSubscription,
   openBillingPortal,
+  analyzeBrandGuidelines,
 } from "@/lib/actions/org";
 
 type Member = {
@@ -243,6 +244,10 @@ function BrandForm({ data }: { data: NonNullable<OrgData> }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  const [analyzing, setAnalyzing] = useState(false);
+  const [aiNote, setAiNote] = useState<string | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+
   function save() {
     setError(null);
     setSaved(false);
@@ -253,6 +258,46 @@ function BrandForm({ data }: { data: NonNullable<OrgData> }) {
     });
   }
 
+  function onGuidelines(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-uploading the same file
+    if (!file) return;
+    if (file.size > 6 * 1024 * 1024) {
+      setAiError("That file is too large — keep it under 6 MB.");
+      return;
+    }
+    setAiError(null);
+    setAiNote(null);
+    setSaved(false);
+    setAnalyzing(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result || "");
+      startTransition(async () => {
+        const res = await analyzeBrandGuidelines({ dataUrl });
+        setAnalyzing(false);
+        if (res.ok && res.suggestion) {
+          const s = res.suggestion;
+          setTheme(s.themeId);
+          setTemplate(s.template);
+          setAccent(s.accent || s.primary);
+          setAiNote(
+            s.summary
+              ? `${s.summary} — review the colours and layout below, then Save brand.`
+              : "Brand applied — review the colours and layout below, then Save brand.",
+          );
+        } else {
+          setAiError(res.error ?? "Couldn't analyse that file.");
+        }
+      });
+    };
+    reader.onerror = () => {
+      setAnalyzing(false);
+      setAiError("Couldn't read that file.");
+    };
+    reader.readAsDataURL(file);
+  }
+
   return (
     <Card className="p-6">
       <SectionHeading icon="palette" title="Brand template" />
@@ -260,6 +305,40 @@ function BrandForm({ data }: { data: NonNullable<OrgData> }) {
         Applied to every member&apos;s card. Members can edit their own details
         but not the colours or layout.
       </p>
+
+      <div className="mb-5 rounded-xl border border-dashed border-outline bg-surface-2/40 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="flex items-center gap-1.5 text-sm font-semibold text-ink">
+              <Icon name="auto_awesome" className="text-[18px] text-primary" />
+              Analyse brand guidelines with AI
+            </p>
+            <p className="mt-0.5 text-xs text-muted">
+              Upload a PNG, JPEG, PDF or HTML file and we&apos;ll match the
+              colours, theme and layout for you.
+            </p>
+          </div>
+          <label className={cn(buttonClass("secondary", "md"), analyzing && "pointer-events-none opacity-60")}>
+            <Icon name="upload_file" className="text-[18px]" />
+            {analyzing ? "Analysing…" : "Upload guidelines"}
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/jpg,image/webp,application/pdf,text/html,.html,.htm"
+              onChange={onGuidelines}
+              disabled={analyzing}
+              className="hidden"
+            />
+          </label>
+        </div>
+        {aiNote && (
+          <p className="mt-3 flex items-start gap-1.5 text-sm font-medium text-emerald-600">
+            <Icon name="auto_awesome" className="mt-0.5 text-[16px]" />
+            {aiNote}
+          </p>
+        )}
+        {aiError && <p className="mt-3 text-sm font-medium text-red-600">{aiError}</p>}
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="o-name">Organisation name</Label>
