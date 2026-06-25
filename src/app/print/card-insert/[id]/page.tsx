@@ -18,6 +18,37 @@ const MUTED = "#5b6166";
 const FAINT = "#9aa0a6";
 const LINE = "#e6e8ea";
 
+// Quirky inside greetings — one is picked per card so a batch feels playful.
+const GREETINGS: { kicker: string; title: string; body: string }[] = [
+  {
+    kicker: "PSST… IT'S HERE",
+    title: "Well, hello there 👋",
+    body: "Your brand-new card has landed. The era of “hang on, I think I’ve got one somewhere…” is officially over.",
+  },
+  {
+    kicker: "DRUMROLL PLEASE",
+    title: "Ta-da! 🎉",
+    body: "Meet the only business card you’ll never have to reprint. Tap it, flaunt it, watch people go “ooh”.",
+  },
+  {
+    kicker: "SPECIAL DELIVERY",
+    title: "It’s heeere! ✨",
+    body: "One tap and your details fly straight to their phone. No app, no fuss, no fumbling for a pen.",
+  },
+  {
+    kicker: "ABRACADABRA",
+    title: "Surprise! 🪄",
+    body: "You just got 100% more memorable. Give it a tap and let the little bit of magic do the talking.",
+  },
+];
+
+/** Stable per-card pick so each greeting is consistent across reprints. */
+function pickGreeting(seed: string) {
+  let sum = 0;
+  for (let i = 0; i < seed.length; i++) sum += seed.charCodeAt(i);
+  return GREETINGS[sum % GREETINGS.length];
+}
+
 const printCss = `
   @page { size: A5 portrait; margin: 0; }
   /* Force background colours/gradients to print (browsers drop them otherwise). */
@@ -51,6 +82,7 @@ function InsertSheet({
 }) {
   const qrSrc = `/api/qr?data=${encodeURIComponent(tapUrl)}&color=${encodeURIComponent(INK)}`;
   const prettyUrl = tapUrl.replace(/^https?:\/\//, "");
+  const greeting = pickGreeting(code + firstName);
 
   return (
     <div
@@ -79,95 +111,125 @@ function InsertSheet({
           boxSizing: "border-box",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "2mm" }}>
-          <span
-            className="material-symbols-outlined"
-            style={{ fontSize: "22px", color: "#4f46e5" }}
-          >
-            contactless
-          </span>
+        {/* Quirky welcome — the first thing they see when the card opens */}
+        <div>
           <span
             style={{
+              fontSize: "7.5pt",
+              fontWeight: 800,
+              letterSpacing: "0.18em",
+              color: "#4f46e5",
+            }}
+          >
+            {greeting.kicker}
+          </span>
+          <h2
+            style={{
+              margin: "1.5mm 0 0",
               fontFamily: "var(--font-montserrat)",
               fontWeight: 800,
-              fontSize: "13pt",
-              letterSpacing: "-0.01em",
+              fontSize: "22pt",
+              lineHeight: 1.05,
+              letterSpacing: "-0.02em",
             }}
           >
-            Activate in seconds
-          </span>
+            {greeting.title}
+          </h2>
+          <p
+            style={{
+              margin: "2.5mm 0 0",
+              fontSize: "10pt",
+              lineHeight: 1.45,
+              color: MUTED,
+              maxWidth: "92mm",
+            }}
+          >
+            {firstName !== "there" ? (
+              <strong style={{ color: INK }}>Hey {firstName} — </strong>
+            ) : null}
+            {greeting.body}
+          </p>
         </div>
 
-        <div style={{ display: "flex", gap: "8mm", marginTop: "6mm", flex: 1 }}>
-          {/* Steps */}
-          <ol
-            style={{
-              margin: 0,
-              padding: 0,
-              listStyle: "none",
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              gap: "4mm",
-            }}
-          >
-            {[
-              {
-                t: "Tap to share",
-                d: "Hold the card to the back of your phone — your profile opens instantly. No app required.",
-              },
-              {
-                t: "Or scan the code",
-                d: "No NFC? Point your camera at the QR code to open the same page.",
-              },
-              {
-                t: "Save & connect",
-                d: "Tap “Save contact”, then share your link anywhere, anytime.",
-              },
-            ].map((s, i) => (
-              <li
-                key={i}
-                style={{ display: "flex", gap: "3mm", alignItems: "flex-start" }}
+        {/* Compact activation + QR */}
+        <div
+          style={{
+            marginTop: "auto",
+            paddingTop: "5mm",
+            display: "flex",
+            gap: "6mm",
+            alignItems: "center",
+          }}
+        >
+          <div style={{ flex: 1 }}>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "1.5mm",
+                fontFamily: "var(--font-montserrat)",
+                fontWeight: 800,
+                fontSize: "10.5pt",
+              }}
+            >
+              <span
+                className="material-symbols-outlined"
+                style={{ fontSize: "18px", color: "#4f46e5" }}
               >
-                <span
-                  style={{
-                    flexShrink: 0,
-                    width: "7mm",
-                    height: "7mm",
-                    borderRadius: "9999px",
-                    background: BRAND,
-                    color: "#fff",
-                    fontWeight: 700,
-                    fontSize: "10pt",
-                    display: "grid",
-                    placeItems: "center",
-                  }}
+                contactless
+              </span>
+              Up and running in seconds
+            </span>
+            <ol
+              style={{
+                margin: "3mm 0 0",
+                padding: 0,
+                listStyle: "none",
+                display: "flex",
+                flexDirection: "column",
+                gap: "2.5mm",
+              }}
+            >
+              {[
+                "Tap the card to the back of your phone — your profile opens. No app needed.",
+                "No NFC? Point your camera at the QR code instead.",
+                "Hit “Save contact”, then share your link anywhere.",
+              ].map((d, i) => (
+                <li
+                  key={i}
+                  style={{ display: "flex", gap: "2.5mm", alignItems: "flex-start" }}
                 >
-                  {i + 1}
-                </span>
-                <span>
                   <span
-                    style={{ fontWeight: 700, fontSize: "10.5pt", display: "block" }}
+                    style={{
+                      flexShrink: 0,
+                      width: "5.5mm",
+                      height: "5.5mm",
+                      borderRadius: "9999px",
+                      background: BRAND,
+                      color: "#fff",
+                      fontWeight: 700,
+                      fontSize: "8pt",
+                      display: "grid",
+                      placeItems: "center",
+                    }}
                   >
-                    {s.t}
+                    {i + 1}
                   </span>
-                  <span
-                    style={{ fontSize: "8.5pt", color: MUTED, lineHeight: 1.4 }}
-                  >
-                    {s.d}
+                  <span style={{ fontSize: "8.5pt", color: MUTED, lineHeight: 1.35 }}>
+                    {d}
                   </span>
-                </span>
-              </li>
-            ))}
-          </ol>
+                </li>
+              ))}
+            </ol>
+          </div>
 
           {/* QR */}
-          <div style={{ width: "34mm", textAlign: "center", flexShrink: 0 }}>
+          <div style={{ width: "30mm", textAlign: "center", flexShrink: 0 }}>
             <div
               style={{
                 border: `1px solid ${LINE}`,
                 borderRadius: "10px",
-                padding: "3mm",
+                padding: "2.5mm",
               }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -179,8 +241,8 @@ function InsertSheet({
             </div>
             <p
               style={{
-                margin: "2mm 0 0",
-                fontSize: "7pt",
+                margin: "1.5mm 0 0",
+                fontSize: "6.5pt",
                 color: FAINT,
                 wordBreak: "break-all",
                 lineHeight: 1.3,
@@ -194,7 +256,8 @@ function InsertSheet({
         <div
           style={{
             borderTop: `1px solid ${LINE}`,
-            paddingTop: "3mm",
+            marginTop: "5mm",
+            paddingTop: "2.5mm",
             display: "flex",
             justifyContent: "space-between",
             fontSize: "7.5pt",
