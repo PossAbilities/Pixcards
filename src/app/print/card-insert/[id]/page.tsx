@@ -57,15 +57,27 @@ const printCss = `
     print-color-adjust: exact !important;
   }
   @media print {
+    /* Safari blanks the page when the body is a min-height flex container —
+       reset it to a plain block flow for printing. */
     html, body {
       margin: 0 !important;
+      padding: 0 !important;
+      height: auto !important;
+      min-height: 0 !important;
+      display: block !important;
+      overflow: visible !important;
       background: #fff !important;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
     }
     .pc-toolbar { display: none !important; }
-    .pc-stage { background: #fff !important; padding: 0 !important; }
-    .pc-sheet { box-shadow: none !important; margin: 0 !important; page-break-after: always; }
+    .pc-stage { background: #fff !important; padding: 0 !important; display: block !important; }
+    .pc-sheet {
+      box-shadow: none !important;
+      margin: 0 !important;
+      break-inside: avoid;
+      page-break-after: always;
+    }
     .pc-sheet:last-child { page-break-after: auto; }
   }
 `;

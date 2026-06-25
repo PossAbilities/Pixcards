@@ -6,7 +6,7 @@ import { buttonClass } from "@/components/ui";
 
 export function PrintToolbar({ backHref }: { backHref: string }) {
   return (
-    <div className="pc-toolbar sticky top-0 z-10 border-b border-black/5 bg-surface/90 backdrop-blur print:hidden">
+    <div className="pc-toolbar sticky top-0 z-10 border-b border-black/5 bg-surface print:hidden">
       <div className="mx-auto flex max-w-3xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <Link
