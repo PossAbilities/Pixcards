@@ -171,6 +171,7 @@ export function material(id: string): CardMaterial {
 }
 
 export const PRO_PRICE_CENTS = 4900; // one-time Pro upgrade
+export const ORG_SEAT_PRICE_CENTS = 300; // per member / month (display estimate)
 
 export const ORDER_STATUSES = [
   "PENDING",

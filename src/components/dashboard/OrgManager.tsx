@@ -10,7 +10,7 @@ import {
   inputClass,
   Label,
 } from "@/components/ui";
-import { THEMES, CARD_TEMPLATES } from "@/lib/constants";
+import { THEMES, CARD_TEMPLATES, ORG_SEAT_PRICE_CENTS, money } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import {
   createOrganisation,
@@ -21,6 +21,8 @@ import {
   revokeInvite,
   updateMemberProfile,
   orderTeamCards,
+  startOrgSubscription,
+  openBillingPortal,
 } from "@/lib/actions/org";
 
 type Member = {
@@ -45,6 +47,7 @@ export type OrgData = {
   template: string;
   accentColor: string;
   role: "OWNER" | "ADMIN" | "MEMBER";
+  planStatus: string;
   analytics: { views: number; taps: number; clicks: number };
   members: Member[];
   invites: { id: string; email: string; role: string }[];
@@ -125,11 +128,80 @@ function MemberView({ data }: { data: NonNullable<OrgData> }) {
 function AdminView({ data }: { data: NonNullable<OrgData> }) {
   return (
     <div className="space-y-6">
+      <BillingCard planStatus={data.planStatus} memberCount={data.members.length} />
       <AnalyticsCard a={data.analytics} memberCount={data.members.length} />
       <BrandForm data={data} />
       <MembersCard data={data} />
       <TeamOrderCard members={data.members} />
     </div>
+  );
+}
+
+function BillingCard({
+  planStatus,
+  memberCount,
+}: {
+  planStatus: string;
+  memberCount: number;
+}) {
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const active = planStatus === "active";
+  const estimate = money(memberCount * ORG_SEAT_PRICE_CENTS);
+
+  function subscribe() {
+    setError(null);
+    startTransition(async () => {
+      const res = await startOrgSubscription();
+      if (res.ok && res.url) window.location.href = res.url;
+      else if (res.ok) window.location.reload();
+      else setError(res.error ?? "Could not start subscription.");
+    });
+  }
+  function manage() {
+    setError(null);
+    startTransition(async () => {
+      const res = await openBillingPortal();
+      if (res.ok && res.url) window.location.href = res.url;
+      else setError(res.error ?? "Billing management isn't available.");
+    });
+  }
+
+  return (
+    <Card className={cn("p-6", !active && "border-primary/30 bg-primary-soft/20")}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="grid h-11 w-11 place-items-center rounded-2xl bg-primary-soft text-primary-deep">
+            <Icon name="workspace_premium" fill className="text-[22px]" />
+          </span>
+          <div>
+            <p className="font-display text-sm font-bold text-ink">
+              {active ? "Team plan active" : "Team plan"}
+              {planStatus === "past_due" && " — payment overdue"}
+            </p>
+            <p className="text-sm text-muted">
+              {memberCount} member{memberCount === 1 ? "" : "s"} ·{" "}
+              {money(ORG_SEAT_PRICE_CENTS)}/member/month (≈ {estimate}/mo)
+            </p>
+          </div>
+        </div>
+        {active ? (
+          <button type="button" onClick={manage} disabled={isPending} className={buttonClass("outline", "md")}>
+            <Icon name="credit_card" className="text-[18px]" /> Manage billing
+          </button>
+        ) : (
+          <button type="button" onClick={subscribe} disabled={isPending} className={buttonClass("primary", "md")}>
+            <Icon name="bolt" fill className="text-[18px]" /> Subscribe
+          </button>
+        )}
+      </div>
+      {!active && (
+        <p className="mt-3 text-xs text-muted">
+          Everything keeps working while you decide — subscribe whenever you&apos;re ready.
+        </p>
+      )}
+      {error && <p className="mt-3 text-sm font-medium text-red-600">{error}</p>}
+    </Card>
   );
 }
 

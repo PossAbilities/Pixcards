@@ -7,6 +7,7 @@ import { getSessionUser, hashPassword } from "@/lib/auth";
 import { slugify } from "@/lib/utils";
 import { appUrl, material } from "@/lib/constants";
 import { generateCardCode } from "@/lib/cards";
+import { stripe, stripeEnabled } from "@/lib/stripe";
 import { sendOrgInvite } from "@/lib/email/dispatch";
 import { recordEvent } from "@/lib/events";
 import type { OrgRole } from "@prisma/client";
@@ -230,6 +231,51 @@ export async function acceptOrgInvite(rawToken: string): Promise<OrgResult> {
   ]);
   revalidatePath("/dashboard/org");
   return { ok: true };
+}
+
+/* ------------------------------- Billing --------------------------------- */
+
+export type BillingResult = { ok: boolean; url?: string; error?: string };
+
+/** Start a per-seat subscription (Stripe Checkout), or activate in demo mode. */
+export async function startOrgSubscription(): Promise<BillingResult> {
+  const { user, org } = await requireOrg(true);
+  const seats = Math.max(1, await prisma.orgMember.count({ where: { orgId: org.id } }));
+  const priceId = process.env.STRIPE_ORG_SEAT_PRICE_ID;
+
+  if (stripeEnabled && stripe && priceId) {
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      customer_email: user.email,
+      line_items: [{ price: priceId, quantity: seats }],
+      metadata: { kind: "org", orgId: org.id },
+      subscription_data: { metadata: { orgId: org.id } },
+      success_url: `${appUrl()}/dashboard/org?subscribed=1`,
+      cancel_url: `${appUrl()}/dashboard/org?cancelled=1`,
+    });
+    return { ok: true, url: session.url ?? undefined };
+  }
+
+  // Demo mode — no Stripe price configured; activate so the flow is testable.
+  await prisma.organisation.update({
+    where: { id: org.id },
+    data: { planStatus: "active" },
+  });
+  revalidatePath("/dashboard/org");
+  return { ok: true };
+}
+
+/** Open the Stripe billing portal to manage/cancel the subscription. */
+export async function openBillingPortal(): Promise<BillingResult> {
+  const { org } = await requireOrg(true);
+  if (!stripeEnabled || !stripe || !org.stripeCustomerId) {
+    return { ok: false, error: "Billing management isn't available yet." };
+  }
+  const session = await stripe.billingPortal.sessions.create({
+    customer: org.stripeCustomerId,
+    return_url: `${appUrl()}/dashboard/org`,
+  });
+  return { ok: true, url: session.url };
 }
 
 export async function removeMember(memberId: string): Promise<OrgResult> {

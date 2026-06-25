@@ -36,6 +36,11 @@ model Organisation {
   cardDesign   String @default("{}")
   cardMaterial String @default("white-gloss")
 
+  // Per-seat billing (soft-enforced).
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  planStatus           String  @default("none") // none | active | past_due | canceled
+
   members OrgMember[]
   invites OrgInvite[]
 

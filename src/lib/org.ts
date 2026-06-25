@@ -11,6 +11,7 @@ export type MyOrg = {
   accentColor: string;
   logoUrl: string | null;
   company: string;
+  planStatus: string;
 };
 
 /** The organisation (with the caller's role) the user belongs to, or null. */
@@ -29,6 +30,7 @@ export async function getMyOrg(userId: string): Promise<MyOrg | null> {
     accentColor: m.org.accentColor,
     logoUrl: m.org.logoUrl,
     company: m.org.company,
+    planStatus: m.org.planStatus,
   };
 }
 
