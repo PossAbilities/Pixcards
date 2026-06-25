@@ -78,6 +78,33 @@ export default async function OrgJoinPage({
     );
   }
 
+  // If they already belong to an org, handle it gracefully on this page.
+  const membership = await prisma.orgMember.findUnique({
+    where: { userId: user.id },
+  });
+  if (membership) {
+    const sameOrg = membership.orgId === invite.orgId;
+    return (
+      <Shell>
+        <Icon
+          name={sameOrg ? "check_circle" : "info"}
+          className={`mx-auto text-[44px] ${sameOrg ? "text-emerald-500" : "text-amber-500"}`}
+        />
+        <h1 className="mt-3 font-display text-xl font-bold text-ink">
+          {sameOrg ? `You're on the ${invite.org.name} team` : "Already in a team"}
+        </h1>
+        <p className="mt-2 text-sm text-muted">
+          {sameOrg
+            ? "You're already a member of this organisation — nothing more to do. Your card uses the team brand."
+            : "You're already part of another organisation. Ask an admin to remove you from it before joining this team."}
+        </p>
+        <Link href="/dashboard/org" className={buttonClass("primary", "md", "mt-5 w-full")}>
+          Go to my team
+        </Link>
+      </Shell>
+    );
+  }
+
   return (
     <Shell>
       <Icon name="groups" className="mx-auto text-[44px] text-primary" />

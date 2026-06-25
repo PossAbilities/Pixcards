@@ -320,7 +320,19 @@ export async function acceptOrgInvite(rawToken: string): Promise<OrgResult> {
     where: { userId: user.id },
   });
   if (existing) {
-    return { ok: false, error: "You're already part of an organisation." };
+    // Already in this org (e.g. added directly) — accept idempotently.
+    if (existing.orgId === invite.orgId) {
+      await prisma.orgInvite.update({
+        where: { id: invite.id },
+        data: { acceptedAt: new Date() },
+      });
+      revalidatePath("/dashboard/org");
+      return { ok: true };
+    }
+    return {
+      ok: false,
+      error: "You're already part of another organisation. Leave it first to join this team.",
+    };
   }
 
   await prisma.$transaction([
