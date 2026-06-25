@@ -124,6 +124,23 @@ export async function updateOrgBranding(input: {
   return { ok: true };
 }
 
+/** Toggle whether printed team cards use the brand colours / show the NFC logo. */
+export async function updateOrgCardOptions(input: {
+  cardUseBrand: boolean;
+  cardNfcLogo: boolean;
+}): Promise<OrgResult> {
+  const { org } = await requireOrg(true);
+  await prisma.organisation.update({
+    where: { id: org.id },
+    data: {
+      cardUseBrand: Boolean(input.cardUseBrand),
+      cardNfcLogo: Boolean(input.cardNfcLogo),
+    },
+  });
+  revalidatePath("/dashboard/org");
+  return { ok: true };
+}
+
 /* -------------------------- AI brand analysis ---------------------------- */
 
 export type BrandAnalysisResult = {

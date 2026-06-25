@@ -33,6 +33,7 @@ import { CARD_MATERIALS, material, money } from "@/lib/constants";
 import { createCardOrder } from "@/lib/actions/checkout";
 import { previewDiscount } from "@/lib/actions/discounts";
 import { ImageCropperModal } from "./ImageCropperModal";
+import { nfcMarkDataUrl } from "@/lib/nfc-logo";
 import { cn } from "@/lib/utils";
 
 /* -------------------------------------------------------------------------- */
@@ -541,6 +542,22 @@ export function CardStudio({
       setError("Couldn't generate the QR code — please try again.");
     }
   }, [shareUrl, addElement]);
+
+  const handleAddNfc = useCallback(() => {
+    // Choose a mark colour that reads against the current background.
+    const bg = sideState.bg || "#ffffff";
+    const isLight = /^#(f|e)/i.test(bg) || bg === "#ffffff";
+    const src = nfcMarkDataUrl({ color: isLight ? "#191c1e" : "#ffffff", label: true });
+    addElement({
+      id: uid(),
+      type: "image",
+      x: 18,
+      y: CARD_H - 96 - 18,
+      w: 62,
+      h: 78,
+      src,
+    });
+  }, [sideState.bg, addElement]);
 
   /* ----- rnd callbacks (curried per element so the id is captured) ----- */
   // Snap an element's proposed position to the canvas centre/edges and to the
@@ -1112,6 +1129,15 @@ export function CardStudio({
                 >
                   <Icon name="qr_code_2" className="text-[18px]" />
                   QR Code
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAddNfc}
+                  className={buttonClass("outline", "sm")}
+                  title="Add the official NFC tap logo"
+                >
+                  <Icon name="contactless" className="text-[18px]" />
+                  NFC Logo
                 </button>
 
                 {/* Background popover */}

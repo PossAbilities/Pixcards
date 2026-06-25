@@ -24,7 +24,9 @@ import {
   startOrgSubscription,
   openBillingPortal,
   analyzeBrandGuidelines,
+  updateOrgCardOptions,
 } from "@/lib/actions/org";
+import { nfcMarkDataUrl } from "@/lib/nfc-logo";
 
 type Member = {
   id: string;
@@ -48,6 +50,8 @@ export type OrgData = {
   template: string;
   accentColor: string;
   brandHeader: string | null;
+  cardUseBrand: boolean;
+  cardNfcLogo: boolean;
   role: "OWNER" | "ADMIN" | "MEMBER";
   planStatus: string;
   analytics: { views: number; taps: number; clicks: number };
@@ -133,6 +137,7 @@ function AdminView({ data }: { data: NonNullable<OrgData> }) {
       <BillingCard planStatus={data.planStatus} memberCount={data.members.length} />
       <AnalyticsCard a={data.analytics} memberCount={data.members.length} />
       <BrandForm data={data} />
+      <PrintedCardCard data={data} />
       <MembersCard data={data} />
       <TeamOrderCard members={data.members} />
     </div>
@@ -457,6 +462,110 @@ function BrandForm({ data }: { data: NonNullable<OrgData> }) {
           </span>
         )}
         {error && <span className="text-sm font-medium text-red-600">{error}</span>}
+      </div>
+    </Card>
+  );
+}
+
+function PrintedCardCard({ data }: { data: NonNullable<OrgData> }) {
+  const [useBrand, setUseBrand] = useState(data.cardUseBrand);
+  const [nfcLogo, setNfcLogo] = useState(data.cardNfcLogo);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  // The baked card uses the brand gradient when enabled, else a solid accent.
+  const cardBg = useBrand && data.brandHeader ? data.brandHeader : data.accentColor;
+  const nfcSrc = nfcMarkDataUrl({ color: "#ffffff", label: true });
+
+  function save() {
+    setError(null);
+    setSaved(false);
+    startTransition(async () => {
+      const res = await updateOrgCardOptions({ cardUseBrand: useBrand, cardNfcLogo: nfcLogo });
+      if (res.ok) setSaved(true);
+      else setError(res.error ?? "Could not save.");
+    });
+  }
+
+  return (
+    <Card className="p-6">
+      <SectionHeading icon="badge" title="Printed card design" />
+      <p className="-mt-1 mb-4 text-sm text-muted">
+        Controls the artwork baked into every team member&apos;s physical NFC
+        card (and the CardPresso export).
+      </p>
+
+      <div className="grid items-start gap-6 sm:grid-cols-[auto,1fr]">
+        {/* Live mini card preview */}
+        <div
+          className="relative h-[150px] w-[238px] shrink-0 overflow-hidden rounded-xl text-white shadow-md ring-1 ring-black/10"
+          style={{ background: cardBg }}
+        >
+          <div className="absolute bottom-3 left-3">
+            <p className="text-base font-bold leading-tight">Alex Member</p>
+            <p className="text-[11px] opacity-90">Account Manager</p>
+            <p className="text-[11px] opacity-90">{data.company || data.name}</p>
+          </div>
+          <span className="absolute right-3 top-3 grid h-12 w-12 place-items-center rounded bg-white/90 text-[9px] font-semibold text-ink">
+            QR
+          </span>
+          {nfcLogo && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={nfcSrc} alt="NFC" className="absolute bottom-3 right-3 h-10 w-auto" />
+          )}
+        </div>
+
+        <div className="space-y-3">
+          <label className="flex cursor-pointer items-start gap-3">
+            <input
+              type="checkbox"
+              checked={useBrand}
+              onChange={(e) => { setUseBrand(e.target.checked); setSaved(false); }}
+              className="mt-1"
+            />
+            <span>
+              <span className="block text-sm font-semibold text-ink">
+                Use our brand colours
+              </span>
+              <span className="block text-xs text-muted">
+                Bakes the brand gradient (from your guidelines) onto the card
+                instead of a flat colour.
+                {!data.brandHeader && " Upload brand guidelines above to set this."}
+              </span>
+            </span>
+          </label>
+
+          <label className="flex cursor-pointer items-start gap-3">
+            <input
+              type="checkbox"
+              checked={nfcLogo}
+              onChange={(e) => { setNfcLogo(e.target.checked); setSaved(false); }}
+              className="mt-1"
+            />
+            <span>
+              <span className="block text-sm font-semibold text-ink">
+                Show the NFC logo
+              </span>
+              <span className="block text-xs text-muted">
+                Adds the universal NFC &ldquo;tap&rdquo; mark so people know the
+                card is contactless.
+              </span>
+            </span>
+          </label>
+
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <button type="button" onClick={save} disabled={isPending} className={buttonClass("primary", "md")}>
+              <Icon name="save" className="text-[18px]" /> Save card design
+            </button>
+            {saved && !isPending && (
+              <span className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-600">
+                <Icon name="check_circle" className="text-[16px]" /> Saved
+              </span>
+            )}
+            {error && <span className="text-sm font-medium text-red-600">{error}</span>}
+          </div>
+        </div>
       </div>
     </Card>
   );

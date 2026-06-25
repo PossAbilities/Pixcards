@@ -37,6 +37,9 @@ model Organisation {
   // Shared physical-card design + material for team ordering (phase 2).
   cardDesign   String @default("{}")
   cardMaterial String @default("white-gloss")
+  // Bake the org brand colours onto printed team cards, and/or the NFC logo.
+  cardUseBrand Boolean @default(true)
+  cardNfcLogo  Boolean @default(false)
 
   // Per-seat billing (soft-enforced).
   stripeCustomerId     String?

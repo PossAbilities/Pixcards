@@ -64,6 +64,15 @@ export async function GET(
     /* no design */
   }
 
+  // Org card-design settings (brand colours / NFC logo) for team orders. The
+  // order is placed by the org owner, so resolve the org from that membership.
+  const membership = await prisma.orgMember.findUnique({
+    where: { userId: order.userId },
+    include: { org: true },
+  });
+  const useBrand = membership?.org.cardUseBrand ?? true;
+  const nfcLogo = membership?.org.cardNfcLogo ?? false;
+
   const zip = new JSZip();
   const base = appUrl();
   const header = [
@@ -90,7 +99,9 @@ export async function GET(
           jobTitle: p?.jobTitle,
           company: p?.company,
           accentColor: p?.accentColor ?? "#4f46e5",
+          brandHeader: useBrand ? p?.brandHeader : null,
           profileUrl,
+          nfcLogo,
         });
         zip.file(file, png);
       } catch {
