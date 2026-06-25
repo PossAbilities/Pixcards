@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Icon } from "@/components/Icon";
 import { Badge } from "@/components/ui";
 import { buttonClass, inputClass } from "@/components/ui";
-import { updateOrderStatus } from "@/lib/actions/admin";
+import { updateOrderStatus, deleteOrder } from "@/lib/actions/admin";
 import { material, money, ORDER_STATUSES } from "@/lib/constants";
 import { formatDate, initials } from "@/lib/utils";
 
@@ -34,6 +35,7 @@ const STATUS_COLOR: Record<
 };
 
 export function OrderRow({ order }: { order: AdminOrder }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState(order.status);
   const [tracking, setTracking] = useState(order.trackingNumber ?? "");
@@ -42,6 +44,23 @@ export function OrderRow({ order }: { order: AdminOrder }) {
   const [isPending, startTransition] = useTransition();
 
   const mat = material(order.material);
+  const shortId = order.id.slice(-8).toUpperCase();
+
+  function remove() {
+    if (
+      !confirm(
+        `Delete order #${shortId}? This removes the order and its un-encoded cards. This can't be undone.`,
+      )
+    ) {
+      return;
+    }
+    setError(null);
+    startTransition(async () => {
+      const res = await deleteOrder(order.id);
+      if (res.ok) router.refresh();
+      else setError(res.error ?? "Could not delete the order.");
+    });
+  }
 
   function save() {
     setError(null);
@@ -122,6 +141,15 @@ export function OrderRow({ order }: { order: AdminOrder }) {
             >
               <Icon name={open ? "close" : "edit"} className="text-[16px]" />
               {open ? "Close" : "Update"}
+            </button>
+            <button
+              type="button"
+              onClick={remove}
+              disabled={isPending}
+              title={`Delete order #${shortId}`}
+              className={buttonClass("danger", "sm")}
+            >
+              <Icon name="delete" className="text-[16px]" />
             </button>
           </div>
         </td>
