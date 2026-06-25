@@ -318,14 +318,23 @@ export default async function AdminOrderDetailPage({
           icon="contactless"
           title="NFC card activation"
           action={
-            <Link
-              href={`/print/card-insert/${order.id}`}
-              target="_blank"
-              className={buttonClass("outline", "sm")}
-            >
-              <Icon name="print" className="text-[16px]" />
-              Print card insert
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <a
+                href={`/api/export/cardpresso/${order.id}`}
+                className={buttonClass("outline", "sm")}
+              >
+                <Icon name="download" className="text-[16px]" />
+                Export for CardPresso
+              </a>
+              <Link
+                href={`/print/card-insert/${order.id}`}
+                target="_blank"
+                className={buttonClass("outline", "sm")}
+              >
+                <Icon name="print" className="text-[16px]" />
+                Print card insert
+              </Link>
+            </div>
           }
         />
         <OrderNfcPanel
