@@ -168,6 +168,24 @@ export function passwordResetEmail(args: {
   );
 }
 
+/* ----------------------------- Org invite -------------------------------- */
+
+export function orgInviteEmail(args: {
+  orgName: string;
+  joinUrl: string;
+}): BuiltEmail {
+  const body = `
+    ${emailHeading(`You're invited to join ${escapeHtml(args.orgName)}`)}
+    ${emailParagraph(`<strong>${escapeHtml(args.orgName)}</strong> has invited you to their team on Pixcards. Accept to get your branded digital business card — set up in minutes.`)}
+    ${emailButton(args.joinUrl, "Join the team")}
+    ${emailParagraph("If you weren't expecting this invitation, you can safely ignore this email.")}
+  `;
+  return build(
+    `Join ${args.orgName} on Pixcards`,
+    emailLayout({ preheader: `Join ${args.orgName} on Pixcards`, body }),
+  );
+}
+
 /* ------------------------------ Marketing -------------------------------- */
 
 export function marketingEmail(args: {

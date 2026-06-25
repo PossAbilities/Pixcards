@@ -8,7 +8,21 @@ import {
   proWelcomeEmail,
   orderShippedEmail,
   passwordResetEmail,
+  orgInviteEmail,
 } from "./templates";
+
+export async function sendOrgInvite(
+  email: string,
+  orgName: string,
+  joinUrl: string,
+): Promise<void> {
+  try {
+    const built = orgInviteEmail({ orgName, joinUrl });
+    await sendEmail({ to: email, ...built, type: "OTHER" });
+  } catch (e) {
+    console.error("sendOrgInvite failed", e);
+  }
+}
 
 export async function sendPasswordReset(
   email: string,

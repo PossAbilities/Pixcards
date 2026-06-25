@@ -93,6 +93,9 @@ export async function updateImages(input: {
 
 export async function setTheme(themeId: string): Promise<ActionResult> {
   const { user, profile } = await myProfile();
+  if (await prisma.orgMember.findUnique({ where: { userId: user.id } })) {
+    return { ok: false, error: "Your organisation manages card branding." };
+  }
   const t = getTheme(themeId);
   if (!THEMES.find((x) => x.id === themeId)) {
     return { ok: false, error: "Unknown theme." };
@@ -110,6 +113,9 @@ export async function setTheme(themeId: string): Promise<ActionResult> {
 
 export async function setTemplate(templateId: string): Promise<ActionResult> {
   const { user, profile } = await myProfile();
+  if (await prisma.orgMember.findUnique({ where: { userId: user.id } })) {
+    return { ok: false, error: "Your organisation manages card branding." };
+  }
   const tpl = CARD_TEMPLATES.find((x) => x.id === templateId);
   if (!tpl) {
     return { ok: false, error: "Unknown template." };

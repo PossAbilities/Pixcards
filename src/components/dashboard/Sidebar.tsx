@@ -16,6 +16,7 @@ const NAV: NavItem[] = [
   { href: "/dashboard/analytics", label: "Analytics", icon: "monitoring" },
   { href: "/dashboard/orders", label: "Orders", icon: "inventory_2" },
   { href: "/dashboard/cards", label: "My Cards", icon: "contactless" },
+  { href: "/dashboard/org", label: "Organisation", icon: "corporate_fare" },
   { href: "/dashboard/order", label: "Order a Card", icon: "add_card" },
   { href: "/dashboard/settings", label: "Settings", icon: "settings" },
 ];
