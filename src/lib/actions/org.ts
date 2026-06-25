@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { getSessionUser, hashPassword } from "@/lib/auth";
 import { slugify } from "@/lib/utils";
-import { appUrl } from "@/lib/constants";
+import { appUrl, material } from "@/lib/constants";
+import { generateCardCode } from "@/lib/cards";
 import { sendOrgInvite } from "@/lib/email/dispatch";
 import { recordEvent } from "@/lib/events";
 import type { OrgRole } from "@prisma/client";
@@ -255,6 +256,107 @@ export async function revokeInvite(inviteId: string): Promise<OrgResult> {
     return { ok: false, error: "Invite not found." };
   }
   await prisma.orgInvite.delete({ where: { id: inviteId } });
+  revalidatePath("/dashboard/org");
+  return { ok: true };
+}
+
+/** Admin edits a member's core profile details (name lives on the user). */
+export async function updateMemberProfile(
+  memberId: string,
+  fields: {
+    name: string;
+    jobTitle: string;
+    phone: string;
+    email: string;
+    bio: string;
+    location: string;
+  },
+): Promise<OrgResult> {
+  const { org } = await requireOrg(true);
+  const member = await prisma.orgMember.findUnique({ where: { id: memberId } });
+  if (!member || member.orgId !== org.id) {
+    return { ok: false, error: "Member not found." };
+  }
+  await prisma.user.update({
+    where: { id: member.userId },
+    data: { name: fields.name.trim().slice(0, 80) || "Member" },
+  });
+  await prisma.profile.updateMany({
+    where: { userId: member.userId },
+    data: {
+      jobTitle: fields.jobTitle.trim(),
+      phone: fields.phone.trim(),
+      email: fields.email.trim(),
+      bio: fields.bio.trim(),
+      location: fields.location.trim(),
+    },
+  });
+  revalidatePath("/dashboard/org");
+  return { ok: true };
+}
+
+/** Provision pre-linked NFC cards for selected members under one team order. */
+export async function orderTeamCards(input: {
+  memberIds: string[];
+  shipName: string;
+  shipAddress: string;
+  shipCity: string;
+  shipPostal: string;
+  shipCountry: string;
+}): Promise<OrgResult> {
+  const { org, user } = await requireOrg(true);
+  const members = await prisma.orgMember.findMany({
+    where: { id: { in: input.memberIds }, orgId: org.id },
+  });
+  if (members.length === 0) {
+    return { ok: false, error: "Select at least one member." };
+  }
+  if (!input.shipName.trim() || !input.shipAddress.trim()) {
+    return { ok: false, error: "Enter a delivery name and address." };
+  }
+
+  const mat = material(org.cardMaterial);
+  const order = await prisma.order.create({
+    data: {
+      userId: user.id,
+      material: org.cardMaterial,
+      cardName: org.company || org.name,
+      quantity: members.length,
+      priceCents: mat.priceCents * members.length,
+      design: org.cardDesign,
+      status: "PENDING",
+      shipName: input.shipName.trim(),
+      shipAddress: input.shipAddress.trim(),
+      shipCity: input.shipCity.trim(),
+      shipPostal: input.shipPostal.trim(),
+      shipCountry: input.shipCountry.trim() || "United Kingdom",
+    },
+  });
+
+  for (const m of members) {
+    for (let attempt = 0; attempt < 6; attempt++) {
+      try {
+        await prisma.card.create({
+          data: {
+            code: generateCardCode(),
+            userId: m.userId,
+            orderId: order.id,
+            material: org.cardMaterial,
+            claimedAt: new Date(),
+          },
+        });
+        break;
+      } catch {
+        // unique code collision — retry
+      }
+    }
+  }
+
+  await recordEvent({
+    type: "ORDER_PLACED",
+    title: `Team card order (${members.length}) — ${org.name}`,
+    meta: { orderId: order.id, orgId: org.id, count: members.length },
+  });
   revalidatePath("/dashboard/org");
   return { ok: true };
 }

@@ -13,7 +13,23 @@ export default async function OrgPage() {
       prisma.orgMember.findMany({
         where: { orgId: myOrg.id },
         include: {
-          user: { select: { name: true, email: true, profile: { select: { username: true } } } },
+          user: {
+            select: {
+              name: true,
+              email: true,
+              profile: {
+                select: {
+                  id: true,
+                  username: true,
+                  jobTitle: true,
+                  phone: true,
+                  email: true,
+                  bio: true,
+                  location: true,
+                },
+              },
+            },
+          },
         },
         orderBy: { createdAt: "asc" },
       }),
@@ -22,6 +38,30 @@ export default async function OrgPage() {
         orderBy: { createdAt: "desc" },
       }),
     ]);
+
+    // Team analytics (last 30 days).
+    const profileIds = members
+      .map((m) => m.user.profile?.id)
+      .filter((x): x is string => Boolean(x));
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const [views, taps, clicks, viewsByProfile] = await Promise.all([
+      prisma.analyticsEvent.count({
+        where: { profileId: { in: profileIds }, type: "VIEW", createdAt: { gte: since } },
+      }),
+      prisma.analyticsEvent.count({
+        where: { profileId: { in: profileIds }, type: "TAP", createdAt: { gte: since } },
+      }),
+      prisma.analyticsEvent.count({
+        where: { profileId: { in: profileIds }, type: "LINK_CLICK", createdAt: { gte: since } },
+      }),
+      prisma.analyticsEvent.groupBy({
+        by: ["profileId"],
+        where: { profileId: { in: profileIds }, type: "VIEW", createdAt: { gte: since } },
+        _count: { _all: true },
+      }),
+    ]);
+    const viewMap = new Map(viewsByProfile.map((v) => [v.profileId, v._count._all]));
+
     data = {
       id: myOrg.id,
       name: myOrg.name,
@@ -30,18 +70,21 @@ export default async function OrgPage() {
       template: myOrg.template,
       accentColor: myOrg.accentColor,
       role: myOrg.role,
+      analytics: { views, taps, clicks },
       members: members.map((m) => ({
         id: m.id,
         name: m.user.name,
         email: m.user.email,
         username: m.user.profile?.username ?? null,
         role: m.role,
+        jobTitle: m.user.profile?.jobTitle ?? "",
+        phone: m.user.profile?.phone ?? "",
+        contactEmail: m.user.profile?.email ?? "",
+        bio: m.user.profile?.bio ?? "",
+        location: m.user.profile?.location ?? "",
+        views: m.user.profile?.id ? (viewMap.get(m.user.profile.id) ?? 0) : 0,
       })),
-      invites: invites.map((i) => ({
-        id: i.id,
-        email: i.email,
-        role: i.role,
-      })),
+      invites: invites.map((i) => ({ id: i.id, email: i.email, role: i.role })),
     };
   }
 
