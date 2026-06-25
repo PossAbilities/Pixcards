@@ -466,12 +466,23 @@ export async function orderTeamCards(input: {
   const { org, user } = await requireOrg(true);
   const members = await prisma.orgMember.findMany({
     where: { id: { in: input.memberIds }, orgId: org.id },
+    include: { user: { include: { profile: true } } },
   });
   if (members.length === 0) {
     return { ok: false, error: "Select at least one member." };
   }
   if (!input.shipName.trim() || !input.shipAddress.trim()) {
     return { ok: false, error: "Enter a delivery name and address." };
+  }
+  // Every card needs a role — block the order until each member has one.
+  const noTitle = members
+    .filter((m) => !m.user.profile?.jobTitle?.trim())
+    .map((m) => m.user.name || m.user.email);
+  if (noTitle.length > 0) {
+    return {
+      ok: false,
+      error: `Add a job title for ${noTitle.join(", ")} before ordering.`,
+    };
   }
 
   const mat = material(org.cardMaterial);

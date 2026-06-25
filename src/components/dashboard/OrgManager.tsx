@@ -843,9 +843,9 @@ function TeamOrderCard({ data }: { data: NonNullable<OrgData> }) {
             {missingTitle.length > 0 && (
               <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
                 <Icon name="warning" className="mt-0.5 text-[14px]" />
-                No job title set for {missingTitle.join(", ")} — their card will
-                print without a role. Add it under <strong>Members</strong> above
-                first.
+                Add a job title for {missingTitle.join(", ")} under{" "}
+                <strong>Members</strong> above before ordering — every card needs
+                a role.
               </p>
             )}
           </div>
@@ -876,7 +876,7 @@ function TeamOrderCard({ data }: { data: NonNullable<OrgData> }) {
         />
         <span>I&apos;ve reviewed the card design above and want to order it.</span>
       </label>
-      <button type="button" onClick={place} disabled={isPending || selected.size === 0 || !confirmed}
+      <button type="button" onClick={place} disabled={isPending || selected.size === 0 || !confirmed || missingTitle.length > 0}
         className={buttonClass("primary", "md", "mt-3")}>
         <Icon name="add_card" className="text-[18px]" />
         Place team order ({selected.size})
