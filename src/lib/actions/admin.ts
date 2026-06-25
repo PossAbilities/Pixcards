@@ -54,6 +54,34 @@ export async function updateOrderStatus(
   return { ok: true };
 }
 
+/**
+ * Delete an order. Also removes its un-encoded cards (so a team/test order
+ * can be cleanly re-placed); any already-encoded cards are kept but unlinked.
+ */
+export async function deleteOrder(orderId: string): Promise<AdminResult> {
+  await requireAdminUser();
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { cards: true },
+  });
+  if (!order) return { ok: false, error: "Order not found." };
+
+  await prisma.card.deleteMany({
+    where: { orderId, encoded: false },
+  });
+  await prisma.order.delete({ where: { id: orderId } });
+
+  await recordEvent({
+    type: "ORDER_STATUS",
+    title: `Order ${orderId.slice(-8).toUpperCase()} deleted`,
+    meta: { orderId, cards: order.cards.length },
+  });
+  revalidatePath("/admin/orders");
+  revalidatePath("/admin");
+  revalidatePath("/dashboard/orders");
+  return { ok: true };
+}
+
 export async function setUserPlan(
   userId: string,
   plan: Plan,

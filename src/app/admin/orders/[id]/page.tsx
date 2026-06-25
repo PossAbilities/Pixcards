@@ -9,6 +9,7 @@ import { cardTapUrl } from "@/lib/cards";
 import { formatDate } from "@/lib/utils";
 import { OrderStatusForm } from "@/components/admin/OrderStatusForm";
 import { OrderNfcPanel } from "@/components/admin/OrderNfcPanel";
+import { DeleteOrderButton } from "@/components/admin/DeleteOrderButton";
 
 const STATUS_COLOR: Record<
   string,
@@ -386,6 +387,16 @@ export default async function AdminOrderDetailPage({
           currentStatus={order.status}
           currentTracking={order.trackingNumber ?? ""}
         />
+      </Card>
+
+      {/* Danger zone */}
+      <Card className="border-red-200 p-6">
+        <SectionHeading icon="warning" title="Danger zone" />
+        <p className="-mt-1 mb-3 text-sm text-muted">
+          Permanently delete this order and its un-encoded cards — use to clear
+          a test order so it can be re-placed.
+        </p>
+        <DeleteOrderButton orderId={order.id} shortId={shortId} />
       </Card>
     </div>
   );
