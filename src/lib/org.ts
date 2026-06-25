@@ -9,6 +9,7 @@ export type MyOrg = {
   theme: string;
   template: string;
   accentColor: string;
+  brandHeader: string | null;
   logoUrl: string | null;
   company: string;
   planStatus: string;
@@ -28,6 +29,7 @@ export async function getMyOrg(userId: string): Promise<MyOrg | null> {
     theme: m.org.theme,
     template: m.org.template,
     accentColor: m.org.accentColor,
+    brandHeader: m.org.brandHeader,
     logoUrl: m.org.logoUrl,
     company: m.org.company,
     planStatus: m.org.planStatus,

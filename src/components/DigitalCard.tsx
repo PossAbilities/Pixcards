@@ -26,6 +26,10 @@ export type CardData = {
   headerUrl?: string | null;
   themeId: string;
   templateId?: string;
+  /** Optional custom brand gradient that overrides the preset theme header. */
+  brandHeader?: string | null;
+  /** Optional brand accent that overrides the preset theme accent. */
+  accent?: string | null;
   links: CardLink[];
 };
 
@@ -43,6 +47,8 @@ export function DigitalCard({
   className?: string;
 }) {
   const t = getTheme(data.themeId);
+  const headerBg = data.brandHeader || t.header;
+  const accent = data.accent || t.accent;
   const template = data.templateId || "classic";
   const [copied, setCopied] = useState(false);
   const dark = t.surface !== "#ffffff";
@@ -163,7 +169,7 @@ export function DigitalCard({
         width: size,
         height: size,
         border: border ? `4px solid ${t.surface}` : undefined,
-        background: t.accent,
+        background: accent,
         color: "#fff",
         fontSize: size * 0.32,
         boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
@@ -202,7 +208,7 @@ export function DigitalCard({
         type="button"
         onClick={interactive ? saveContact : undefined}
         className="flex flex-col items-center justify-center gap-1 py-3 rounded-xl text-white font-semibold text-sm shadow-md transition active:scale-95"
-        style={{ background: t.accent }}
+        style={{ background: accent }}
       >
         <Icon name="person_add" className="text-[20px]" />
         Save Contact
@@ -296,7 +302,7 @@ export function DigitalCard({
     <div className="py-6 flex flex-col items-center gap-1 mt-auto">
       <span
         className="text-[11px] font-bold tracking-widest opacity-60 font-display"
-        style={{ color: t.accent }}
+        style={{ color: accent }}
       >
         POWERED BY PIXCARDS
       </span>
@@ -319,7 +325,7 @@ export function DigitalCard({
           ) : (
             <div
               className="absolute inset-0 grid place-items-center text-white/90 font-display font-bold text-6xl"
-              style={{ background: t.header }}
+              style={{ background: headerBg }}
             >
               {initials(data.name || "P")}
             </div>
@@ -378,7 +384,7 @@ export function DigitalCard({
           {data.headerUrl ? (
             coverImg(data.headerUrl, "")
           ) : (
-            <div className="absolute inset-0" style={{ background: t.header }} />
+            <div className="absolute inset-0" style={{ background: headerBg }} />
           )}
           <div className="absolute -bottom-10 left-1/2 -translate-x-1/2">
             {avatarNode(80)}
@@ -409,7 +415,7 @@ export function DigitalCard({
             type="button"
             onClick={interactive ? saveContact : undefined}
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-white font-semibold text-sm shadow-md transition active:scale-95"
-            style={{ background: t.accent }}
+            style={{ background: accent }}
           >
             <Icon name="person_add" className="text-[20px]" />
             Save Contact
@@ -435,7 +441,7 @@ export function DigitalCard({
           {(data.jobTitle || data.company) && (
             <span
               className="inline-block text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full"
-              style={{ background: `${t.accent}1a`, color: t.accent }}
+              style={{ background: `${accent}1a`, color: accent }}
             >
               {[data.jobTitle, data.company].filter(Boolean).join(" · ")}
             </span>
@@ -478,7 +484,7 @@ export function DigitalCard({
         {data.headerUrl ? (
           coverImg(data.headerUrl, "")
         ) : (
-          <div className="absolute inset-0" style={{ background: t.header }} />
+          <div className="absolute inset-0" style={{ background: headerBg }} />
         )}
         <div className="absolute -bottom-12 left-1/2 -translate-x-1/2">
           {avatarNode(96)}
@@ -492,7 +498,7 @@ export function DigitalCard({
         {(data.jobTitle || data.company) && (
           <span
             className="inline-block text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full"
-            style={{ background: `${t.accent}1a`, color: t.accent }}
+            style={{ background: `${accent}1a`, color: accent }}
           >
             {[data.jobTitle, data.company].filter(Boolean).join(" · ")}
           </span>

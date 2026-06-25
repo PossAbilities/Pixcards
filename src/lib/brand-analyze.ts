@@ -16,6 +16,8 @@ export type BrandSuggestion = {
   accent: string;
   background: string;
   ink: string;
+  /** A CSS linear-gradient built from the real brand colours (header override). */
+  headerGradient: string;
   themeId: string;
   template: string;
   summary: string;
@@ -30,6 +32,23 @@ export function brandAnalysisEnabled(): boolean {
 
 const hex = (v: unknown, fallback: string): string =>
   typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v) ? v : fallback;
+
+/** Lighten (pct > 0) or darken (pct < 0) a #rrggbb colour. */
+function shade(h: string, pct: number): string {
+  const n = (i: number) => parseInt(h.slice(i, i + 2), 16);
+  const adj = (c: number) =>
+    Math.max(0, Math.min(255, Math.round(c + (pct / 100) * 255)));
+  const to = (c: number) => adj(c).toString(16).padStart(2, "0");
+  return `#${to(n(1))}${to(n(3))}${to(n(5))}`;
+}
+
+/** Build a tasteful header gradient from the brand's real colours. */
+function buildGradient(primary: string, accent: string): string {
+  if (accent.toLowerCase() !== primary.toLowerCase()) {
+    return `linear-gradient(135deg, ${primary} 0%, ${accent} 100%)`;
+  }
+  return `linear-gradient(135deg, ${shade(primary, 16)} 0%, ${primary} 55%, ${shade(primary, -24)} 100%)`;
+}
 
 export async function analyzeBrand(input: BrandInput): Promise<BrandSuggestion> {
   const key = process.env.ANTHROPIC_API_KEY;
@@ -94,11 +113,13 @@ export async function analyzeBrand(input: BrandInput): Promise<BrandSuggestion> 
   }
 
   const primary = hex(parsed.primary, "#4f46e5");
+  const accent = hex(parsed.accent, primary);
   return {
     primary,
-    accent: hex(parsed.accent, primary),
+    accent,
     background: hex(parsed.background, "#ffffff"),
     ink: hex(parsed.ink, "#191c1e"),
+    headerGradient: buildGradient(primary, accent),
     themeId: VALID_THEMES.includes(String(parsed.themeId)) ? String(parsed.themeId) : "indigo",
     template: VALID_TEMPLATES.includes(String(parsed.template)) ? String(parsed.template) : "classic",
     summary: typeof parsed.summary === "string" ? parsed.summary.slice(0, 200) : "",

@@ -49,6 +49,8 @@ type ProfileState = {
   headerUrl: string | null;
   theme: string;
   template: string;
+  accentColor?: string | null;
+  brandHeader?: string | null;
 };
 
 type LinkDraft = { platform: string; label: string; url: string };
@@ -94,6 +96,8 @@ export function ProfileEditor({
       headerUrl: form.headerUrl,
       themeId: form.theme,
       templateId: form.template,
+      brandHeader: form.brandHeader,
+      accent: form.accentColor,
       links,
     }),
     [form, links],

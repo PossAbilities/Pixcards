@@ -42,6 +42,8 @@ export default async function ProfilePage() {
           headerUrl: profile.headerUrl,
           theme: profile.theme,
           template: profile.template,
+          accentColor: profile.accentColor,
+          brandHeader: profile.brandHeader,
         }}
         links={profile.links.map((l) => ({
           id: l.id,

@@ -57,6 +57,7 @@ async function applyBranding(orgId: string) {
           theme: org.theme,
           template: org.template,
           accentColor: org.accentColor,
+          brandHeader: org.brandHeader,
           ...(org.company ? { company: org.company } : {}),
         },
       }),
@@ -99,6 +100,7 @@ export async function updateOrgBranding(input: {
   theme: string;
   template: string;
   accentColor: string;
+  brandHeader?: string | null;
   logoUrl?: string | null;
 }): Promise<OrgResult> {
   const { org } = await requireOrg(true);
@@ -110,6 +112,10 @@ export async function updateOrgBranding(input: {
       theme: input.theme,
       template: input.template,
       accentColor: input.accentColor,
+      // Empty string clears the custom gradient (revert to the preset theme).
+      ...(input.brandHeader !== undefined
+        ? { brandHeader: input.brandHeader?.trim() ? input.brandHeader.trim() : null }
+        : {}),
       ...(input.logoUrl !== undefined ? { logoUrl: input.logoUrl } : {}),
     },
   });
@@ -222,6 +228,7 @@ export async function addMemberDirect(input: {
           theme: org.theme,
           template: org.template,
           accentColor: org.accentColor,
+          brandHeader: org.brandHeader,
         },
       },
       orgMembership: { create: { orgId: org.id, role: "MEMBER" } },
@@ -291,6 +298,7 @@ export async function acceptOrgInvite(rawToken: string): Promise<OrgResult> {
         theme: invite.org.theme,
         template: invite.org.template,
         accentColor: invite.org.accentColor,
+        brandHeader: invite.org.brandHeader,
         ...(invite.org.company ? { company: invite.org.company } : {}),
       },
     }),

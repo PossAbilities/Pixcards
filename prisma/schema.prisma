@@ -31,6 +31,8 @@ model Organisation {
   theme       String  @default("indigo")
   template    String  @default("classic")
   accentColor String  @default("#4f46e5")
+  // Optional custom brand header gradient (overrides the preset theme header).
+  brandHeader String?
   logoUrl     String?
   // Shared physical-card design + material for team ordering (phase 2).
   cardDesign   String @default("{}")
@@ -177,6 +179,9 @@ model Profile {
   theme       String  @default("indigo") // indigo | midnight | ruby | slate | emerald
   template    String  @default("classic") // classic | spotlight | grid
   accentColor String  @default("#4f46e5")
+  // Optional custom brand header gradient (overrides the preset theme header).
+  // Set by the AI brand analysis / org branding so real brand colours render.
+  brandHeader String?
   published   Boolean @default(true)
 
   links  Link[]

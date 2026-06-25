@@ -108,6 +108,8 @@ export default async function PublicCardPage({
     headerUrl: imgUrl("header", profile.headerUrl),
     themeId: profile.theme,
     templateId: profile.template,
+    brandHeader: profile.brandHeader || undefined,
+    accent,
     links: profile.links.map((l) => ({
       id: l.id,
       platform: l.platform,
@@ -122,7 +124,7 @@ export default async function PublicCardPage({
       {/* Subtle themed glow at the top for a premium feel */}
       <div
         className="absolute inset-x-0 top-0 h-56 -z-0 opacity-30 blur-3xl pointer-events-none"
-        style={{ background: t.header }}
+        style={{ background: profile.brandHeader || t.header }}
       />
       <div className="relative z-10 mx-auto max-w-md px-4 py-8 sm:py-12 flex flex-col gap-6">
         {!profile.published && isOwner && (

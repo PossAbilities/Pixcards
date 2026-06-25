@@ -47,6 +47,7 @@ export type OrgData = {
   theme: string;
   template: string;
   accentColor: string;
+  brandHeader: string | null;
   role: "OWNER" | "ADMIN" | "MEMBER";
   planStatus: string;
   analytics: { views: number; taps: number; clicks: number };
@@ -240,6 +241,8 @@ function BrandForm({ data }: { data: NonNullable<OrgData> }) {
   const [theme, setTheme] = useState(data.theme);
   const [template, setTemplate] = useState(data.template);
   const [accent, setAccent] = useState(data.accentColor);
+  // Custom brand gradient from the AI (overrides the preset theme header).
+  const [brandHeader, setBrandHeader] = useState<string | null>(data.brandHeader);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -248,11 +251,32 @@ function BrandForm({ data }: { data: NonNullable<OrgData> }) {
   const [aiNote, setAiNote] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
 
+  // What the card header will actually look like: custom brand gradient if set,
+  // otherwise the selected preset theme's gradient.
+  const presetHeader =
+    THEMES.find((t) => t.id === theme)?.header ?? THEMES[0].header;
+  const previewHeader = brandHeader || presetHeader;
+
+  // Picking a preset theme clears any custom brand gradient so the preset wins.
+  function pickTheme(t: (typeof THEMES)[number]) {
+    setTheme(t.id);
+    setAccent(t.accent);
+    setBrandHeader(null);
+    setSaved(false);
+  }
+
   function save() {
     setError(null);
     setSaved(false);
     startTransition(async () => {
-      const res = await updateOrgBranding({ name, company, theme, template, accentColor: accent });
+      const res = await updateOrgBranding({
+        name,
+        company,
+        theme,
+        template,
+        accentColor: accent,
+        brandHeader: brandHeader ?? "",
+      });
       if (res.ok) setSaved(true);
       else setError(res.error ?? "Could not save.");
     });
@@ -281,6 +305,7 @@ function BrandForm({ data }: { data: NonNullable<OrgData> }) {
           setTheme(s.themeId);
           setTemplate(s.template);
           setAccent(s.accent || s.primary);
+          setBrandHeader(s.headerGradient || null);
           setAiNote(
             s.summary
               ? `${s.summary} — review the colours and layout below, then Save brand.`
@@ -339,6 +364,39 @@ function BrandForm({ data }: { data: NonNullable<OrgData> }) {
         {aiError && <p className="mt-3 text-sm font-medium text-red-600">{aiError}</p>}
       </div>
 
+      {/* Live preview — instantly reflects the chosen / AI-detected brand. */}
+      <div className="mb-5">
+        <div className="flex items-center justify-between">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-faint">Preview</p>
+          {brandHeader && (
+            <button
+              type="button"
+              onClick={() => { setBrandHeader(null); setSaved(false); }}
+              className="text-xs font-semibold text-muted hover:text-primary"
+            >
+              Reset to preset theme
+            </button>
+          )}
+        </div>
+        <div className="overflow-hidden rounded-2xl border border-outline">
+          <div className="h-20 w-full" style={{ background: previewHeader }} />
+          <div className="flex items-center gap-3 bg-surface px-4 py-3">
+            <span
+              className="grid h-10 w-10 place-items-center rounded-full text-sm font-bold text-white"
+              style={{ background: accent }}
+            >
+              {(company || name || "B").trim().charAt(0).toUpperCase()}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-ink">{company || name || "Your company"}</p>
+              <p className="truncate text-xs" style={{ color: accent }}>
+                {brandHeader ? "Custom brand colours" : "Preset theme"}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="o-name">Organisation name</Label>
@@ -352,9 +410,21 @@ function BrandForm({ data }: { data: NonNullable<OrgData> }) {
 
       <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-wide text-faint">Theme</p>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {brandHeader && (
+          <button
+            type="button"
+            onClick={() => setSaved(false)}
+            className="rounded-xl border-2 border-primary p-2 text-left text-xs font-semibold transition"
+          >
+            <span className="block h-6 rounded" style={{ background: brandHeader }} />
+            <span className="mt-1 flex items-center gap-1 text-ink">
+              <Icon name="auto_awesome" className="text-[14px] text-primary" /> Your brand
+            </span>
+          </button>
+        )}
         {THEMES.map((t) => (
-          <button key={t.id} type="button" onClick={() => { setTheme(t.id); setAccent(t.accent); }}
-            className={cn("rounded-xl border-2 p-2 text-left text-xs font-semibold transition", theme === t.id ? "border-primary" : "border-outline hover:border-primary/40")}>
+          <button key={t.id} type="button" onClick={() => pickTheme(t)}
+            className={cn("rounded-xl border-2 p-2 text-left text-xs font-semibold transition", theme === t.id && !brandHeader ? "border-primary" : "border-outline hover:border-primary/40")}>
             <span className="block h-6 rounded" style={{ background: t.header }} />
             <span className="mt-1 block text-ink">{t.name}</span>
           </button>

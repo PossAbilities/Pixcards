@@ -69,6 +69,7 @@ export default async function OrgPage() {
       theme: myOrg.theme,
       template: myOrg.template,
       accentColor: myOrg.accentColor,
+      brandHeader: myOrg.brandHeader,
       role: myOrg.role,
       planStatus: myOrg.planStatus,
       analytics: { views, taps, clicks },
