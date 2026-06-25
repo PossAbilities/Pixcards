@@ -16,6 +16,7 @@ export type MyOrg = {
   cardUseBrand: boolean;
   cardNfcLogo: boolean;
   cardDesign: string;
+  cardMaterial: string;
 };
 
 /** The organisation (with the caller's role) the user belongs to, or null. */
@@ -39,6 +40,7 @@ export async function getMyOrg(userId: string): Promise<MyOrg | null> {
     cardUseBrand: m.org.cardUseBrand,
     cardNfcLogo: m.org.cardNfcLogo,
     cardDesign: m.org.cardDesign,
+    cardMaterial: m.org.cardMaterial,
   };
 }
 

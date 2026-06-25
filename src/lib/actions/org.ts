@@ -474,7 +474,7 @@ export async function orderTeamCards(input: {
   shipCity: string;
   shipPostal: string;
   shipCountry: string;
-}): Promise<OrgResult> {
+}): Promise<BillingResult> {
   const { org, user } = await requireOrg(true);
   const members = await prisma.orgMember.findMany({
     where: { id: { in: input.memberIds }, orgId: org.id },
@@ -498,13 +498,14 @@ export async function orderTeamCards(input: {
   }
 
   const mat = material(org.cardMaterial);
+  const priceCents = mat.priceCents * members.length;
   const order = await prisma.order.create({
     data: {
       userId: user.id,
       material: org.cardMaterial,
       cardName: org.company || org.name,
       quantity: members.length,
-      priceCents: mat.priceCents * members.length,
+      priceCents,
       design: org.cardDesign,
       status: "PENDING",
       shipName: input.shipName.trim(),
@@ -539,6 +540,39 @@ export async function orderTeamCards(input: {
     title: `Team card order (${members.length}) — ${org.name}`,
     meta: { orderId: order.id, orgId: org.id, count: members.length },
   });
+
+  // Take payment via Stripe Checkout (same flow as individual card orders).
+  if (stripeEnabled && stripe && priceCents > 0) {
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      customer_email: user.email,
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: "gbp",
+            unit_amount: priceCents,
+            product_data: {
+              name: `${org.name} — team NFC cards (x${members.length})`,
+              description: `${members.length} ${mat.name} for your team`,
+            },
+          },
+        },
+      ],
+      metadata: { kind: "order", orderId: order.id },
+      success_url: `${appUrl()}/dashboard/org?ordered=1`,
+      cancel_url: `${appUrl()}/dashboard/org?cancelled=1`,
+    });
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { stripeSessionId: session.id },
+    });
+    revalidatePath("/dashboard/org");
+    return { ok: true, url: session.url ?? undefined };
+  }
+
+  // Demo mode (no Stripe) — mark paid so the flow is testable.
+  await prisma.order.update({ where: { id: order.id }, data: { status: "PAID" } });
   revalidatePath("/dashboard/org");
   return { ok: true };
 }

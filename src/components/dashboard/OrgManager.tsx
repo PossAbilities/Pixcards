@@ -10,7 +10,7 @@ import {
   inputClass,
   Label,
 } from "@/components/ui";
-import { THEMES, CARD_TEMPLATES, ORG_SEAT_PRICE_CENTS, money } from "@/lib/constants";
+import { THEMES, CARD_TEMPLATES, ORG_SEAT_PRICE_CENTS, money, material } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import {
   createOrganisation,
@@ -54,6 +54,7 @@ export type OrgData = {
   cardUseBrand: boolean;
   cardNfcLogo: boolean;
   cardDesign: string;
+  cardMaterial: string;
   role: "OWNER" | "ADMIN" | "MEMBER";
   planStatus: string;
   analytics: { views: number; taps: number; clicks: number };
@@ -774,6 +775,8 @@ function TeamOrderCard({ data }: { data: NonNullable<OrgData> }) {
   const missingTitle = members
     .filter((m) => selected.has(m.id) && !m.jobTitle.trim())
     .map((m) => m.name);
+  const unitPrice = material(data.cardMaterial).priceCents;
+  const total = unitPrice * selected.size;
 
   function toggle(id: string) {
     setSelected((s) => {
@@ -796,7 +799,8 @@ function TeamOrderCard({ data }: { data: NonNullable<OrgData> }) {
         shipPostal,
         shipCountry: "United Kingdom",
       });
-      if (res.ok) setMsg("Team order placed — cards are pre-linked to each member and ready to fulfil.");
+      if (res.ok && res.url) window.location.href = res.url;
+      else if (res.ok) setMsg("Team order placed — cards are pre-linked to each member and ready to fulfil.");
       else setError(res.error ?? "Could not place the order.");
     });
   }
@@ -876,10 +880,15 @@ function TeamOrderCard({ data }: { data: NonNullable<OrgData> }) {
         />
         <span>I&apos;ve reviewed the card design above and want to order it.</span>
       </label>
+      <p className="mt-3 text-sm text-muted">
+        {selected.size} {selected.size === 1 ? "card" : "cards"} ×{" "}
+        {money(unitPrice)} = <strong className="text-ink">{money(total)}</strong>.
+        You&apos;ll be taken to secure checkout to pay.
+      </p>
       <button type="button" onClick={place} disabled={isPending || selected.size === 0 || !confirmed || missingTitle.length > 0}
-        className={buttonClass("primary", "md", "mt-3")}>
-        <Icon name="add_card" className="text-[18px]" />
-        Place team order ({selected.size})
+        className={buttonClass("primary", "md", "mt-2")}>
+        <Icon name="shopping_cart_checkout" className="text-[18px]" />
+        {isPending ? "Starting checkout…" : `Continue to payment · ${money(total)}`}
       </button>
       {msg && <p className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-emerald-600"><Icon name="check_circle" className="text-[16px]" />{msg}</p>}
       {error && <p className="mt-3 text-sm font-medium text-red-600">{error}</p>}
