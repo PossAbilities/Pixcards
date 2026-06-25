@@ -15,6 +15,21 @@ export default async function ProfilePage() {
 
   const shareUrl = `${appUrl()}/u/${profile.username}`;
 
+  // Org link restriction (if the user belongs to an organisation).
+  const membership = await prisma.orgMember.findUnique({
+    where: { userId: user.id },
+    include: { org: { select: { allowedLinkTypes: true } } },
+  });
+  let allowedPlatforms: string[] | undefined;
+  if (membership) {
+    try {
+      const v = JSON.parse(membership.org.allowedLinkTypes || "[]") as string[];
+      if (Array.isArray(v) && v.length > 0) allowedPlatforms = v;
+    } catch {
+      /* none */
+    }
+  }
+
   return (
     <div>
       <header className="mb-6 md:mb-8">
@@ -51,7 +66,9 @@ export default async function ProfilePage() {
           label: l.label,
           url: l.url,
           icon: l.icon,
+          orgLocked: l.orgLocked,
         }))}
+        allowedPlatforms={allowedPlatforms}
       />
     </div>
   );

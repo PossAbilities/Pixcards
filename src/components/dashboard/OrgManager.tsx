@@ -10,7 +10,7 @@ import {
   inputClass,
   Label,
 } from "@/components/ui";
-import { THEMES, CARD_TEMPLATES, ORG_SEAT_PRICE_CENTS, money, material } from "@/lib/constants";
+import { THEMES, CARD_TEMPLATES, ORG_SEAT_PRICE_CENTS, money, material, PLATFORMS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import {
   createOrganisation,
@@ -25,6 +25,7 @@ import {
   openBillingPortal,
   analyzeBrandGuidelines,
   updateOrgCardOptions,
+  updateOrgLinks,
 } from "@/lib/actions/org";
 import { nfcMarkDataUrl } from "@/lib/nfc-logo";
 import { OrgCardDesigner } from "./OrgCardDesigner";
@@ -55,6 +56,8 @@ export type OrgData = {
   cardNfcLogo: boolean;
   cardDesign: string;
   cardMaterial: string;
+  sharedLinks: string;
+  allowedLinkTypes: string;
   role: "OWNER" | "ADMIN" | "MEMBER";
   planStatus: string;
   analytics: { views: number; taps: number; clicks: number };
@@ -140,6 +143,7 @@ function AdminView({ data }: { data: NonNullable<OrgData> }) {
       <BillingCard planStatus={data.planStatus} memberCount={data.members.length} />
       <AnalyticsCard a={data.analytics} memberCount={data.members.length} />
       <BrandForm data={data} />
+      <ProfileLinksCard data={data} />
       <PrintedCardCard data={data} />
       <OrgCardDesigner data={data} />
       <MembersCard data={data} />
@@ -459,6 +463,153 @@ function BrandForm({ data }: { data: NonNullable<OrgData> }) {
       <div className="mt-5 flex flex-wrap items-center gap-3">
         <button type="button" onClick={save} disabled={isPending} className={buttonClass("primary", "md")}>
           <Icon name="save" className="text-[18px]" /> Save brand
+        </button>
+        {saved && !isPending && (
+          <span className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-600">
+            <Icon name="check_circle" className="text-[16px]" /> Saved &amp; applied to all members
+          </span>
+        )}
+        {error && <span className="text-sm font-medium text-red-600">{error}</span>}
+      </div>
+    </Card>
+  );
+}
+
+type SharedLinkRow = { platform: string; label: string; url: string };
+
+function ProfileLinksCard({ data }: { data: NonNullable<OrgData> }) {
+  const initialShared: SharedLinkRow[] = (() => {
+    try {
+      const v = JSON.parse(data.sharedLinks || "[]");
+      return Array.isArray(v) ? v : [];
+    } catch {
+      return [];
+    }
+  })();
+  const initialAllowed: string[] = (() => {
+    try {
+      const v = JSON.parse(data.allowedLinkTypes || "[]");
+      return Array.isArray(v) ? v : [];
+    } catch {
+      return [];
+    }
+  })();
+
+  const [shared, setShared] = useState<SharedLinkRow[]>(initialShared);
+  const [allowed, setAllowed] = useState<string[]>(initialAllowed);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function addRow() {
+    setShared((s) => [...s, { platform: "website", label: "", url: "" }]);
+    setSaved(false);
+  }
+  function setRow(i: number, patch: Partial<SharedLinkRow>) {
+    setShared((s) => s.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
+    setSaved(false);
+  }
+  function removeRow(i: number) {
+    setShared((s) => s.filter((_, idx) => idx !== i));
+    setSaved(false);
+  }
+  function toggleAllowed(id: string) {
+    setAllowed((a) => (a.includes(id) ? a.filter((x) => x !== id) : [...a, id]));
+    setSaved(false);
+  }
+
+  function save() {
+    setError(null);
+    setSaved(false);
+    const cleaned = shared
+      .map((r) => ({ ...r, url: r.url.trim(), label: r.label.trim() }))
+      .filter((r) => r.url);
+    startTransition(async () => {
+      const res = await updateOrgLinks({ sharedLinks: cleaned, allowedLinkTypes: allowed });
+      if (res.ok) setSaved(true);
+      else setError(res.error ?? "Could not save.");
+    });
+  }
+
+  return (
+    <Card className="p-6">
+      <SectionHeading icon="link" title="Profile buttons & links" />
+      <p className="-mt-1 mb-4 text-sm text-muted">
+        Shared links appear on <strong>every</strong> member&apos;s profile and
+        can&apos;t be removed by them. Allowed types are the extra links members
+        may add themselves.
+      </p>
+
+      {/* Shared (locked) links */}
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-faint">
+        Shared links (on every card)
+      </p>
+      <div className="space-y-2">
+        {shared.length === 0 && (
+          <p className="text-sm text-muted">No shared links yet.</p>
+        )}
+        {shared.map((row, i) => (
+          <div key={i} className="flex flex-wrap items-center gap-2">
+            <select
+              value={row.platform}
+              onChange={(e) => setRow(i, { platform: e.target.value })}
+              className={cn(inputClass, "w-36")}
+            >
+              {PLATFORMS.map((p) => (
+                <option key={p.id} value={p.id}>{p.label}</option>
+              ))}
+            </select>
+            <input
+              value={row.label}
+              onChange={(e) => setRow(i, { label: e.target.value })}
+              placeholder="Label (optional)"
+              className={cn(inputClass, "w-40")}
+            />
+            <input
+              value={row.url}
+              onChange={(e) => setRow(i, { url: e.target.value })}
+              placeholder="https://…"
+              className={cn(inputClass, "min-w-0 flex-1")}
+            />
+            <button type="button" onClick={() => removeRow(i)} className="rounded p-1.5 text-red-600 hover:bg-red-50" title="Remove">
+              <Icon name="delete" className="text-[18px]" />
+            </button>
+          </div>
+        ))}
+      </div>
+      <button type="button" onClick={addRow} className={buttonClass("outline", "sm", "mt-2")}>
+        <Icon name="add" className="text-[16px]" /> Add shared link
+      </button>
+
+      {/* Allowed member-added types */}
+      <p className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wide text-faint">
+        Links members may add themselves
+      </p>
+      <p className="mb-2 text-xs text-muted">
+        Tick the types members can add. Leave all unticked to allow everything.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {PLATFORMS.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            onClick={() => toggleAllowed(p.id)}
+            className={cn(
+              "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition",
+              allowed.includes(p.id)
+                ? "border-primary bg-primary-soft/40 text-primary-deep"
+                : "border-outline text-muted hover:border-primary/40",
+            )}
+          >
+            <Icon name={p.icon} className="text-[14px]" />
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-5 flex flex-wrap items-center gap-3">
+        <button type="button" onClick={save} disabled={isPending} className={buttonClass("primary", "md")}>
+          <Icon name="save" className="text-[18px]" /> Save links
         </button>
         {saved && !isPending && (
           <span className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-600">

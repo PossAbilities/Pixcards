@@ -40,6 +40,10 @@ model Organisation {
   // Bake the org brand colours onto printed team cards, and/or the NFC logo.
   cardUseBrand Boolean @default(true)
   cardNfcLogo  Boolean @default(false)
+  // Shared profile links pushed to every member (JSON [{platform,label,url}]),
+  // and the link types members may add themselves (JSON [platformId]; "" = all).
+  sharedLinks      String @default("[]")
+  allowedLinkTypes String @default("")
 
   // Per-seat billing (soft-enforced).
   stripeCustomerId     String?
@@ -205,6 +209,8 @@ model Link {
   icon     String  @default("link")
   position Int     @default(0)
   active   Boolean @default(true)
+  // Pushed by the organisation — the member can't edit or remove it.
+  orgLocked Boolean @default(false)
 
   events    AnalyticsEvent[]
   createdAt DateTime         @default(now())

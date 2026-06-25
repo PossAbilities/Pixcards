@@ -54,22 +54,26 @@ type ProfileState = {
 };
 
 type LinkDraft = { platform: string; label: string; url: string };
+export type EditorLink = CardLink & { orgLocked?: boolean };
 
 export function ProfileEditor({
   plan,
   shareUrl,
   profile,
   links: initialLinks,
+  allowedPlatforms,
 }: {
   plan: Plan;
   shareUrl: string;
   profile: ProfileState;
-  links: CardLink[];
+  links: EditorLink[];
+  /** When set, members may only add these link types (org restriction). */
+  allowedPlatforms?: string[];
 }) {
   const isPro = plan === "PRO";
 
   const [form, setForm] = useState<ProfileState>(profile);
-  const [links, setLinks] = useState<CardLink[]>(initialLinks);
+  const [links, setLinks] = useState<EditorLink[]>(initialLinks);
   const [toast, setToast] = useState<ToastState>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -283,6 +287,7 @@ export function ProfileEditor({
           startTransition={startTransition}
           isPending={isPending}
           showToast={showToast}
+          allowedPlatforms={allowedPlatforms}
         />
 
         {/* Layout template */}
@@ -595,13 +600,15 @@ function LinksCard({
   startTransition,
   isPending,
   showToast,
+  allowedPlatforms,
 }: {
-  links: CardLink[];
-  setLinks: React.Dispatch<React.SetStateAction<CardLink[]>>;
+  links: EditorLink[];
+  setLinks: React.Dispatch<React.SetStateAction<EditorLink[]>>;
   isPro: boolean;
   startTransition: React.TransitionStartFunction;
   isPending: boolean;
   showToast: (m: string, k: "success" | "error") => void;
+  allowedPlatforms?: string[];
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -707,6 +714,7 @@ function LinksCard({
           onSubmit={submitAdd}
           onCancel={() => setAdding(false)}
           disabled={isPending}
+          allowedPlatforms={allowedPlatforms}
         />
       )}
 
@@ -717,7 +725,7 @@ function LinksCard({
           </p>
         )}
         {links.map((link) =>
-          editingId === link.id ? (
+          editingId === link.id && !link.orgLocked ? (
             <LinkForm
               key={link.id}
               initial={{
@@ -728,6 +736,7 @@ function LinksCard({
               onSubmit={(d) => submitEdit(link.id, d)}
               onCancel={() => setEditingId(null)}
               disabled={isPending}
+              allowedPlatforms={allowedPlatforms}
             />
           ) : (
             <div
@@ -741,26 +750,35 @@ function LinksCard({
                 </p>
                 <p className="text-xs text-faint truncate">{link.url}</p>
               </div>
-              <button
-                type="button"
-                aria-label="Edit link"
-                onClick={() => {
-                  setEditingId(link.id);
-                  setAdding(false);
-                }}
-                className="grid place-items-center w-8 h-8 rounded-lg text-muted hover:bg-surface-high hover:text-ink"
-              >
-                <Icon name="edit" className="text-[18px]" />
-              </button>
-              <button
-                type="button"
-                aria-label="Delete link"
-                onClick={() => remove(link.id)}
-                disabled={isPending}
-                className="grid place-items-center w-8 h-8 rounded-lg text-muted hover:bg-red-50 hover:text-red-600"
-              >
-                <Icon name="delete" className="text-[18px]" />
-              </button>
+              {link.orgLocked ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-surface-high px-2.5 py-1 text-[11px] font-medium text-muted">
+                  <Icon name="lock" className="text-[14px]" />
+                  Team link
+                </span>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    aria-label="Edit link"
+                    onClick={() => {
+                      setEditingId(link.id);
+                      setAdding(false);
+                    }}
+                    className="grid place-items-center w-8 h-8 rounded-lg text-muted hover:bg-surface-high hover:text-ink"
+                  >
+                    <Icon name="edit" className="text-[18px]" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Delete link"
+                    onClick={() => remove(link.id)}
+                    disabled={isPending}
+                    className="grid place-items-center w-8 h-8 rounded-lg text-muted hover:bg-red-50 hover:text-red-600"
+                  >
+                    <Icon name="delete" className="text-[18px]" />
+                  </button>
+                </>
+              )}
             </div>
           ),
         )}
@@ -781,14 +799,21 @@ function LinkForm({
   onSubmit,
   onCancel,
   disabled,
+  allowedPlatforms,
 }: {
   initial?: LinkDraft;
   onSubmit: (draft: LinkDraft) => void;
   onCancel: () => void;
   disabled?: boolean;
+  allowedPlatforms?: string[];
 }) {
+  // Restrict to the org's allowed types when set (always keep the current one).
+  const palette =
+    allowedPlatforms && allowedPlatforms.length > 0
+      ? PLATFORMS.filter((pl) => allowedPlatforms.includes(pl.id))
+      : PLATFORMS;
   const [draft, setDraft] = useState<LinkDraft>(
-    initial ?? { platform: "website", label: "Website", url: "" },
+    initial ?? { platform: palette[0]?.id ?? "website", label: palette[0]?.label ?? "Website", url: "" },
   );
   const p = platform(draft.platform);
 
@@ -814,7 +839,7 @@ function LinkForm({
       <div>
         <Label>Platform</Label>
         <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 mt-1">
-          {PLATFORMS.map((pl) => {
+          {palette.map((pl) => {
             const active = pl.id === draft.platform;
             return (
               <button

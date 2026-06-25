@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { getSessionUser, hashPassword } from "@/lib/auth";
 import { slugify } from "@/lib/utils";
-import { appUrl, material } from "@/lib/constants";
+import { appUrl, material, platform } from "@/lib/constants";
 import { generateCardCode } from "@/lib/cards";
 import { stripe, stripeEnabled } from "@/lib/stripe";
 import { sendOrgInvite } from "@/lib/email/dispatch";
@@ -63,6 +63,74 @@ async function applyBranding(orgId: string) {
       }),
     ),
   );
+}
+
+type SharedLink = { platform: string; label: string; url: string };
+
+function parseSharedLinks(json: string): SharedLink[] {
+  try {
+    const v = JSON.parse(json) as SharedLink[];
+    if (Array.isArray(v)) {
+      return v
+        .filter((l) => l && typeof l.url === "string" && l.url.trim())
+        .slice(0, 12)
+        .map((l) => ({
+          platform: String(l.platform || "custom"),
+          label: String(l.label || "").slice(0, 60),
+          url: String(l.url).slice(0, 400),
+        }));
+    }
+  } catch {
+    /* ignore */
+  }
+  return [];
+}
+
+/** Replace every member's org-locked links with the org's shared links. */
+async function syncSharedLinksToMember(userId: string, links: SharedLink[]) {
+  const profile = await prisma.profile.findUnique({ where: { userId }, select: { id: true } });
+  if (!profile) return;
+  await prisma.link.deleteMany({ where: { profileId: profile.id, orgLocked: true } });
+  if (links.length === 0) return;
+  await prisma.link.createMany({
+    data: links.map((l, i) => ({
+      profileId: profile.id,
+      platform: l.platform,
+      label: l.label || platform(l.platform).label,
+      url: l.url,
+      icon: platform(l.platform).icon,
+      position: i,
+      orgLocked: true,
+    })),
+  });
+}
+
+async function syncSharedLinksToOrg(orgId: string, links: SharedLink[]) {
+  const members = await prisma.orgMember.findMany({ where: { orgId }, select: { userId: true } });
+  await Promise.all(members.map((m) => syncSharedLinksToMember(m.userId, links)));
+}
+
+/** Admin sets the shared (locked) links and the member-addable link types. */
+export async function updateOrgLinks(input: {
+  sharedLinks: SharedLink[];
+  allowedLinkTypes: string[];
+}): Promise<OrgResult> {
+  const { org } = await requireOrg(true);
+  const shared = parseSharedLinks(JSON.stringify(input.sharedLinks ?? []));
+  const allowed = Array.isArray(input.allowedLinkTypes)
+    ? input.allowedLinkTypes.map(String).slice(0, 30)
+    : [];
+  await prisma.organisation.update({
+    where: { id: org.id },
+    data: {
+      sharedLinks: JSON.stringify(shared),
+      allowedLinkTypes: JSON.stringify(allowed),
+    },
+  });
+  await syncSharedLinksToOrg(org.id, shared);
+  revalidatePath("/dashboard/org");
+  revalidatePath("/dashboard");
+  return { ok: true };
 }
 
 export async function createOrganisation(name: string): Promise<OrgResult> {
@@ -252,7 +320,7 @@ export async function addMemberDirect(input: {
   // Random password — the member can set their own via 'forgot password'.
   const passwordHash = await hashPassword(crypto.randomBytes(18).toString("base64url"));
 
-  await prisma.user.create({
+  const created = await prisma.user.create({
     data: {
       name,
       email,
@@ -273,6 +341,7 @@ export async function addMemberDirect(input: {
       orgMembership: { create: { orgId: org.id, role: "MEMBER" } },
     },
   });
+  await syncSharedLinksToMember(created.id, parseSharedLinks(org.sharedLinks));
   revalidatePath("/dashboard/org");
   return { ok: true };
 }
@@ -354,6 +423,7 @@ export async function acceptOrgInvite(rawToken: string): Promise<OrgResult> {
       },
     }),
   ]);
+  await syncSharedLinksToMember(user.id, parseSharedLinks(invite.org.sharedLinks));
   revalidatePath("/dashboard/org");
   return { ok: true };
 }

@@ -22,6 +22,21 @@ async function myProfile() {
   return { user, profile };
 }
 
+/** The link types this user is allowed to add (null = no org restriction). */
+async function allowedLinkTypes(userId: string): Promise<string[] | null> {
+  const m = await prisma.orgMember.findUnique({
+    where: { userId },
+    include: { org: { select: { allowedLinkTypes: true } } },
+  });
+  if (!m) return null;
+  try {
+    const v = JSON.parse(m.org.allowedLinkTypes || "[]") as string[];
+    return Array.isArray(v) && v.length > 0 ? v : null;
+  } catch {
+    return null;
+  }
+}
+
 const profileSchema = z.object({
   name: z.string().min(1).max(60),
   jobTitle: z.string().max(80).optional().default(""),
@@ -161,6 +176,14 @@ export async function addLink(formData: FormData): Promise<ActionResult> {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid link" };
   }
 
+  const allowed = await allowedLinkTypes(user.id);
+  if (allowed && !allowed.includes(parsed.data.platform)) {
+    return {
+      ok: false,
+      error: "Your organisation doesn't allow that link type on team cards.",
+    };
+  }
+
   const count = await prisma.link.count({ where: { profileId: profile.id } });
   if (user.plan !== "PRO" && count >= FREE_LINK_LIMIT) {
     return {
@@ -193,6 +216,9 @@ export async function updateLink(
     where: { id, profileId: profile.id },
   });
   if (!link) return { ok: false, error: "Link not found." };
+  if (link.orgLocked) {
+    return { ok: false, error: "This link is managed by your organisation." };
+  }
   const parsed = linkSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid link" };
@@ -213,7 +239,9 @@ export async function updateLink(
 
 export async function deleteLink(id: string): Promise<ActionResult> {
   const { profile } = await myProfile();
-  await prisma.link.deleteMany({ where: { id, profileId: profile.id } });
+  await prisma.link.deleteMany({
+    where: { id, profileId: profile.id, orgLocked: false },
+  });
   revalidatePath(`/u/${profile.username}`);
   return { ok: true };
 }

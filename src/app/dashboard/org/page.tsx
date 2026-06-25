@@ -74,6 +74,8 @@ export default async function OrgPage() {
       cardNfcLogo: myOrg.cardNfcLogo,
       cardDesign: myOrg.cardDesign,
       cardMaterial: myOrg.cardMaterial,
+      sharedLinks: myOrg.sharedLinks,
+      allowedLinkTypes: myOrg.allowedLinkTypes,
       role: myOrg.role,
       planStatus: myOrg.planStatus,
       analytics: { views, taps, clicks },
