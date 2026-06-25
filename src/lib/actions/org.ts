@@ -8,6 +8,7 @@ import { slugify } from "@/lib/utils";
 import { appUrl, material, platform } from "@/lib/constants";
 import { generateCardCode } from "@/lib/cards";
 import { stripe, stripeEnabled } from "@/lib/stripe";
+import { validateDiscount, recordRedemption } from "@/lib/discounts";
 import { sendOrgInvite } from "@/lib/email/dispatch";
 import { recordEvent } from "@/lib/events";
 import { analyzeBrand, brandAnalysisEnabled, type BrandSuggestion } from "@/lib/brand-analyze";
@@ -544,6 +545,7 @@ export async function orderTeamCards(input: {
   shipCity: string;
   shipPostal: string;
   shipCountry: string;
+  discountCode?: string;
 }): Promise<BillingResult> {
   const { org, user } = await requireOrg(true);
   const members = await prisma.orgMember.findMany({
@@ -568,7 +570,19 @@ export async function orderTeamCards(input: {
   }
 
   const mat = material(org.cardMaterial);
-  const priceCents = mat.priceCents * members.length;
+  let priceCents = mat.priceCents * members.length;
+
+  // Optional discount code.
+  let redemption: { codeId: string; amountOffCents: number } | null = null;
+  if (input.discountCode?.trim()) {
+    const res = await validateDiscount(input.discountCode, "CARD", priceCents, user.id);
+    if (!res.valid) {
+      return { ok: false, error: res.reason ?? "That code isn't valid." };
+    }
+    priceCents = res.finalCents;
+    redemption = { codeId: res.codeId, amountOffCents: res.amountOffCents };
+  }
+
   const order = await prisma.order.create({
     data: {
       userId: user.id,
@@ -629,7 +643,16 @@ export async function orderTeamCards(input: {
           },
         },
       ],
-      metadata: { kind: "order", orderId: order.id },
+      metadata: {
+        kind: "order",
+        orderId: order.id,
+        ...(redemption
+          ? {
+              discountCodeId: redemption.codeId,
+              discountAmount: String(redemption.amountOffCents),
+            }
+          : {}),
+      },
       success_url: `${appUrl()}/dashboard/org?ordered=1`,
       cancel_url: `${appUrl()}/dashboard/org?cancelled=1`,
     });
@@ -641,8 +664,11 @@ export async function orderTeamCards(input: {
     return { ok: true, url: session.url ?? undefined };
   }
 
-  // Demo mode (no Stripe) — mark paid so the flow is testable.
+  // Demo mode (or fully discounted) — mark paid so the flow is testable.
   await prisma.order.update({ where: { id: order.id }, data: { status: "PAID" } });
+  if (redemption) {
+    await recordRedemption(redemption.codeId, user.id, "order", redemption.amountOffCents);
+  }
   revalidatePath("/dashboard/org");
   return { ok: true };
 }

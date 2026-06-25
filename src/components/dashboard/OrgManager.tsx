@@ -27,6 +27,7 @@ import {
   updateOrgCardOptions,
   updateOrgLinks,
 } from "@/lib/actions/org";
+import { previewDiscount } from "@/lib/actions/discounts";
 import { nfcMarkDataUrl } from "@/lib/nfc-logo";
 import { OrgCardDesigner } from "./OrgCardDesigner";
 
@@ -915,6 +916,10 @@ function TeamOrderCard({ data }: { data: NonNullable<OrgData> }) {
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [code, setCode] = useState("");
+  const [discount, setDiscount] = useState<{ off: number; final: number } | null>(null);
+  const [codeMsg, setCodeMsg] = useState<string | null>(null);
+  const [codeChecking, setCodeChecking] = useState(false);
 
   // Same auto-design that gets baked onto each card, so they can confirm it.
   const cardBg = data.cardUseBrand && data.brandHeader ? data.brandHeader : data.accentColor;
@@ -928,6 +933,27 @@ function TeamOrderCard({ data }: { data: NonNullable<OrgData> }) {
     .map((m) => m.name);
   const unitPrice = material(data.cardMaterial).priceCents;
   const total = unitPrice * selected.size;
+  const payable = discount ? discount.final : total;
+
+  function applyCode() {
+    setCodeMsg(null);
+    if (!code.trim()) {
+      setDiscount(null);
+      return;
+    }
+    setCodeChecking(true);
+    startTransition(async () => {
+      const res = await previewDiscount(code, "CARD", total);
+      setCodeChecking(false);
+      if (res.ok) {
+        setDiscount({ off: res.amountOffCents ?? 0, final: res.finalCents ?? total });
+        setCodeMsg(`Code applied — you save ${money(res.amountOffCents ?? 0)}.`);
+      } else {
+        setDiscount(null);
+        setCodeMsg(res.reason ?? "That code isn't valid.");
+      }
+    });
+  }
 
   function toggle(id: string) {
     setSelected((s) => {
@@ -936,6 +962,9 @@ function TeamOrderCard({ data }: { data: NonNullable<OrgData> }) {
       else n.add(id);
       return n;
     });
+    // Total changed — a previewed discount is no longer accurate.
+    setDiscount(null);
+    setCodeMsg(null);
   }
 
   function place() {
@@ -949,6 +978,7 @@ function TeamOrderCard({ data }: { data: NonNullable<OrgData> }) {
         shipCity,
         shipPostal,
         shipCountry: "United Kingdom",
+        discountCode: discount ? code.trim() : undefined,
       });
       if (res.ok && res.url) window.location.href = res.url;
       else if (res.ok) setMsg("Team order placed — cards are pre-linked to each member and ready to fulfil.");
@@ -1022,6 +1052,29 @@ function TeamOrderCard({ data }: { data: NonNullable<OrgData> }) {
         <input value={shipCity} onChange={(e) => setShipCity(e.target.value)} placeholder="City" className={inputClass} />
         <input value={shipPostal} onChange={(e) => setShipPostal(e.target.value)} placeholder="Postcode" className={inputClass} />
       </div>
+      {/* Discount code */}
+      <div className="mt-3">
+        <Label htmlFor="team-discount">Discount code</Label>
+        <div className="mt-1 flex gap-2">
+          <input
+            id="team-discount"
+            value={code}
+            onChange={(e) => { setCode(e.target.value); setDiscount(null); setCodeMsg(null); }}
+            placeholder="Enter a code (optional)"
+            className={cn(inputClass, "flex-1")}
+          />
+          <button type="button" onClick={applyCode} disabled={codeChecking || !code.trim()}
+            className={buttonClass("outline", "md")}>
+            {codeChecking ? "Checking…" : "Apply"}
+          </button>
+        </div>
+        {codeMsg && (
+          <p className={cn("mt-1.5 text-sm font-medium", discount ? "text-emerald-600" : "text-red-600")}>
+            {codeMsg}
+          </p>
+        )}
+      </div>
+
       <label className="mt-3 flex cursor-pointer items-start gap-2 text-sm text-ink">
         <input
           type="checkbox"
@@ -1032,14 +1085,21 @@ function TeamOrderCard({ data }: { data: NonNullable<OrgData> }) {
         <span>I&apos;ve reviewed the card design above and want to order it.</span>
       </label>
       <p className="mt-3 text-sm text-muted">
-        {selected.size} {selected.size === 1 ? "card" : "cards"} ×{" "}
-        {money(unitPrice)} = <strong className="text-ink">{money(total)}</strong>.
-        You&apos;ll be taken to secure checkout to pay.
+        {selected.size} {selected.size === 1 ? "card" : "cards"} × {money(unitPrice)} ={" "}
+        {discount ? (
+          <>
+            <span className="line-through">{money(total)}</span>{" "}
+            <strong className="text-ink">{money(payable)}</strong>
+          </>
+        ) : (
+          <strong className="text-ink">{money(total)}</strong>
+        )}
+        . You&apos;ll be taken to secure checkout to pay.
       </p>
       <button type="button" onClick={place} disabled={isPending || selected.size === 0 || !confirmed || missingTitle.length > 0}
         className={buttonClass("primary", "md", "mt-2")}>
         <Icon name="shopping_cart_checkout" className="text-[18px]" />
-        {isPending ? "Starting checkout…" : `Continue to payment · ${money(total)}`}
+        {isPending ? "Starting checkout…" : `Continue to payment · ${money(payable)}`}
       </button>
       {msg && <p className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-emerald-600"><Icon name="check_circle" className="text-[16px]" />{msg}</p>}
       {error && <p className="mt-3 text-sm font-medium text-red-600">{error}</p>}
