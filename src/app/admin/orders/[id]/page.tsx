@@ -214,6 +214,16 @@ export default async function AdminOrderDetailPage({
                             className="block aspect-[1013/638] w-full object-contain"
                           />
                         </div>
+                        <a
+                          href={`/api/card-art/${c.id}?side=${side}`}
+                          download={`card-${c.code}-${side}.png`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={buttonClass("outline", "sm", "mt-2 w-full")}
+                        >
+                          <Icon name="download" className="text-[16px]" />
+                          Download {side} PNG
+                        </a>
                       </div>
                     ))}
                   </div>
