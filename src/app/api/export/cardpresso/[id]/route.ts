@@ -3,6 +3,7 @@ import JSZip from "jszip";
 import { prisma } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
 import { appUrl } from "@/lib/constants";
+import { renderMemberCardPng } from "@/lib/card-artwork";
 
 export const runtime = "nodejs";
 
@@ -64,11 +65,6 @@ export async function GET(
   }
 
   const zip = new JSZip();
-  const front = await toBytes(design.frontImage);
-  const back = await toBytes(design.backImage);
-  if (front) zip.file("front.png", front);
-  if (back) zip.file("back.png", back);
-
   const base = appUrl();
   const header = [
     "Code",
@@ -76,39 +72,56 @@ export async function GET(
     "JobTitle",
     "Company",
     "ProfileURL",
-    "FrontImage",
-    "BackImage",
+    "Print",
+    "Back",
   ].join(",");
-
-  // One row per pre-linked card (team order), or a single row for the order.
   const rows: string[] = [];
-  const list =
-    order.cards.length > 0
-      ? order.cards.map((c) => ({
-          code: c.code,
-          name: c.user?.name ?? order.user.name,
-          jobTitle: c.user?.profile?.jobTitle ?? "",
-          company: c.user?.profile?.company ?? "",
-          username: c.user?.profile?.username ?? order.user.profile?.username ?? "",
-        }))
-      : [
-          {
-            code: "",
-            name: order.user.name,
-            jobTitle: order.user.profile?.jobTitle ?? "",
-            company: order.user.profile?.company ?? "",
-            username: order.user.profile?.username ?? "",
-          },
-        ];
 
-  for (const r of list) {
+  if (order.cards.length > 0) {
+    // Team order — bake a print-ready PNG per member (name/role/QR included).
+    for (const c of order.cards) {
+      const p = c.user?.profile;
+      const username = p?.username ?? "";
+      const profileUrl = username ? `${base}/u/${username}` : base;
+      const file = `card-${c.code}.png`;
+      try {
+        const png = await renderMemberCardPng({
+          name: c.user?.name ?? order.user.name,
+          jobTitle: p?.jobTitle,
+          company: p?.company,
+          accentColor: p?.accentColor ?? "#4f46e5",
+          profileUrl,
+        });
+        zip.file(file, png);
+      } catch {
+        /* skip this member's image, keep the row */
+      }
+      rows.push(
+        [
+          csvCell(c.code),
+          csvCell(c.user?.name ?? ""),
+          csvCell(p?.jobTitle ?? ""),
+          csvCell(p?.company ?? ""),
+          csvCell(username ? profileUrl : ""),
+          csvCell(file),
+          csvCell(""),
+        ].join(","),
+      );
+    }
+  } else {
+    // Single order — use the artwork designed in the studio.
+    const front = await toBytes(design.frontImage);
+    const back = await toBytes(design.backImage);
+    if (front) zip.file("front.png", front);
+    if (back) zip.file("back.png", back);
+    const p = order.user.profile;
     rows.push(
       [
-        csvCell(r.code),
-        csvCell(r.name),
-        csvCell(r.jobTitle),
-        csvCell(r.company),
-        csvCell(r.username ? `${base}/u/${r.username}` : ""),
+        csvCell(""),
+        csvCell(order.user.name),
+        csvCell(p?.jobTitle ?? ""),
+        csvCell(p?.company ?? ""),
+        csvCell(p?.username ? `${base}/u/${p.username}` : ""),
         csvCell(front ? "front.png" : ""),
         csvCell(back ? "back.png" : ""),
       ].join(","),
@@ -121,12 +134,20 @@ export async function GET(
     [
       "Pixcards → CardPresso export",
       "",
+      "This folder contains a print-ready card image per person plus a",
+      "cards.csv database to batch-print them in CardPresso.",
+      "",
+      "Quickest (use the baked images):",
       "1. Unzip this folder.",
-      "2. In CardPresso: Database → connect → choose cards.csv.",
-      "3. Map the text fields (Name, JobTitle, Company) to your card design,",
-      "   add a QR field linked to ProfileURL, and link the image field to",
-      "   the FrontImage / BackImage column (the PNGs are in this folder).",
-      "4. Print → it batches every row as a card.",
+      "2. New CardPresso card at CR80 size (with bleed).",
+      "3. Database -> connect -> cards.csv.",
+      "4. Add a single full-card image field and link it to the 'Print'",
+      "   column (the card-*.png files already have each person's name,",
+      "   role and QR baked in).",
+      "5. Print -> it batches every row.",
+      "",
+      "Or build your own design and use the text columns (Name, JobTitle,",
+      "Company) + a QR field linked to ProfileURL.",
     ].join("\n"),
   );
 
