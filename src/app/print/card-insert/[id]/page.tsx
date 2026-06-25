@@ -20,8 +20,18 @@ const LINE = "#e6e8ea";
 
 const printCss = `
   @page { size: A5 portrait; margin: 0; }
+  /* Force background colours/gradients to print (browsers drop them otherwise). */
+  .pc-sheet, .pc-sheet * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
   @media print {
-    html, body { margin: 0 !important; background: #fff !important; }
+    html, body {
+      margin: 0 !important;
+      background: #fff !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
     .pc-toolbar { display: none !important; }
     .pc-stage { background: #fff !important; padding: 0 !important; }
     .pc-sheet { box-shadow: none !important; margin: 0 !important; page-break-after: always; }
