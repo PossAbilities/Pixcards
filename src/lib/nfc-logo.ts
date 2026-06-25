@@ -10,10 +10,17 @@
 export function nfcMarkSvg(opts?: {
   color?: string;
   label?: boolean;
+  /** Pre-rendered SVG for the "NFC" label (e.g. a font path) — used server-side
+   *  where no system font exists. When omitted, a <text> element is used. */
+  labelSvg?: string;
 }): string {
   const color = opts?.color ?? "#ffffff";
   const label = opts?.label ?? true;
   const h = label ? 150 : 124;
+  const labelMarkup = label
+    ? opts?.labelSvg ??
+      `<text x="60" y="146" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-weight="700" font-size="24" letter-spacing="1" fill="${color}">NFC</text>`
+    : "";
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 ${h}" width="120" height="${h}">
   <g fill="none" stroke="${color}" stroke-width="9" stroke-linecap="round">
     <path d="M34 50 A20 20 0 0 1 34 90"/>
@@ -21,11 +28,7 @@ export function nfcMarkSvg(opts?: {
     <path d="M34 20 A50 50 0 0 1 34 120"/>
   </g>
   <circle cx="30" cy="70" r="7.5" fill="${color}"/>
-  ${
-    label
-      ? `<text x="60" y="146" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-weight="700" font-size="24" letter-spacing="1" fill="${color}">NFC</text>`
-      : ""
-  }
+  ${labelMarkup}
 </svg>`;
 }
 

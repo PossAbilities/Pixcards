@@ -2,12 +2,22 @@ import "server-only";
 import sharp from "sharp";
 import QRCode from "qrcode";
 import { nfcMarkSvg } from "@/lib/nfc-logo";
+import { textPath } from "@/lib/text-render";
 import {
   applyMerge,
   type CardTemplateSpec,
   type MergeData,
   type SideSpec,
 } from "@/lib/card-template";
+
+/** NFC mark with the "NFC" label rendered as a font path (server-safe). */
+function nfcMark(ink: string): string {
+  return nfcMarkSvg({
+    color: ink,
+    label: true,
+    labelSvg: textPath({ text: "NFC", x: 60, y: 146, fontSize: 24, color: ink, align: "center", bold: true }),
+  });
+}
 
 // ~CR80 at 300 DPI (85.6 × 54 mm).
 const W = 1013;
@@ -21,13 +31,6 @@ function dataUrlToBuffer(value?: string): Buffer | null {
   return m[1]
     ? Buffer.from(m[2], "base64")
     : Buffer.from(decodeURIComponent(m[2]), "utf8");
-}
-
-function esc(s: string): string {
-  return (s || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
 }
 
 /**
@@ -85,16 +88,16 @@ export async function renderMemberCardPng(opts: {
   const ink = grad ? "#ffffff" : readableInk(accent);
   const fade = ink === "#ffffff" ? "0.92" : "0.78";
 
-  const sub = [opts.jobTitle, opts.company]
-    .filter((x): x is string => Boolean(x))
-    .map(esc);
+  const subs = [opts.jobTitle, opts.company].filter(
+    (x): x is string => Boolean(x && x.trim()),
+  );
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
     ${grad ? `<defs>${grad}</defs>` : ""}
     <rect width="${W}" height="${H}" fill="${fill}"/>
-    <text x="64" y="${H - 150}" font-family="Helvetica, Arial, sans-serif" font-size="62" font-weight="700" fill="${ink}">${esc(opts.name)}</text>
-    ${sub[0] ? `<text x="66" y="${H - 98}" font-family="Helvetica, Arial, sans-serif" font-size="33" fill="${ink}" fill-opacity="${fade}">${sub[0]}</text>` : ""}
-    ${sub[1] ? `<text x="66" y="${H - 54}" font-family="Helvetica, Arial, sans-serif" font-size="33" fill="${ink}" fill-opacity="${fade}">${sub[1]}</text>` : ""}
+    ${textPath({ text: opts.name, x: 64, y: H - 150, fontSize: 62, color: ink, bold: true })}
+    ${subs[0] ? textPath({ text: subs[0], x: 66, y: H - 98, fontSize: 33, color: ink, opacity: Number(fade) }) : ""}
+    ${subs[1] ? textPath({ text: subs[1], x: 66, y: H - 54, fontSize: 33, color: ink, opacity: Number(fade) }) : ""}
   </svg>`;
 
   const base = await sharp(Buffer.from(svg)).png().toBuffer();
@@ -110,7 +113,7 @@ export async function renderMemberCardPng(opts: {
 
   if (opts.nfcLogo) {
     const markH = 150;
-    const mark = await sharp(Buffer.from(nfcMarkSvg({ color: ink, label: true })))
+    const mark = await sharp(Buffer.from(nfcMark(ink)))
       .resize({ height: markH })
       .png()
       .toBuffer();
@@ -152,16 +155,22 @@ export async function renderTemplateSidePng(
     const h = Math.max(1, Math.round(el.h * H));
 
     if (el.kind === "text") {
-      const content = esc(applyMerge(el.text ?? "", merge));
+      const content = applyMerge(el.text ?? "", merge);
       if (!content) continue;
       const size = Math.round(el.fontSize ?? 34);
-      const weight = el.fontWeight ?? 600;
       const color = el.color ?? "#ffffff";
-      const anchor = el.align === "center" ? "middle" : el.align === "right" ? "end" : "start";
       const tx = el.align === "center" ? left + w / 2 : el.align === "right" ? left + w : left;
       const ty = top + size; // baseline
       textParts.push(
-        `<text x="${tx}" y="${ty}" font-family="Helvetica, Arial, sans-serif" font-size="${size}" font-weight="${weight}" fill="${color}" text-anchor="${anchor}">${content}</text>`,
+        textPath({
+          text: content,
+          x: tx,
+          y: ty,
+          fontSize: size,
+          color,
+          align: el.align ?? "left",
+          bold: (el.fontWeight ?? 600) >= 700,
+        }),
       );
     } else if (el.kind === "image") {
       const buf = dataUrlToBuffer(el.src);
@@ -180,7 +189,7 @@ export async function renderTemplateSidePng(
       layers.push({ input: qr, top, left });
     } else if (el.kind === "nfc") {
       const mark = await sharp(
-        Buffer.from(nfcMarkSvg({ color: el.nfcColor ?? "#ffffff", label: true })),
+        Buffer.from(nfcMark(el.nfcColor ?? "#ffffff")),
       )
         .resize({ height: h })
         .png()
@@ -249,19 +258,19 @@ async function renderAutoBackPng(opts: {
   const grad = gradientDef(opts.brandHeader ?? undefined, "bg");
   const fill = grad ? "url(#bg)" : accent;
   const ink = grad ? "#ffffff" : readableInk(accent);
-  const title = esc(opts.company || opts.name);
+  const title = opts.company || opts.name;
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
     ${grad ? `<defs>${grad}</defs>` : ""}
     <rect width="${W}" height="${H}" fill="${fill}"/>
-    <text x="${W / 2}" y="${H / 2 - 6}" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="56" font-weight="800" fill="${ink}">${title}</text>
-    <text x="${W / 2}" y="${H / 2 + 52}" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="28" fill="${ink}" fill-opacity="0.8">Tap to connect</text>
+    ${textPath({ text: title, x: W / 2, y: H / 2 - 6, fontSize: 56, color: ink, align: "center", bold: true })}
+    ${textPath({ text: "Tap to connect", x: W / 2, y: H / 2 + 52, fontSize: 28, color: ink, align: "center", opacity: 0.8 })}
   </svg>`;
   const base = await sharp(Buffer.from(svg)).png().toBuffer();
 
   if (opts.nfcLogo) {
     const markH = 150;
-    const mark = await sharp(Buffer.from(nfcMarkSvg({ color: ink, label: true })))
+    const mark = await sharp(Buffer.from(nfcMark(ink)))
       .resize({ height: markH })
       .png()
       .toBuffer();
