@@ -767,7 +767,13 @@ function TeamOrderCard({ data }: { data: NonNullable<OrgData> }) {
   // Same auto-design that gets baked onto each card, so they can confirm it.
   const cardBg = data.cardUseBrand && data.brandHeader ? data.brandHeader : data.accentColor;
   const nfcSrc = nfcMarkDataUrl({ color: "#ffffff", label: true });
-  const sampleName = members.find((m) => selected.has(m.id))?.name ?? "Member name";
+  const sampleMember = members.find((m) => selected.has(m.id));
+  const sampleName = sampleMember?.name ?? "Member name";
+  const sampleTitle = sampleMember?.jobTitle ?? "";
+  // Selected members with no job title — their card prints without a role.
+  const missingTitle = members
+    .filter((m) => selected.has(m.id) && !m.jobTitle.trim())
+    .map((m) => m.name);
 
   function toggle(id: string) {
     setSelected((s) => {
@@ -815,6 +821,7 @@ function TeamOrderCard({ data }: { data: NonNullable<OrgData> }) {
           >
             <div className="absolute bottom-3 left-3">
               <p className="text-base font-bold leading-tight">{sampleName}</p>
+              {sampleTitle && <p className="text-[11px] opacity-90">{sampleTitle}</p>}
               <p className="text-[11px] opacity-90">{data.company || data.name}</p>
             </div>
             <span className="absolute right-3 top-3 grid h-12 w-12 place-items-center rounded bg-white/90 text-[9px] font-semibold text-ink">
@@ -825,13 +832,23 @@ function TeamOrderCard({ data }: { data: NonNullable<OrgData> }) {
               <img src={nfcSrc} alt="NFC" className="absolute bottom-3 right-3 h-10 w-auto" />
             )}
           </div>
-          <p className="flex-1 text-sm text-muted">
-            Each card is auto-designed with the member&apos;s name, role and QR
-            code on your{" "}
-            {data.cardUseBrand && data.brandHeader ? "brand colours" : "accent colour"}
-            {data.cardNfcLogo ? " with the NFC logo" : ""}. Change this in{" "}
-            <strong>Printed card design</strong> above.
-          </p>
+          <div className="flex-1">
+            <p className="text-sm text-muted">
+              Each card is auto-designed with the member&apos;s name, role and QR
+              code on your{" "}
+              {data.cardUseBrand && data.brandHeader ? "brand colours" : "accent colour"}
+              {data.cardNfcLogo ? " with the NFC logo" : ""}. Change this in{" "}
+              <strong>Printed card design</strong> above.
+            </p>
+            {missingTitle.length > 0 && (
+              <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+                <Icon name="warning" className="mt-0.5 text-[14px]" />
+                No job title set for {missingTitle.join(", ")} — their card will
+                print without a role. Add it under <strong>Members</strong> above
+                first.
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
