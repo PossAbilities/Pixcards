@@ -103,7 +103,7 @@ export default async function AdminOrderDetailPage({
     where: { id },
     include: {
       user: { include: { profile: true } },
-      cards: { orderBy: { createdAt: "asc" } },
+      cards: { include: { user: true }, orderBy: { createdAt: "asc" } },
     },
   });
 
@@ -118,6 +118,9 @@ export default async function AdminOrderDetailPage({
 
   const design = parseDesign(order.design);
   const hasArtwork = Boolean(design.frontImage || design.backImage);
+  // Team/auto orders have no studio artwork, but each card is auto-designed
+  // from the member's details + org brand. Show those baked cards instead.
+  const hasBakedCards = !hasArtwork && order.cards.length > 0;
   // Serve artwork via the image endpoint when it's an inline data-URI, so the
   // page stays light (a multi-MB inline PNG crashes the tab on re-render).
   const artworkUrl = (side: "front" | "back", value?: string) =>
@@ -163,7 +166,10 @@ export default async function AdminOrderDetailPage({
 
       {/* Artwork */}
       <Card className="p-6">
-        <SectionHeading icon="image" title="Submitted artwork" />
+        <SectionHeading
+          icon="image"
+          title={hasBakedCards ? "Card design" : "Submitted artwork"}
+        />
         {hasArtwork ? (
           <>
             <div className="flex flex-col gap-6 sm:flex-row">
@@ -181,6 +187,34 @@ export default async function AdminOrderDetailPage({
             <p className="mt-4 flex items-center gap-1.5 text-sm text-muted">
               <Icon name="info" className="text-[16px] text-primary" />
               Print-ready PNG — import into your card software (CardPresso).
+            </p>
+          </>
+        ) : hasBakedCards ? (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {order.cards.map((c) => (
+                <div key={c.id}>
+                  <div className="overflow-hidden rounded-xl border border-outline bg-surface-low">
+                    <img
+                      src={`/api/card-art/${c.id}`}
+                      alt={`Card for ${c.user?.name ?? c.code}`}
+                      className="block aspect-[1013/638] w-full object-contain"
+                    />
+                  </div>
+                  <p className="mt-2 flex items-center justify-between text-xs">
+                    <span className="font-medium text-ink">
+                      {c.user?.name ?? "Member"}
+                    </span>
+                    <span className="font-mono text-faint">{c.code}</span>
+                  </p>
+                </div>
+              ))}
+            </div>
+            <p className="mt-4 flex items-center gap-1.5 text-sm text-muted">
+              <Icon name="info" className="text-[16px] text-primary" />
+              Auto-designed from each member&apos;s details and the
+              organisation&apos;s brand. Use <strong>Export for CardPresso</strong>{" "}
+              below for print-ready files.
             </p>
           </>
         ) : (

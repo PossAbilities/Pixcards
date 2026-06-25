@@ -139,7 +139,7 @@ function AdminView({ data }: { data: NonNullable<OrgData> }) {
       <BrandForm data={data} />
       <PrintedCardCard data={data} />
       <MembersCard data={data} />
-      <TeamOrderCard members={data.members} />
+      <TeamOrderCard data={data} />
     </div>
   );
 }
@@ -749,15 +749,22 @@ function MembersCard({ data }: { data: NonNullable<OrgData> }) {
   );
 }
 
-function TeamOrderCard({ members }: { members: Member[] }) {
+function TeamOrderCard({ data }: { data: NonNullable<OrgData> }) {
+  const members = data.members;
   const [selected, setSelected] = useState<Set<string>>(new Set(members.map((m) => m.id)));
   const [shipName, setShipName] = useState("");
   const [shipAddress, setShipAddress] = useState("");
   const [shipCity, setShipCity] = useState("");
   const [shipPostal, setShipPostal] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  // Same auto-design that gets baked onto each card, so they can confirm it.
+  const cardBg = data.cardUseBrand && data.brandHeader ? data.brandHeader : data.accentColor;
+  const nfcSrc = nfcMarkDataUrl({ color: "#ffffff", label: true });
+  const sampleName = members.find((m) => selected.has(m.id))?.name ?? "Member name";
 
   function toggle(id: string) {
     setSelected((s) => {
@@ -792,6 +799,39 @@ function TeamOrderCard({ members }: { members: Member[] }) {
         Generates a physical NFC card for each selected member, pre-linked to
         their profile, shipped to one address.
       </p>
+
+      {/* Card design preview — what every member's card will look like */}
+      <div className="mb-4 rounded-xl border border-outline bg-surface-2/40 p-4">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-faint">
+          Card design
+        </p>
+        <div className="flex flex-wrap items-center gap-4">
+          <div
+            className="relative h-[150px] w-[238px] shrink-0 overflow-hidden rounded-xl text-white shadow-md ring-1 ring-black/10"
+            style={{ background: cardBg }}
+          >
+            <div className="absolute bottom-3 left-3">
+              <p className="text-base font-bold leading-tight">{sampleName}</p>
+              <p className="text-[11px] opacity-90">{data.company || data.name}</p>
+            </div>
+            <span className="absolute right-3 top-3 grid h-12 w-12 place-items-center rounded bg-white/90 text-[9px] font-semibold text-ink">
+              QR
+            </span>
+            {data.cardNfcLogo && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={nfcSrc} alt="NFC" className="absolute bottom-3 right-3 h-10 w-auto" />
+            )}
+          </div>
+          <p className="flex-1 text-sm text-muted">
+            Each card is auto-designed with the member&apos;s name, role and QR
+            code on your{" "}
+            {data.cardUseBrand && data.brandHeader ? "brand colours" : "accent colour"}
+            {data.cardNfcLogo ? " with the NFC logo" : ""}. Change this in{" "}
+            <strong>Printed card design</strong> above.
+          </p>
+        </div>
+      </div>
+
       <div className="mb-3 max-h-44 overflow-y-auto rounded-xl border border-outline p-2">
         {members.map((m) => (
           <label key={m.id} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-surface-low">
@@ -807,7 +847,16 @@ function TeamOrderCard({ members }: { members: Member[] }) {
         <input value={shipCity} onChange={(e) => setShipCity(e.target.value)} placeholder="City" className={inputClass} />
         <input value={shipPostal} onChange={(e) => setShipPostal(e.target.value)} placeholder="Postcode" className={inputClass} />
       </div>
-      <button type="button" onClick={place} disabled={isPending || selected.size === 0}
+      <label className="mt-3 flex cursor-pointer items-start gap-2 text-sm text-ink">
+        <input
+          type="checkbox"
+          checked={confirmed}
+          onChange={(e) => setConfirmed(e.target.checked)}
+          className="mt-0.5"
+        />
+        <span>I&apos;ve reviewed the card design above and want to order it.</span>
+      </label>
+      <button type="button" onClick={place} disabled={isPending || selected.size === 0 || !confirmed}
         className={buttonClass("primary", "md", "mt-3")}>
         <Icon name="add_card" className="text-[18px]" />
         Place team order ({selected.size})
