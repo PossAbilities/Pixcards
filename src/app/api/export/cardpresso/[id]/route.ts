@@ -3,7 +3,8 @@ import JSZip from "jszip";
 import { prisma } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
 import { appUrl } from "@/lib/constants";
-import { renderMemberCardPng } from "@/lib/card-artwork";
+import { renderCardSide } from "@/lib/card-artwork";
+import { parseTemplate } from "@/lib/card-template";
 
 export const runtime = "nodejs";
 
@@ -72,6 +73,7 @@ export async function GET(
   });
   const useBrand = membership?.org.cardUseBrand ?? true;
   const nfcLogo = membership?.org.cardNfcLogo ?? false;
+  const template = parseTemplate(membership?.org.cardDesign);
 
   const zip = new JSZip();
   const base = appUrl();
@@ -92,20 +94,31 @@ export async function GET(
       const p = c.user?.profile;
       const username = p?.username ?? "";
       const profileUrl = username ? `${base}/u/${username}` : base;
-      const file = `card-${c.code}.png`;
+      const frontFile = `card-${c.code}-front.png`;
+      const backFile = `card-${c.code}-back.png`;
+      const common = {
+        template,
+        name: c.user?.name ?? order.user.name,
+        jobTitle: p?.jobTitle,
+        company: p?.company,
+        accentColor: p?.accentColor ?? "#4f46e5",
+        brandHeader: useBrand ? p?.brandHeader : null,
+        profileUrl,
+        nfcLogo,
+      };
+      let haveFront = false;
+      let haveBack = false;
       try {
-        const png = await renderMemberCardPng({
-          name: c.user?.name ?? order.user.name,
-          jobTitle: p?.jobTitle,
-          company: p?.company,
-          accentColor: p?.accentColor ?? "#4f46e5",
-          brandHeader: useBrand ? p?.brandHeader : null,
-          profileUrl,
-          nfcLogo,
-        });
-        zip.file(file, png);
+        zip.file(frontFile, await renderCardSide({ ...common, side: "front" }));
+        haveFront = true;
       } catch {
-        /* skip this member's image, keep the row */
+        /* skip front, keep the row */
+      }
+      try {
+        zip.file(backFile, await renderCardSide({ ...common, side: "back" }));
+        haveBack = true;
+      } catch {
+        /* skip back */
       }
       rows.push(
         [
@@ -114,8 +127,8 @@ export async function GET(
           csvCell(p?.jobTitle ?? ""),
           csvCell(p?.company ?? ""),
           csvCell(username ? profileUrl : ""),
-          csvCell(file),
-          csvCell(""),
+          csvCell(haveFront ? frontFile : ""),
+          csvCell(haveBack ? backFile : ""),
         ].join(","),
       );
     }
@@ -150,12 +163,13 @@ export async function GET(
       "",
       "Quickest (use the baked images):",
       "1. Unzip this folder.",
-      "2. New CardPresso card at CR80 size (with bleed).",
+      "2. New CardPresso card at CR80 size (with bleed), double-sided.",
       "3. Database -> connect -> cards.csv.",
-      "4. Add a single full-card image field and link it to the 'Print'",
-      "   column (the card-*.png files already have each person's name,",
-      "   role and QR baked in).",
-      "5. Print -> it batches every row.",
+      "4. Add a full-card image field on the FRONT linked to the 'Print'",
+      "   column, and one on the BACK linked to the 'Back' column",
+      "   (card-*-front.png / card-*-back.png have each person's details,",
+      "   QR and brand baked in).",
+      "5. Print -> it batches every row, both sides.",
       "",
       "Or build your own design and use the text columns (Name, JobTitle,",
       "Company) + a QR field linked to ProfileURL.",

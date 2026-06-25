@@ -141,6 +141,28 @@ export async function updateOrgCardOptions(input: {
   return { ok: true };
 }
 
+/** Save the org's front+back card template (JSON design spec). */
+export async function updateOrgCardTemplate(specJson: string): Promise<OrgResult> {
+  const { org } = await requireOrg(true);
+  if (typeof specJson !== "string" || specJson.length > 3_000_000) {
+    return { ok: false, error: "That design is too large — try smaller images." };
+  }
+  try {
+    const v = JSON.parse(specJson);
+    if (!v || (!v.front && !v.back)) {
+      return { ok: false, error: "Invalid card design." };
+    }
+  } catch {
+    return { ok: false, error: "Invalid card design." };
+  }
+  await prisma.organisation.update({
+    where: { id: org.id },
+    data: { cardDesign: specJson },
+  });
+  revalidatePath("/dashboard/org");
+  return { ok: true };
+}
+
 /* -------------------------- AI brand analysis ---------------------------- */
 
 export type BrandAnalysisResult = {

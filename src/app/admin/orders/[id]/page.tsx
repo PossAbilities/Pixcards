@@ -192,22 +192,31 @@ export default async function AdminOrderDetailPage({
           </>
         ) : hasBakedCards ? (
           <>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-5">
               {order.cards.map((c) => (
                 <div key={c.id}>
-                  <div className="overflow-hidden rounded-xl border border-outline bg-surface-low">
-                    <img
-                      src={`/api/card-art/${c.id}`}
-                      alt={`Card for ${c.user?.name ?? c.code}`}
-                      className="block aspect-[1013/638] w-full object-contain"
-                    />
-                  </div>
-                  <p className="mt-2 flex items-center justify-between text-xs">
+                  <p className="mb-2 flex items-center justify-between text-xs">
                     <span className="font-medium text-ink">
                       {c.user?.name ?? "Member"}
                     </span>
                     <span className="font-mono text-faint">{c.code}</span>
                   </p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {(["front", "back"] as const).map((side) => (
+                      <div key={side}>
+                        <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-faint">
+                          {side}
+                        </p>
+                        <div className="overflow-hidden rounded-xl border border-outline bg-surface-low">
+                          <img
+                            src={`/api/card-art/${c.id}?side=${side}`}
+                            alt={`${side} of card for ${c.user?.name ?? c.code}`}
+                            className="block aspect-[1013/638] w-full object-contain"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>

@@ -72,6 +72,7 @@ export default async function OrgPage() {
       brandHeader: myOrg.brandHeader,
       cardUseBrand: myOrg.cardUseBrand,
       cardNfcLogo: myOrg.cardNfcLogo,
+      cardDesign: myOrg.cardDesign,
       role: myOrg.role,
       planStatus: myOrg.planStatus,
       analytics: { views, taps, clicks },

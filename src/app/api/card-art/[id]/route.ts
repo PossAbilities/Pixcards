@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
 import { appUrl } from "@/lib/constants";
-import { renderMemberCardPng } from "@/lib/card-artwork";
+import { renderCardSide } from "@/lib/card-artwork";
+import { parseTemplate } from "@/lib/card-template";
 
 export const runtime = "nodejs";
 
@@ -14,7 +15,7 @@ export const runtime = "nodejs";
  * design on the order page and in "My cards".
  */
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const viewer = await getSessionUser();
@@ -22,6 +23,7 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
   }
   const { id } = await params;
+  const side = req.nextUrl.searchParams.get("side") === "back" ? "back" : "front";
 
   const card = await prisma.card.findUnique({
     where: { id },
@@ -45,10 +47,13 @@ export async function GET(
   const org = card.user.orgMembership?.org;
   const useBrand = org?.cardUseBrand ?? true;
   const nfcLogo = org?.cardNfcLogo ?? false;
+  const template = parseTemplate(org?.cardDesign);
   const profileUrl = p?.username ? `${appUrl()}/u/${p.username}` : appUrl();
 
   try {
-    const png = await renderMemberCardPng({
+    const png = await renderCardSide({
+      side,
+      template,
       name: card.user.name ?? "Member",
       jobTitle: p?.jobTitle,
       company: p?.company,

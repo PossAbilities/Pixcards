@@ -27,6 +27,7 @@ import {
   updateOrgCardOptions,
 } from "@/lib/actions/org";
 import { nfcMarkDataUrl } from "@/lib/nfc-logo";
+import { OrgCardDesigner } from "./OrgCardDesigner";
 
 type Member = {
   id: string;
@@ -52,6 +53,7 @@ export type OrgData = {
   brandHeader: string | null;
   cardUseBrand: boolean;
   cardNfcLogo: boolean;
+  cardDesign: string;
   role: "OWNER" | "ADMIN" | "MEMBER";
   planStatus: string;
   analytics: { views: number; taps: number; clicks: number };
@@ -138,6 +140,7 @@ function AdminView({ data }: { data: NonNullable<OrgData> }) {
       <AnalyticsCard a={data.analytics} memberCount={data.members.length} />
       <BrandForm data={data} />
       <PrintedCardCard data={data} />
+      <OrgCardDesigner data={data} />
       <MembersCard data={data} />
       <TeamOrderCard data={data} />
     </div>
