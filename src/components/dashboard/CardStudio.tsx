@@ -110,12 +110,12 @@ const BG_PRESETS: { id: string; label: string; value: string }[] = [
   {
     id: "grad-indigo",
     label: "Indigo gradient",
-    value: "linear-gradient(135deg,#6366f1,#3525cd)",
+    value: "linear-gradient(135deg,#4f46e5,#4338ca)",
   },
   {
     id: "grad-slate",
     label: "Midnight gradient",
-    value: "linear-gradient(135deg,#0f172a,#1e293b)",
+    value: "linear-gradient(135deg,#1e293b,#0f172a)",
   },
 ];
 
@@ -259,7 +259,7 @@ export function CardStudio({
 
   /* ----- designer state ----- */
   const [front, setFront] = useState<SideState>(() => ({
-    bg: "linear-gradient(135deg,#6366f1,#3525cd)",
+    bg: "#4f46e5",
     elements: [
       {
         id: uid(),
