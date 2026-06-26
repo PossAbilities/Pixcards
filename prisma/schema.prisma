@@ -52,9 +52,30 @@ model Organisation {
 
   members OrgMember[]
   invites OrgInvite[]
+  departments Department[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+/** A department/team within an organisation with its own profile links. */
+model Department {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organisation @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name  String
+
+  // Shared (locked) links pushed to this department's members, and the link
+  // types they may add themselves (JSON, same shape as the org-level fields).
+  sharedLinks      String @default("[]")
+  allowedLinkTypes String @default("")
+
+  members OrgMember[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId])
 }
 
 model OrgMember {
@@ -66,9 +87,14 @@ model OrgMember {
   role   OrgRole      @default(MEMBER)
   active Boolean      @default(true)
 
+  // Optional department — its links apply instead of the org defaults.
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
   createdAt DateTime @default(now())
 
   @@index([orgId])
+  @@index([departmentId])
 }
 
 /// Email invitation to join an organisation. Only the token hash is stored.

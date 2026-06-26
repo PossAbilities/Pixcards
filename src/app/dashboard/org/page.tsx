@@ -9,7 +9,7 @@ export default async function OrgPage() {
 
   let data: OrgData = null;
   if (myOrg) {
-    const [members, invites] = await Promise.all([
+    const [members, invites, departments] = await Promise.all([
       prisma.orgMember.findMany({
         where: { orgId: myOrg.id },
         include: {
@@ -36,6 +36,11 @@ export default async function OrgPage() {
       prisma.orgInvite.findMany({
         where: { orgId: myOrg.id, acceptedAt: null },
         orderBy: { createdAt: "desc" },
+      }),
+      prisma.department.findMany({
+        where: { orgId: myOrg.id },
+        include: { _count: { select: { members: true } } },
+        orderBy: { createdAt: "asc" },
       }),
     ]);
 
@@ -90,9 +95,17 @@ export default async function OrgPage() {
         contactEmail: m.user.profile?.email ?? "",
         bio: m.user.profile?.bio ?? "",
         location: m.user.profile?.location ?? "",
+        departmentId: m.departmentId ?? null,
         views: m.user.profile?.id ? (viewMap.get(m.user.profile.id) ?? 0) : 0,
       })),
       invites: invites.map((i) => ({ id: i.id, email: i.email, role: i.role })),
+      departments: departments.map((d) => ({
+        id: d.id,
+        name: d.name,
+        sharedLinks: d.sharedLinks,
+        allowedLinkTypes: d.allowedLinkTypes,
+        memberCount: d._count.members,
+      })),
     };
   }
 

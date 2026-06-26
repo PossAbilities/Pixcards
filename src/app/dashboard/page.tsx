@@ -15,15 +15,19 @@ export default async function ProfilePage() {
 
   const shareUrl = `${appUrl()}/u/${profile.username}`;
 
-  // Org link restriction (if the user belongs to an organisation).
+  // Link restriction (department-first, then org default) if in an org.
   const membership = await prisma.orgMember.findUnique({
     where: { userId: user.id },
-    include: { org: { select: { allowedLinkTypes: true } } },
+    include: {
+      org: { select: { allowedLinkTypes: true } },
+      department: { select: { allowedLinkTypes: true } },
+    },
   });
   let allowedPlatforms: string[] | undefined;
   if (membership) {
     try {
-      const v = JSON.parse(membership.org.allowedLinkTypes || "[]") as string[];
+      const raw = membership.department?.allowedLinkTypes ?? membership.org.allowedLinkTypes;
+      const v = JSON.parse(raw || "[]") as string[];
       if (Array.isArray(v) && v.length > 0) allowedPlatforms = v;
     } catch {
       /* none */

@@ -22,15 +22,20 @@ async function myProfile() {
   return { user, profile };
 }
 
-/** The link types this user is allowed to add (null = no org restriction). */
+/** The link types this user is allowed to add (null = no restriction).
+ *  Resolved department-first, then org default. */
 async function allowedLinkTypes(userId: string): Promise<string[] | null> {
   const m = await prisma.orgMember.findUnique({
     where: { userId },
-    include: { org: { select: { allowedLinkTypes: true } } },
+    include: {
+      org: { select: { allowedLinkTypes: true } },
+      department: { select: { allowedLinkTypes: true } },
+    },
   });
   if (!m) return null;
+  const raw = m.department?.allowedLinkTypes ?? m.org.allowedLinkTypes;
   try {
-    const v = JSON.parse(m.org.allowedLinkTypes || "[]") as string[];
+    const v = JSON.parse(raw || "[]") as string[];
     return Array.isArray(v) && v.length > 0 ? v : null;
   } catch {
     return null;

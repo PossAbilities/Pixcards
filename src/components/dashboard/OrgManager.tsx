@@ -26,6 +26,10 @@ import {
   analyzeBrandGuidelines,
   updateOrgCardOptions,
   updateOrgLinks,
+  createDepartment,
+  updateDepartment,
+  deleteDepartment,
+  assignMemberDepartment,
 } from "@/lib/actions/org";
 import { previewDiscount } from "@/lib/actions/discounts";
 import { nfcMarkDataUrl } from "@/lib/nfc-logo";
@@ -42,7 +46,16 @@ type Member = {
   contactEmail: string;
   bio: string;
   location: string;
+  departmentId: string | null;
   views: number;
+};
+
+export type Department = {
+  id: string;
+  name: string;
+  sharedLinks: string;
+  allowedLinkTypes: string;
+  memberCount: number;
 };
 
 export type OrgData = {
@@ -64,6 +77,7 @@ export type OrgData = {
   analytics: { views: number; taps: number; clicks: number };
   members: Member[];
   invites: { id: string; email: string; role: string }[];
+  departments: Department[];
 } | null;
 
 export function OrgManager({ data }: { data: OrgData }) {
@@ -145,6 +159,7 @@ function AdminView({ data }: { data: NonNullable<OrgData> }) {
       <AnalyticsCard a={data.analytics} memberCount={data.members.length} />
       <BrandForm data={data} />
       <ProfileLinksCard data={data} />
+      <DepartmentsCard data={data} />
       <PrintedCardCard data={data} />
       <OrgCardDesigner data={data} />
       <MembersCard data={data} />
@@ -478,46 +493,45 @@ function BrandForm({ data }: { data: NonNullable<OrgData> }) {
 
 type SharedLinkRow = { platform: string; label: string; url: string };
 
-function ProfileLinksCard({ data }: { data: NonNullable<OrgData> }) {
-  const initialShared: SharedLinkRow[] = (() => {
-    try {
-      const v = JSON.parse(data.sharedLinks || "[]");
-      return Array.isArray(v) ? v : [];
-    } catch {
-      return [];
-    }
-  })();
-  const initialAllowed: string[] = (() => {
-    try {
-      const v = JSON.parse(data.allowedLinkTypes || "[]");
-      return Array.isArray(v) ? v : [];
-    } catch {
-      return [];
-    }
-  })();
+function parseRows(json: string): SharedLinkRow[] {
+  try {
+    const v = JSON.parse(json || "[]");
+    return Array.isArray(v) ? v : [];
+  } catch {
+    return [];
+  }
+}
+function parseIds(json: string): string[] {
+  try {
+    const v = JSON.parse(json || "[]");
+    return Array.isArray(v) ? v : [];
+  } catch {
+    return [];
+  }
+}
 
+/** Reusable shared-links + allowed-types editor (org default or a department). */
+function LinksEditor({
+  initialShared,
+  initialAllowed,
+  onSave,
+  savedNote = "Saved & applied to members",
+}: {
+  initialShared: SharedLinkRow[];
+  initialAllowed: string[];
+  onSave: (shared: SharedLinkRow[], allowed: string[]) => Promise<{ ok: boolean; error?: string }>;
+  savedNote?: string;
+}) {
   const [shared, setShared] = useState<SharedLinkRow[]>(initialShared);
   const [allowed, setAllowed] = useState<string[]>(initialAllowed);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  function addRow() {
-    setShared((s) => [...s, { platform: "website", label: "", url: "" }]);
-    setSaved(false);
-  }
-  function setRow(i: number, patch: Partial<SharedLinkRow>) {
-    setShared((s) => s.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
-    setSaved(false);
-  }
-  function removeRow(i: number) {
-    setShared((s) => s.filter((_, idx) => idx !== i));
-    setSaved(false);
-  }
-  function toggleAllowed(id: string) {
-    setAllowed((a) => (a.includes(id) ? a.filter((x) => x !== id) : [...a, id]));
-    setSaved(false);
-  }
+  const addRow = () => { setShared((s) => [...s, { platform: "website", label: "", url: "" }]); setSaved(false); };
+  const setRow = (i: number, patch: Partial<SharedLinkRow>) => { setShared((s) => s.map((r, idx) => (idx === i ? { ...r, ...patch } : r))); setSaved(false); };
+  const removeRow = (i: number) => { setShared((s) => s.filter((_, idx) => idx !== i)); setSaved(false); };
+  const toggleAllowed = (id: string) => { setAllowed((a) => (a.includes(id) ? a.filter((x) => x !== id) : [...a, id])); setSaved(false); };
 
   function save() {
     setError(null);
@@ -526,52 +540,26 @@ function ProfileLinksCard({ data }: { data: NonNullable<OrgData> }) {
       .map((r) => ({ ...r, url: r.url.trim(), label: r.label.trim() }))
       .filter((r) => r.url);
     startTransition(async () => {
-      const res = await updateOrgLinks({ sharedLinks: cleaned, allowedLinkTypes: allowed });
+      const res = await onSave(cleaned, allowed);
       if (res.ok) setSaved(true);
       else setError(res.error ?? "Could not save.");
     });
   }
 
   return (
-    <Card className="p-6">
-      <SectionHeading icon="link" title="Profile buttons & links" />
-      <p className="-mt-1 mb-4 text-sm text-muted">
-        Shared links appear on <strong>every</strong> member&apos;s profile and
-        can&apos;t be removed by them. Allowed types are the extra links members
-        may add themselves.
-      </p>
-
-      {/* Shared (locked) links */}
+    <div>
       <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-faint">
-        Shared links (on every card)
+        Shared links (locked on every card)
       </p>
       <div className="space-y-2">
-        {shared.length === 0 && (
-          <p className="text-sm text-muted">No shared links yet.</p>
-        )}
+        {shared.length === 0 && <p className="text-sm text-muted">No shared links yet.</p>}
         {shared.map((row, i) => (
           <div key={i} className="flex flex-wrap items-center gap-2">
-            <select
-              value={row.platform}
-              onChange={(e) => setRow(i, { platform: e.target.value })}
-              className={cn(inputClass, "w-36")}
-            >
-              {PLATFORMS.map((p) => (
-                <option key={p.id} value={p.id}>{p.label}</option>
-              ))}
+            <select value={row.platform} onChange={(e) => setRow(i, { platform: e.target.value })} className={cn(inputClass, "w-36")}>
+              {PLATFORMS.map((p) => (<option key={p.id} value={p.id}>{p.label}</option>))}
             </select>
-            <input
-              value={row.label}
-              onChange={(e) => setRow(i, { label: e.target.value })}
-              placeholder="Label (optional)"
-              className={cn(inputClass, "w-40")}
-            />
-            <input
-              value={row.url}
-              onChange={(e) => setRow(i, { url: e.target.value })}
-              placeholder="https://…"
-              className={cn(inputClass, "min-w-0 flex-1")}
-            />
+            <input value={row.label} onChange={(e) => setRow(i, { label: e.target.value })} placeholder="Label (optional)" className={cn(inputClass, "w-40")} />
+            <input value={row.url} onChange={(e) => setRow(i, { url: e.target.value })} placeholder="https://…" className={cn(inputClass, "min-w-0 flex-1")} />
             <button type="button" onClick={() => removeRow(i)} className="rounded p-1.5 text-red-600 hover:bg-red-50" title="Remove">
               <Icon name="delete" className="text-[18px]" />
             </button>
@@ -582,26 +570,17 @@ function ProfileLinksCard({ data }: { data: NonNullable<OrgData> }) {
         <Icon name="add" className="text-[16px]" /> Add shared link
       </button>
 
-      {/* Allowed member-added types */}
       <p className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wide text-faint">
         Links members may add themselves
       </p>
-      <p className="mb-2 text-xs text-muted">
-        Tick the types members can add. Leave all unticked to allow everything.
-      </p>
+      <p className="mb-2 text-xs text-muted">Tick the allowed types. Leave all unticked to allow everything.</p>
       <div className="flex flex-wrap gap-2">
         {PLATFORMS.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => toggleAllowed(p.id)}
+          <button key={p.id} type="button" onClick={() => toggleAllowed(p.id)}
             className={cn(
               "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition",
-              allowed.includes(p.id)
-                ? "border-primary bg-primary-soft/40 text-primary-deep"
-                : "border-outline text-muted hover:border-primary/40",
-            )}
-          >
+              allowed.includes(p.id) ? "border-primary bg-primary-soft/40 text-primary-deep" : "border-outline text-muted hover:border-primary/40",
+            )}>
             <Icon name={p.icon} className="text-[14px]" />
             {p.label}
           </button>
@@ -614,12 +593,116 @@ function ProfileLinksCard({ data }: { data: NonNullable<OrgData> }) {
         </button>
         {saved && !isPending && (
           <span className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-600">
-            <Icon name="check_circle" className="text-[16px]" /> Saved &amp; applied to all members
+            <Icon name="check_circle" className="text-[16px]" /> {savedNote}
           </span>
         )}
         {error && <span className="text-sm font-medium text-red-600">{error}</span>}
       </div>
+    </div>
+  );
+}
+
+function ProfileLinksCard({ data }: { data: NonNullable<OrgData> }) {
+  return (
+    <Card className="p-6">
+      <SectionHeading icon="link" title="Default profile links" />
+      <p className="-mt-1 mb-4 text-sm text-muted">
+        The default links for members <strong>not</strong> in a department.
+        Shared links are locked on their profile; allowed types are extras they
+        may add. Set up departments below for team-specific links.
+      </p>
+      <LinksEditor
+        initialShared={parseRows(data.sharedLinks)}
+        initialAllowed={parseIds(data.allowedLinkTypes)}
+        onSave={(shared, allowed) => updateOrgLinks({ sharedLinks: shared, allowedLinkTypes: allowed })}
+      />
     </Card>
+  );
+}
+
+function DepartmentsCard({ data }: { data: NonNullable<OrgData> }) {
+  const [newName, setNewName] = useState("");
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function create() {
+    if (!newName.trim()) return;
+    setError(null);
+    startTransition(async () => {
+      const res = await createDepartment(newName.trim());
+      if (res.ok) setNewName("");
+      else setError(res.error ?? "Could not create department.");
+    });
+  }
+  function remove(id: string, name: string) {
+    if (!confirm(`Delete the "${name}" department? Its members move back to the default links.`)) return;
+    startTransition(async () => { await deleteDepartment(id); });
+  }
+
+  return (
+    <Card className="p-6">
+      <SectionHeading icon="groups" title="Departments" />
+      <p className="-mt-1 mb-4 text-sm text-muted">
+        Create departments (e.g. General, Employment Team, Senior Management)
+        with their own links. Assign members to a department in the members list
+        below — their links come from the department instead of the default.
+      </p>
+
+      <div className="mb-4 flex gap-2">
+        <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="New department name" className={cn(inputClass, "flex-1")} />
+        <button type="button" onClick={create} disabled={isPending || !newName.trim()} className={buttonClass("primary", "md")}>
+          <Icon name="add" className="text-[18px]" /> Add
+        </button>
+      </div>
+      {error && <p className="mb-3 text-sm font-medium text-red-600">{error}</p>}
+
+      {data.departments.length === 0 ? (
+        <p className="text-sm text-muted">No departments yet.</p>
+      ) : (
+        <div className="divide-y divide-black/5 rounded-xl border border-outline">
+          {data.departments.map((d) => (
+            <div key={d.id}>
+              <div className="flex items-center justify-between gap-3 px-4 py-3">
+                <button type="button" onClick={() => setOpenId(openId === d.id ? null : d.id)} className="flex items-center gap-2 text-left">
+                  <Icon name={openId === d.id ? "expand_less" : "expand_more"} className="text-[18px] text-faint" />
+                  <span className="text-sm font-semibold text-ink">{d.name}</span>
+                  <span className="text-xs text-faint">{d.memberCount} {d.memberCount === 1 ? "member" : "members"}</span>
+                </button>
+                <button type="button" onClick={() => remove(d.id, d.name)} className="rounded p-1.5 text-red-600 hover:bg-red-50" title="Delete department">
+                  <Icon name="delete" className="text-[18px]" />
+                </button>
+              </div>
+              {openId === d.id && (
+                <div className="border-t border-black/5 bg-surface-low/40 px-4 py-4">
+                  <DepartmentEditor dept={d} />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function DepartmentEditor({ dept }: { dept: Department }) {
+  const [name, setName] = useState(dept.name);
+  return (
+    <>
+      <div className="mb-4">
+        <Label htmlFor={`dept-${dept.id}`}>Department name</Label>
+        <input id={`dept-${dept.id}`} value={name} onChange={(e) => setName(e.target.value)} className={cn(inputClass, "max-w-xs")} />
+      </div>
+      <LinksEditor
+        initialShared={parseRows(dept.sharedLinks)}
+        initialAllowed={parseIds(dept.allowedLinkTypes)}
+        savedNote="Saved & applied to this department"
+        onSave={(shared, allowed) =>
+          updateDepartment({ id: dept.id, name, sharedLinks: shared, allowedLinkTypes: allowed })
+        }
+      />
+    </>
   );
 }
 
@@ -727,7 +810,7 @@ function PrintedCardCard({ data }: { data: NonNullable<OrgData> }) {
   );
 }
 
-function MemberRow({ m }: { m: Member }) {
+function MemberRow({ m, departments }: { m: Member; departments: Department[] }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(m.name);
   const [jobTitle, setJobTitle] = useState(m.jobTitle);
@@ -735,9 +818,21 @@ function MemberRow({ m }: { m: Member }) {
   const [email, setEmail] = useState(m.contactEmail);
   const [bio, setBio] = useState(m.bio);
   const [location, setLocation] = useState(m.location);
+  const [deptId, setDeptId] = useState(m.departmentId ?? "");
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  function changeDept(value: string) {
+    setDeptId(value);
+    setMsg(null);
+    setErr(null);
+    startTransition(async () => {
+      const res = await assignMemberDepartment(m.id, value || null);
+      if (res.ok) setMsg("Department updated — links re-applied.");
+      else setErr(res.error ?? "Could not update department.");
+    });
+  }
 
   function save() {
     setMsg(null);
@@ -799,6 +894,15 @@ function MemberRow({ m }: { m: Member }) {
             <Label>Location</Label>
             <input value={location} onChange={(e) => setLocation(e.target.value)} className={inputClass} />
           </div>
+          <div>
+            <Label>Department</Label>
+            <select value={deptId} onChange={(e) => changeDept(e.target.value)} disabled={isPending} className={inputClass}>
+              <option value="">Default (no department)</option>
+              {departments.map((d) => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
+          </div>
           <div className="sm:col-span-2">
             <Label>Bio</Label>
             <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={2} className={`${inputClass} resize-none`} />
@@ -846,7 +950,7 @@ function MembersCard({ data }: { data: NonNullable<OrgData> }) {
       <SectionHeading icon="groups" title={`Members (${data.members.length})`} />
       <ul className="divide-y divide-black/5">
         {data.members.map((m) => (
-          <MemberRow key={m.id} m={m} />
+          <MemberRow key={m.id} m={m} departments={data.departments} />
         ))}
       </ul>
 

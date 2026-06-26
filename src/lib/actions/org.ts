@@ -87,8 +87,8 @@ function parseSharedLinks(json: string): SharedLink[] {
   return [];
 }
 
-/** Replace every member's org-locked links with the org's shared links. */
-async function syncSharedLinksToMember(userId: string, links: SharedLink[]) {
+/** Replace a member's org-locked links with the given set. */
+async function applyLinksToMember(userId: string, links: SharedLink[]) {
   const profile = await prisma.profile.findUnique({ where: { userId }, select: { id: true } });
   if (!profile) return;
   await prisma.link.deleteMany({ where: { profileId: profile.id, orgLocked: true } });
@@ -106,9 +106,47 @@ async function syncSharedLinksToMember(userId: string, links: SharedLink[]) {
   });
 }
 
-async function syncSharedLinksToOrg(orgId: string, links: SharedLink[]) {
-  const members = await prisma.orgMember.findMany({ where: { orgId }, select: { userId: true } });
-  await Promise.all(members.map((m) => syncSharedLinksToMember(m.userId, links)));
+/** A member's effective shared links: their department's, else the org's. */
+async function resyncMemberLinks(userId: string) {
+  const m = await prisma.orgMember.findUnique({
+    where: { userId },
+    include: {
+      org: { select: { sharedLinks: true } },
+      department: { select: { sharedLinks: true } },
+    },
+  });
+  if (!m) return;
+  const src = m.department?.sharedLinks ?? m.org.sharedLinks;
+  await applyLinksToMember(userId, parseSharedLinks(src));
+}
+
+/** Re-sync every member in the org, honouring each member's department. */
+async function resyncOrgLinks(orgId: string) {
+  const org = await prisma.organisation.findUnique({
+    where: { id: orgId },
+    select: { sharedLinks: true },
+  });
+  if (!org) return;
+  const members = await prisma.orgMember.findMany({
+    where: { orgId },
+    include: { department: { select: { sharedLinks: true } } },
+  });
+  await Promise.all(
+    members.map((m) =>
+      applyLinksToMember(m.userId, parseSharedLinks(m.department?.sharedLinks ?? org.sharedLinks)),
+    ),
+  );
+}
+
+/** Re-sync only the members of one department. */
+async function resyncDepartmentLinks(departmentId: string) {
+  const dept = await prisma.department.findUnique({
+    where: { id: departmentId },
+    include: { members: { select: { userId: true } } },
+  });
+  if (!dept) return;
+  const links = parseSharedLinks(dept.sharedLinks);
+  await Promise.all(dept.members.map((m) => applyLinksToMember(m.userId, links)));
 }
 
 /** Admin sets the shared (locked) links and the member-addable link types. */
@@ -128,7 +166,91 @@ export async function updateOrgLinks(input: {
       allowedLinkTypes: JSON.stringify(allowed),
     },
   });
-  await syncSharedLinksToOrg(org.id, shared);
+  await resyncOrgLinks(org.id);
+  revalidatePath("/dashboard/org");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+/* ------------------------------ Departments ------------------------------ */
+
+export type DepartmentData = {
+  id: string;
+  name: string;
+  sharedLinks: string;
+  allowedLinkTypes: string;
+  memberCount: number;
+};
+
+export async function createDepartment(name: string): Promise<OrgResult> {
+  const { org } = await requireOrg(true);
+  const clean = name.trim().slice(0, 60);
+  if (!clean) return { ok: false, error: "Enter a department name." };
+  await prisma.department.create({ data: { orgId: org.id, name: clean } });
+  revalidatePath("/dashboard/org");
+  return { ok: true };
+}
+
+export async function updateDepartment(input: {
+  id: string;
+  name: string;
+  sharedLinks: SharedLink[];
+  allowedLinkTypes: string[];
+}): Promise<OrgResult> {
+  const { org } = await requireOrg(true);
+  const dept = await prisma.department.findUnique({ where: { id: input.id } });
+  if (!dept || dept.orgId !== org.id) return { ok: false, error: "Department not found." };
+  const shared = parseSharedLinks(JSON.stringify(input.sharedLinks ?? []));
+  const allowed = Array.isArray(input.allowedLinkTypes)
+    ? input.allowedLinkTypes.map(String).slice(0, 30)
+    : [];
+  await prisma.department.update({
+    where: { id: input.id },
+    data: {
+      name: input.name.trim().slice(0, 60) || dept.name,
+      sharedLinks: JSON.stringify(shared),
+      allowedLinkTypes: JSON.stringify(allowed),
+    },
+  });
+  await resyncDepartmentLinks(input.id);
+  revalidatePath("/dashboard/org");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+export async function deleteDepartment(id: string): Promise<OrgResult> {
+  const { org } = await requireOrg(true);
+  const dept = await prisma.department.findUnique({
+    where: { id },
+    include: { members: { select: { userId: true } } },
+  });
+  if (!dept || dept.orgId !== org.id) return { ok: false, error: "Department not found." };
+  const affected = dept.members.map((m) => m.userId);
+  await prisma.department.delete({ where: { id } }); // members' departmentId → null
+  // Re-sync freed members back to the org default links.
+  await Promise.all(affected.map((userId) => resyncMemberLinks(userId)));
+  revalidatePath("/dashboard/org");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+/** Assign a member to a department (or null to clear) and re-sync their links. */
+export async function assignMemberDepartment(
+  memberId: string,
+  departmentId: string | null,
+): Promise<OrgResult> {
+  const { org } = await requireOrg(true);
+  const member = await prisma.orgMember.findUnique({ where: { id: memberId } });
+  if (!member || member.orgId !== org.id) return { ok: false, error: "Member not found." };
+  if (departmentId) {
+    const dept = await prisma.department.findUnique({ where: { id: departmentId } });
+    if (!dept || dept.orgId !== org.id) return { ok: false, error: "Department not found." };
+  }
+  await prisma.orgMember.update({
+    where: { id: memberId },
+    data: { departmentId: departmentId || null },
+  });
+  await resyncMemberLinks(member.userId);
   revalidatePath("/dashboard/org");
   revalidatePath("/dashboard");
   return { ok: true };
@@ -342,7 +464,7 @@ export async function addMemberDirect(input: {
       orgMembership: { create: { orgId: org.id, role: "MEMBER" } },
     },
   });
-  await syncSharedLinksToMember(created.id, parseSharedLinks(org.sharedLinks));
+  await applyLinksToMember(created.id, parseSharedLinks(org.sharedLinks));
   revalidatePath("/dashboard/org");
   return { ok: true };
 }
@@ -424,7 +546,7 @@ export async function acceptOrgInvite(rawToken: string): Promise<OrgResult> {
       },
     }),
   ]);
-  await syncSharedLinksToMember(user.id, parseSharedLinks(invite.org.sharedLinks));
+  await applyLinksToMember(user.id, parseSharedLinks(invite.org.sharedLinks));
   revalidatePath("/dashboard/org");
   return { ok: true };
 }
