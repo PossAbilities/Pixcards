@@ -269,6 +269,44 @@ export function DigitalCard({
     </div>
   );
 
+  // Tappable contact rows (email/phone) with accent icons — mirrors the
+  // printed card. Each shows only when the field is set.
+  const contactItem = (icon: string, label: string, href: string) => {
+    const inner = (
+      <>
+        <span
+          className="grid place-items-center rounded-[10px] shrink-0"
+          style={{ width: 40, height: 40, background: accent, color: "#fff" }}
+        >
+          <Icon name={icon} className="text-[20px]" />
+        </span>
+        <span className="flex-1 text-left font-semibold text-sm truncate">{label}</span>
+      </>
+    );
+    const cls =
+      "flex items-center gap-3 p-3 rounded-xl border transition hover:shadow-md hover:-translate-y-0.5";
+    const style: React.CSSProperties = {
+      borderColor: dark ? "#1e293b" : "#eceef0",
+      background: dark ? "#0f172a" : "#fff",
+    };
+    return interactive ? (
+      <a key={icon} href={href} className={cls} style={style}>
+        {inner}
+      </a>
+    ) : (
+      <div key={icon} className={cls} style={style}>
+        {inner}
+      </div>
+    );
+  };
+  const contactRows =
+    data.email || data.phone ? (
+      <div className="flex flex-col gap-3">
+        {data.email && contactItem("mail", data.email, `mailto:${data.email}`)}
+        {data.phone && contactItem("call", data.phone, `tel:${data.phone}`)}
+      </div>
+    ) : null;
+
   const linkGrid = (
     <div className="grid grid-cols-3 gap-3">
       {data.links.length === 0 && (
@@ -367,6 +405,7 @@ export function DigitalCard({
         {actionButtons}
 
         <div className="px-5 mt-6 flex flex-col gap-3 flex-1">
+          {contactRows}
           {sectionLabel}
           {linkRows}
         </div>
@@ -422,7 +461,10 @@ export function DigitalCard({
           </button>
         </div>
 
-        <div className="px-5 mt-6 flex-1">{linkGrid}</div>
+        <div className="px-5 mt-6 flex flex-col gap-3 flex-1">
+          {contactRows}
+          {linkGrid}
+        </div>
 
         {footer}
       </div>
@@ -468,6 +510,7 @@ export function DigitalCard({
         {actionButtons}
 
         <div className="px-5 mt-6 flex flex-col gap-3 flex-1">
+          {contactRows}
           {sectionLabel}
           {linkRows}
         </div>
@@ -525,6 +568,7 @@ export function DigitalCard({
       {actionButtons}
 
       <div className="px-5 mt-6 flex flex-col gap-3 flex-1">
+        {contactRows}
         {sectionLabel}
         {linkRows}
       </div>
