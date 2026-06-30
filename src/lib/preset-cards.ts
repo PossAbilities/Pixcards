@@ -101,8 +101,8 @@ export async function defaultPerspectiveSpec(): Promise<CardTemplateSpec> {
     back: {
       bg: `url("${chrome.back}")`,
       elements: [
-        { id: eid(), kind: "text", x: 0.063, y: 0.157, w: 0.5, h: 0.06, text: "PERSPECTIVE", color: NAVY, fontSize: 32, fontWeight: 700, align: "left" },
-        { id: eid(), kind: "text", x: 0.063, y: 0.213, w: 0.5, h: 0.06, text: "STUDIO", color: NAVY, fontSize: 32, fontWeight: 700, align: "left" },
+        { id: eid(), kind: "text", x: 0.063, y: 0.121, w: 0.5, h: 0.06, text: "PERSPECTIVE", color: NAVY, fontSize: 32, fontWeight: 700, align: "left" },
+        { id: eid(), kind: "text", x: 0.063, y: 0.179, w: 0.5, h: 0.06, text: "STUDIO", color: NAVY, fontSize: 32, fontWeight: 700, align: "left" },
         { id: eid(), kind: "text", x: 0.063, y: 0.345, w: 0.65, h: 0.09, text: "Bold creative work that’s", color: NAVY, fontSize: 42, fontWeight: 800, align: "left" },
         { id: eid(), kind: "text", x: 0.063, y: 0.42, w: 0.65, h: 0.09, text: "impossible to ignore.", color: NAVY, fontSize: 42, fontWeight: 800, align: "left" },
         { id: eid(), kind: "image", x: 0.059, y: 0.578, w: 0.028, h: 0.042, src: chrome.mail },

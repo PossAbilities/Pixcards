@@ -138,6 +138,7 @@ export async function setUserCardPreset(
       data.template = t.template;
       data.brandHeader = t.brandHeader;
       data.accentColor = t.accentColor;
+      data.panelColor = t.panelColor;
     }
     if (preset === "perspective" && !profile.cardDesign) {
       data.cardDesign = JSON.stringify(await defaultPerspectiveSpec());

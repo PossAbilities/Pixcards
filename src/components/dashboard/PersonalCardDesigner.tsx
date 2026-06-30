@@ -77,6 +77,16 @@ export function PersonalCardDesigner({
     mutateSide((s) => ({ ...s, elements: s.elements.filter((e) => e.id !== id) }));
     setSelectedId(null);
   }
+  /** Copy the selected element's position/size/style onto the other side
+   *  (adds it if missing there, or moves the existing one to match). */
+  function copyToOtherSide(el: TemplateElement) {
+    const other = activeSide === "front" ? "back" : "front";
+    setSpec((prev) => ({
+      ...prev,
+      [other]: { ...prev[other], elements: [...prev[other].elements, { ...el, id: uid() }] },
+    }));
+    setSaved(false);
+  }
   function reorder(id: string, dir: "front" | "back") {
     mutateSide((s) => {
       const i = s.elements.findIndex((e) => e.id === id);
@@ -305,6 +315,9 @@ export function PersonalCardDesigner({
                   {selected.kind} element
                 </span>
                 <div className="flex gap-1">
+                  <button type="button" onClick={() => copyToOtherSide(selected)} title={`Copy to ${activeSide === "front" ? "back" : "front"}, same position`} className="rounded p-1 hover:bg-surface-2">
+                    <Icon name="content_copy" className="text-[16px]" />
+                  </button>
                   <button type="button" onClick={() => reorder(selected.id, "back")} title="Send back" className="rounded p-1 hover:bg-surface-2">
                     <Icon name="flip_to_back" className="text-[16px]" />
                   </button>
@@ -315,6 +328,35 @@ export function PersonalCardDesigner({
                     <Icon name="delete" className="text-[16px]" />
                   </button>
                 </div>
+              </div>
+
+              {/* Precise position — for exact alignment (e.g. matching the
+                  logo's spot on both sides) rather than eyeballing a drag. */}
+              <div className="mb-3 grid grid-cols-2 gap-2">
+                <label className="text-xs text-muted">
+                  X %
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={0.5}
+                    value={Math.round(selected.x * 1000) / 10}
+                    onChange={(e) => updateEl(selected.id, { x: Number(e.target.value) / 100 })}
+                    className={cn(inputClass, "mt-0.5")}
+                  />
+                </label>
+                <label className="text-xs text-muted">
+                  Y %
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={0.5}
+                    value={Math.round(selected.y * 1000) / 10}
+                    onChange={(e) => updateEl(selected.id, { y: Number(e.target.value) / 100 })}
+                    className={cn(inputClass, "mt-0.5")}
+                  />
+                </label>
               </div>
 
               {selected.kind === "text" && (

@@ -9,6 +9,7 @@ export type PresetProfileTheme = {
   template: string;
   brandHeader: string;
   accentColor: string;
+  panelColor: string;
 };
 
 export const PRESET_PROFILE_THEME: Record<string, PresetProfileTheme> = {
@@ -17,6 +18,7 @@ export const PRESET_PROFILE_THEME: Record<string, PresetProfileTheme> = {
     template: "brand",
     brandHeader: "linear-gradient(135deg,#1a2046 0%,#0f1330 60%,#0a0d22 100%)",
     accentColor: "#ff5a1f",
+    panelColor: "#c7ec4f",
   },
 };
 

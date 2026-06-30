@@ -51,6 +51,7 @@ type ProfileState = {
   template: string;
   accentColor?: string | null;
   brandHeader?: string | null;
+  panelColor?: string | null;
 };
 
 type LinkDraft = { platform: string; label: string; url: string };
@@ -102,6 +103,7 @@ export function ProfileEditor({
       templateId: form.template,
       brandHeader: form.brandHeader,
       accent: form.accentColor,
+      panelColor: form.panelColor,
       links,
     }),
     [form, links],

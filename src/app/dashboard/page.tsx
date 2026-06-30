@@ -99,6 +99,7 @@ export default async function ProfilePage() {
           template: profile.template,
           accentColor: profile.accentColor,
           brandHeader: profile.brandHeader,
+          panelColor: profile.panelColor,
         }}
         links={profile.links.map((l) => ({
           id: l.id,

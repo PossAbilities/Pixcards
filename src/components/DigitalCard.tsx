@@ -6,6 +6,16 @@ import { BrandTile } from "./BrandIcon";
 import { theme as getTheme } from "@/lib/constants";
 import { buildVCard, initials, cn } from "@/lib/utils";
 
+/** Black or white, whichever reads better on a given hex colour. */
+function readableInk(hex?: string | null): string {
+  if (!hex || !/^#[0-9a-fA-F]{6}$/.test(hex)) return "#12142f";
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return lum > 0.62 ? "#12142f" : "#ffffff";
+}
+
 export type CardLink = {
   id: string;
   platform: string;
@@ -30,6 +40,8 @@ export type CardData = {
   brandHeader?: string | null;
   /** Optional brand accent that overrides the preset theme accent. */
   accent?: string | null;
+  /** Optional second brand colour (e.g. a lime panel) for the "brand" template. */
+  panelColor?: string | null;
   links: CardLink[];
 };
 
@@ -49,6 +61,8 @@ export function DigitalCard({
   const t = getTheme(data.themeId);
   const headerBg = data.brandHeader || t.header;
   const accent = data.accent || t.accent;
+  const panel = data.panelColor || `${accent}1a`;
+  const panelInk = readableInk(data.panelColor);
   const template = data.templateId || "classic";
   const [copied, setCopied] = useState(false);
   const dark = t.surface !== "#ffffff";
@@ -356,67 +370,81 @@ export function DigitalCard({
     color: t.ink,
   };
 
-  /* --- BRAND — mirrors the printed card's structure --------------------- */
+  /* --- BRAND — a literal echo of the printed card: navy hero, lime panel,
+         gradient strip, blob cut-out, pill CTA ------------------------- */
   if (template === "brand") {
+    const strip = `linear-gradient(90deg, ${panel} 0%, #5aa0e0 50%, ${accent} 100%)`;
     return (
-      <div className={wrapperCls} style={wrapperStyle}>
-        {/* Hero — bold name + role on the brand header, like the card front */}
-        <div className="relative shrink-0 px-6 pt-8 pb-7" style={{ background: headerBg }}>
-          <div className="flex items-center gap-4">
-            {avatarNode(72)}
+      <div className={wrapperCls} style={{ ...wrapperStyle, background: "#fff" }}>
+        {/* Hero — navy card-front: small avatar badge, bold name, role, ring */}
+        <div className="relative shrink-0 overflow-hidden px-6 pb-9 pt-8" style={{ background: headerBg }}>
+          <span
+            className="pointer-events-none absolute right-6 top-7 h-7 w-7 rounded-full border-[3px]"
+            style={{ borderColor: accent }}
+            aria-hidden
+          />
+          <div className="flex items-center gap-3.5">
+            {avatarNode(60)}
             <div className="min-w-0">
-              <h1 className="font-display text-[26px] font-bold leading-tight tracking-tight text-white truncate">
+              <h1 className="font-display text-2xl font-bold leading-tight tracking-tight text-white truncate">
                 {data.name || "Your Name"}
               </h1>
               {(data.jobTitle || data.company) && (
-                <p className="mt-0.5 truncate text-sm font-semibold text-white/85">
+                <p className="mt-0.5 truncate text-sm font-semibold" style={{ color: panel }}>
                   {[data.jobTitle, data.company].filter(Boolean).join(" · ")}
                 </p>
               )}
-              {data.location && (
-                <span className="mt-1 inline-flex items-center gap-1 text-xs text-white/70">
-                  <Icon name="location_on" className="text-[14px]" />
-                  {data.location}
-                </span>
-              )}
             </div>
           </div>
-          <div className="absolute inset-x-0 bottom-0 h-1.5" style={{ background: accent }} aria-hidden />
+          {data.location && (
+            <span className="mt-3 inline-flex items-center gap-1 text-xs text-white/65">
+              <Icon name="location_on" className="text-[14px]" />
+              {data.location}
+            </span>
+          )}
+          {/* Signature gradient strip — same recipe as the printed card edge. */}
+          <div className="absolute inset-x-0 bottom-0 h-2" style={{ background: strip }} aria-hidden />
         </div>
 
-        {/* Tagline block — mirrors the card back's bold statement */}
-        {data.bio && (
-          <div className="px-6 py-6" style={{ background: `${accent}14` }}>
-            <p className="font-display text-lg font-bold leading-snug" style={{ color: t.ink }}>
+        {/* Panel — lime card-back echo: blob cut-out, tagline, CTA pills */}
+        <div className="relative -mt-px overflow-hidden px-6 pb-7 pt-7" style={{ background: panel }}>
+          <span
+            className="pointer-events-none absolute -right-6 -top-12 h-28 w-28 rounded-full"
+            style={{ background: headerBg }}
+            aria-hidden
+          />
+          {data.bio && (
+            <p className="relative font-display text-[19px] font-bold leading-snug" style={{ color: panelInk }}>
               {data.bio}
             </p>
-          </div>
-        )}
+          )}
 
-        {/* Pill CTAs — mirrors the card's rounded action pill */}
-        <div className="px-5 mt-5">
-          <button
-            type="button"
-            onClick={interactive ? saveContact : undefined}
-            className="flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold text-white transition active:scale-95"
-            style={{ background: accent, boxShadow: `0 10px 24px -8px ${accent}99` }}
-          >
-            <Icon name="person_add" className="text-[20px]" />
-            Save Contact
-          </button>
-          <button
-            type="button"
-            onClick={interactive ? share : undefined}
-            className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-full border-2 py-3 text-sm font-semibold transition active:scale-95"
-            style={{ borderColor: dark ? "#334155" : "#e6e8ec", color: t.ink }}
-          >
-            <Icon name={copied ? "check" : "ios_share"} className="text-[18px]" />
-            {copied ? "Copied!" : "Share my card"}
-          </button>
+          <div className="relative mt-5">
+            <button
+              type="button"
+              onClick={interactive ? saveContact : undefined}
+              className="flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold text-white transition active:scale-95"
+              style={{ background: accent, boxShadow: `0 10px 24px -8px ${accent}99` }}
+            >
+              <Icon name="person_add" className="text-[20px]" />
+              Save Contact
+            </button>
+            <button
+              type="button"
+              onClick={interactive ? share : undefined}
+              className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-full py-3 text-sm font-semibold transition active:scale-95"
+              style={{ background: "#ffffff", color: panelInk }}
+            >
+              <Icon name={copied ? "check" : "ios_share"} className="text-[18px]" />
+              {copied ? "Copied!" : "Share my card"}
+            </button>
+          </div>
+
+          {contactRows && <div className="relative mt-5">{contactRows}</div>}
         </div>
 
-        <div className="px-5 mt-6 flex flex-col gap-3 flex-1">
-          {contactRows}
+        {/* White body — links, easiest to scan on a plain background */}
+        <div className="flex flex-1 flex-col gap-3 px-5 pt-6" style={{ color: t.ink }}>
           {sectionLabel}
           {linkRows}
         </div>

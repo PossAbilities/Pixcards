@@ -110,6 +110,7 @@ export default async function PublicCardPage({
     templateId: profile.template,
     brandHeader: profile.brandHeader || undefined,
     accent,
+    panelColor: profile.panelColor || undefined,
     links: profile.links.map((l) => ({
       id: l.id,
       platform: l.platform,
