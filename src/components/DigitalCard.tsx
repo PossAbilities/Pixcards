@@ -207,8 +207,8 @@ export function DigitalCard({
       <button
         type="button"
         onClick={interactive ? saveContact : undefined}
-        className="flex flex-col items-center justify-center gap-1 py-3 rounded-xl text-white font-semibold text-sm shadow-md transition active:scale-95"
-        style={{ background: accent }}
+        className="flex items-center justify-center gap-2 py-3.5 rounded-2xl text-white font-semibold text-sm transition active:scale-95"
+        style={{ background: accent, boxShadow: `0 10px 24px -8px ${accent}99` }}
       >
         <Icon name="person_add" className="text-[20px]" />
         Save Contact
@@ -216,26 +216,29 @@ export function DigitalCard({
       <button
         type="button"
         onClick={interactive ? share : undefined}
-        className="flex flex-col items-center justify-center gap-1 py-3 rounded-xl font-semibold text-sm border-2 transition active:scale-95"
+        className="flex items-center justify-center gap-2 py-3.5 rounded-2xl font-semibold text-sm border-2 transition active:scale-95"
         style={{
-          borderColor: dark ? "#334155" : "#e2e8f0",
+          borderColor: dark ? "#334155" : "#e6e8ec",
           background: dark ? "transparent" : "#fff",
           color: t.ink,
         }}
       >
         <Icon name={copied ? "check" : "ios_share"} className="text-[20px]" />
-        {copied ? "Copied!" : "Share My Card"}
+        {copied ? "Copied!" : "Share"}
       </button>
     </div>
   );
 
   const sectionLabel = (
-    <p
-      className="text-xs font-semibold uppercase tracking-widest"
-      style={{ color: subtleColor }}
-    >
-      Connect with me
-    </p>
+    <div className="flex items-center gap-2.5">
+      <span
+        className="text-xs font-semibold uppercase tracking-widest"
+        style={{ color: subtleColor }}
+      >
+        Connect with me
+      </span>
+      <span className="h-px flex-1" style={{ background: dark ? "#1e293b" : "#eceef0" }} />
+    </div>
   );
 
   const linkRows = (
@@ -375,8 +378,8 @@ export function DigitalCard({
                 "linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.15) 45%, transparent 72%)",
             }}
           />
-          <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
-            <h1 className="font-display text-2xl font-bold leading-tight drop-shadow">
+          <div className="absolute bottom-0 left-0 right-0 p-5 pb-6 text-white">
+            <h1 className="font-display text-[28px] font-bold leading-tight tracking-tight drop-shadow">
               {data.name || "Your Name"}
             </h1>
             {(data.jobTitle || data.company) && (
@@ -391,6 +394,8 @@ export function DigitalCard({
               </span>
             )}
           </div>
+          {/* Signature accent strip along the cover's bottom edge. */}
+          <div className="absolute inset-x-0 bottom-0 h-1.5" style={{ background: accent }} aria-hidden />
         </div>
 
         {data.bio && (
@@ -425,6 +430,7 @@ export function DigitalCard({
           ) : (
             <div className="absolute inset-0" style={{ background: headerBg }} />
           )}
+          <div className="absolute inset-x-0 bottom-0 h-1.5" style={{ background: accent }} aria-hidden />
           <div className="absolute -bottom-10 left-1/2 -translate-x-1/2">
             {avatarNode(80)}
           </div>
@@ -475,6 +481,7 @@ export function DigitalCard({
   if (template === "minimal") {
     return (
       <div className={wrapperCls} style={wrapperStyle}>
+        <div className="h-1.5 w-full shrink-0" style={{ background: accent }} aria-hidden />
         <div className="pt-10 px-5 flex flex-col items-center text-center gap-1.5">
           {avatarNode(96)}
           <h1 className="font-display text-2xl font-bold leading-tight mt-3">
@@ -529,13 +536,15 @@ export function DigitalCard({
         ) : (
           <div className="absolute inset-0" style={{ background: headerBg }} />
         )}
+        {/* Signature accent strip — echoes the printed card's edge. */}
+        <div className="absolute inset-x-0 bottom-0 h-1.5" style={{ background: accent }} aria-hidden />
         <div className="absolute -bottom-12 left-1/2 -translate-x-1/2">
           {avatarNode(96)}
         </div>
       </div>
 
       <div className="mt-14 px-5 text-center flex flex-col items-center gap-1.5">
-        <h1 className="font-display text-2xl font-bold leading-tight">
+        <h1 className="font-display text-[26px] font-bold leading-tight tracking-tight">
           {data.name || "Your Name"}
         </h1>
         {(data.jobTitle || data.company) && (
