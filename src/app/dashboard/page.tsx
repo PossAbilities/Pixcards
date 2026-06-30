@@ -1,8 +1,12 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/guards";
 import { appUrl } from "@/lib/constants";
+import { Icon } from "@/components/Icon";
+import { Card, SectionHeading, buttonClass } from "@/components/ui";
 import { ProfileEditor } from "@/components/dashboard/ProfileEditor";
+import { PRESET_OPTIONS } from "@/lib/card-preset-meta";
 
 export default async function ProfilePage() {
   const user = await requireUser();
@@ -34,6 +38,11 @@ export default async function ProfilePage() {
     }
   }
 
+  const presetLabel = profile.cardPreset
+    ? (PRESET_OPTIONS.find((p) => p.id === profile.cardPreset)?.label ?? null)
+    : null;
+  const v = profile.updatedAt.getTime();
+
   return (
     <div>
       <header className="mb-6 md:mb-8">
@@ -44,6 +53,33 @@ export default async function ProfilePage() {
           Manage how your professional identity appears to the world.
         </p>
       </header>
+
+      {presetLabel && (
+        <Card className="mb-6 p-6">
+          <SectionHeading icon="bookmark" title={`Your card template — ${presetLabel}`} />
+          <p className="-mt-1 mb-4 text-sm text-muted">
+            This branded card is saved to your account. It fills automatically
+            from the details below, and your QR points to this profile. Order it
+            from the button — no need to design anything.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {(["front", "back"] as const).map((side) => (
+              <div key={side} className="overflow-hidden rounded-xl border border-outline bg-surface-low">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`/api/card-art/preset/${side}?v=${v}`}
+                  alt={`${side} of your card`}
+                  className="block aspect-[1013/638] w-full object-contain"
+                />
+              </div>
+            ))}
+          </div>
+          <Link href="/dashboard/order" className={buttonClass("primary", "md", "mt-4")}>
+            <Icon name="shopping_cart_checkout" className="text-[18px]" />
+            Order this card
+          </Link>
+        </Card>
+      )}
 
       <ProfileEditor
         plan={user.plan}
