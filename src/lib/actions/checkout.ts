@@ -10,6 +10,7 @@ import { validateDiscount, recordRedemption } from "@/lib/discounts";
 import { sendOrderReceipt, sendProWelcome } from "@/lib/email/dispatch";
 import { recordEvent } from "@/lib/events";
 import { renderPerspectiveSide, type PerspectiveDetails } from "@/lib/preset-cards";
+import { PRESET_PROFILE_THEME } from "@/lib/card-preset-meta";
 
 const presetOrderSchema = z.object({
   quantity: z.coerce.number().int().min(1).max(50).default(1),
@@ -25,18 +26,9 @@ function bareUrl(u: string): string {
 }
 
 /** Remember the user's chosen card preset (or clear it). */
-// Navy header + orange accent so the digital profile matches the card.
-const PRESET_THEME: Record<string, { theme: string; brandHeader: string; accentColor: string }> = {
-  perspective: {
-    theme: "indigo",
-    brandHeader: "linear-gradient(135deg,#1a2046 0%,#0f1330 60%,#0a0d22 100%)",
-    accentColor: "#ff5a1f",
-  },
-};
-
 /** Apply a preset's profile theme (navy/orange for Perspective) to a user. */
 async function applyPresetProfileTheme(userId: string, preset: string) {
-  const t = PRESET_THEME[preset];
+  const t = PRESET_PROFILE_THEME[preset];
   if (!t) return;
   await prisma.profile.updateMany({
     where: { userId },

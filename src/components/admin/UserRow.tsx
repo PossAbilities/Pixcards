@@ -9,7 +9,9 @@ import {
   deleteUser,
   grantPro,
   revokePro,
+  setUserCardPreset,
 } from "@/lib/actions/admin";
+import { PRESET_OPTIONS } from "@/lib/card-preset-meta";
 import { cn, colorFromString, formatDate, initials } from "@/lib/utils";
 
 export type AdminUser = {
@@ -21,6 +23,7 @@ export type AdminUser = {
   proUntil: string | null;
   proComplimentary: boolean;
   role: "USER" | "ADMIN";
+  cardPreset: string | null;
   ordersCount: number;
   createdAt: string;
 };
@@ -271,6 +274,29 @@ export function UserRow({
                 <Icon name="shield_person" className="text-[18px] text-primary" />
                 {user.role === "ADMIN" ? "Revoke admin" : "Make admin"}
               </button>
+              <div className="my-1 h-px bg-black/5" />
+              <div className="px-3 py-2">
+                <span className="flex items-center gap-2 text-sm text-ink">
+                  <Icon name="badge" className="text-[18px] text-primary" />
+                  Card template
+                </span>
+                <select
+                  value={user.cardPreset ?? ""}
+                  onChange={(e) =>
+                    run(() => setUserCardPreset(user.id, e.target.value || null))
+                  }
+                  disabled={isPending}
+                  className="mt-1.5 w-full rounded-lg border border-outline bg-surface px-2.5 py-1.5 text-sm text-ink outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 disabled:opacity-50"
+                >
+                  <option value="">None (custom designer)</option>
+                  {PRESET_OPTIONS.map((p) => (
+                    <option key={p.id} value={p.id}>{p.label}</option>
+                  ))}
+                </select>
+                <span className="mt-1 block text-[11px] text-faint">
+                  Attaches the saved card design + themes their digital profile.
+                </span>
+              </div>
               <div className="my-1 h-px bg-black/5" />
               <button
                 type="button"

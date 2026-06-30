@@ -9,7 +9,7 @@ export default async function AdminUsersPage() {
   const users = await prisma.user.findMany({
     orderBy: { createdAt: "desc" },
     include: {
-      profile: { select: { username: true } },
+      profile: { select: { username: true, cardPreset: true } },
       _count: { select: { orders: true } },
     },
   });
@@ -23,6 +23,7 @@ export default async function AdminUsersPage() {
     proUntil: u.proUntil ? u.proUntil.toISOString() : null,
     proComplimentary: u.proComplimentary,
     role: u.role,
+    cardPreset: u.profile?.cardPreset ?? null,
     ordersCount: u._count.orders,
     createdAt: u.createdAt.toISOString(),
   }));

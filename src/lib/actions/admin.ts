@@ -7,6 +7,7 @@ import { ORDER_STATUSES } from "@/lib/constants";
 import { generateCardCode } from "@/lib/cards";
 import { sendOrderShipped } from "@/lib/email/dispatch";
 import { recordEvent } from "@/lib/events";
+import { PRESET_PROFILE_THEME } from "@/lib/card-preset-meta";
 import type { OrderStatus, Plan, Role } from "@prisma/client";
 
 async function requireAdminUser() {
@@ -79,6 +80,38 @@ export async function deleteOrder(orderId: string): Promise<AdminResult> {
   revalidatePath("/admin/orders");
   revalidatePath("/admin");
   revalidatePath("/dashboard/orders");
+  return { ok: true };
+}
+
+/** Attach (or clear) a saved card preset on a user, applying its profile theme. */
+export async function setUserCardPreset(
+  userId: string,
+  preset: string | null,
+): Promise<AdminResult> {
+  await requireAdminUser();
+  const profile = await prisma.profile.findUnique({ where: { userId } });
+  if (!profile) return { ok: false, error: "That user has no profile yet." };
+  await prisma.profile.update({
+    where: { userId },
+    data: { cardPreset: preset || null },
+  });
+  if (preset) {
+    const t = PRESET_PROFILE_THEME[preset];
+    if (t) {
+      await prisma.profile.update({
+        where: { userId },
+        data: { theme: t.theme, brandHeader: t.brandHeader, accentColor: t.accentColor },
+      });
+    }
+  }
+  await recordEvent({
+    type: "SECURITY",
+    title: `Card preset ${preset ? `"${preset}" attached to` : "cleared from"} a user`,
+    meta: { userId, preset },
+  });
+  revalidatePath("/admin/users");
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/order");
   return { ok: true };
 }
 
