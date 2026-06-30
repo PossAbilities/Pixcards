@@ -48,17 +48,37 @@ export default async function OrderPage({
         </div>
       )}
 
-      {showPreset && (
-        <SavedCardPanel unitPriceCents={presetPrice} defaultName={user.name} />
+      {showPreset ? (
+        <>
+          <SavedCardPanel unitPriceCents={presetPrice} defaultName={user.name} />
+          <details className="group rounded-2xl border border-outline bg-surface">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-5">
+              <span className="flex items-center gap-2 text-sm font-semibold text-ink">
+                <Icon name="design_services" className="text-[18px] text-muted" />
+                Design a different card from scratch
+              </span>
+              <Icon name="expand_more" className="text-[20px] text-muted transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="border-t border-outline p-5 pt-2">
+              <CardStudio
+                plan={user.plan}
+                defaultName={user.name}
+                defaultTitle={defaultTitle}
+                shareUrl={shareUrl}
+                avatarUrl={profile?.avatarUrl ?? null}
+              />
+            </div>
+          </details>
+        </>
+      ) : (
+        <CardStudio
+          plan={user.plan}
+          defaultName={user.name}
+          defaultTitle={defaultTitle}
+          shareUrl={shareUrl}
+          avatarUrl={profile?.avatarUrl ?? null}
+        />
       )}
-
-      <CardStudio
-        plan={user.plan}
-        defaultName={user.name}
-        defaultTitle={defaultTitle}
-        shareUrl={shareUrl}
-        avatarUrl={profile?.avatarUrl ?? null}
-      />
     </div>
   );
 }

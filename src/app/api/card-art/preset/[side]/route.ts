@@ -39,6 +39,7 @@ export async function GET(
     phone: profile.phone || "",
     website: websiteLink ? bareUrl(websiteLink) : "perspectivestudio.co.uk",
     profileUrl,
+    logoUrl: profile.cardLogo,
   };
 
   try {

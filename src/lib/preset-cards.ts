@@ -3,9 +3,13 @@ import sharp from "sharp";
 import QRCode from "qrcode";
 import { textOverlay, type TextSvgOpts } from "@/lib/text-render";
 
-// ~CR80 at 300 DPI — matches the rest of the platform's card artwork.
-const W = 1013;
-const H = 638;
+// Base CR80 at 300 DPI; rendered at SCALE× for print-grade output (~600 DPI).
+const BASE_W = 1013;
+const BASE_H = 638;
+const SCALE = 2;
+const W = BASE_W * SCALE;
+const H = BASE_H * SCALE;
+const u = (n: number) => n * SCALE; // base unit → output px
 
 const NAVY = "#12142f";
 const LIME = "#c7ec4f";
@@ -19,17 +23,41 @@ export type PerspectiveDetails = {
   phone: string;
   website: string; // shown on the back ("W" line) + front strapline
   profileUrl: string; // QR + NFC target
+  logoUrl?: string | null; // white logo for the front (replaces the wordmark)
 };
 
-/** Collect text lines, drop empties, and composite them in one pass. */
+/** Decode a data: URL or fetch a URL into image bytes, or null. */
+async function toBytes(value?: string | null): Promise<Buffer | null> {
+  if (!value) return null;
+  try {
+    if (value.startsWith("data:")) {
+      const m = /^data:[^;,]*(;base64)?,([\s\S]*)$/.exec(value);
+      if (!m) return null;
+      return m[1] ? Buffer.from(m[2], "base64") : Buffer.from(decodeURIComponent(m[2]), "utf8");
+    }
+    const res = await fetch(value);
+    if (!res.ok) return null;
+    return Buffer.from(await res.arrayBuffer());
+  } catch {
+    return null;
+  }
+}
+
+/** Collect text lines (scaled), drop empties, composite in one pass. */
 async function compositeText(base: Buffer, lines: TextSvgOpts[]): Promise<Buffer> {
-  const layers = (await Promise.all(lines.map((l) => textOverlay(l)))).filter(
+  const scaled = lines.map((l) => ({
+    ...l,
+    x: u(l.x),
+    y: u(l.y),
+    fontSize: u(l.fontSize),
+  }));
+  const layers = (await Promise.all(scaled.map((l) => textOverlay(l)))).filter(
     (x): x is { input: Buffer; top: number; left: number } => Boolean(x),
   );
   return sharp(base).composite(layers).png().toBuffer();
 }
 
-/** Front (navy): logo, name, lime role, website, orange ring, gradient strip. */
+/** Front (navy): logo (or wordmark), name, lime role, website, ring, strip. */
 async function renderFront(d: PerspectiveDetails): Promise<Buffer> {
   const bg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
 <defs>
@@ -39,35 +67,44 @@ async function renderFront(d: PerspectiveDetails): Promise<Buffer> {
 </defs>
 <rect width="${W}" height="${H}" fill="url(#ng)"/>
 <rect width="${W}" height="${H}" fill="url(#glow)"/>
-<circle cx="930" cy="540" r="15" fill="none" stroke="${ORANGE}" stroke-width="7"/>
-<rect x="0" y="${H - 18}" width="${W}" height="18" fill="url(#strip)"/>
+<circle cx="${u(930)}" cy="${u(540)}" r="${u(15)}" fill="none" stroke="${ORANGE}" stroke-width="${u(7)}"/>
+<rect x="0" y="${u(BASE_H - 18)}" width="${W}" height="${u(18)}" fill="url(#strip)"/>
 </svg>`;
-  const base = await sharp(Buffer.from(bg)).png().toBuffer();
+  let base = await sharp(Buffer.from(bg)).png().toBuffer();
+
+  // Top-left: a white logo if supplied, else the typographic wordmark.
+  const logo = await toBytes(d.logoUrl);
+  if (logo) {
+    const logoH = u(80);
+    const img = await sharp(logo).resize({ height: logoH, fit: "inside" }).png().toBuffer();
+    base = await sharp(base).composite([{ input: img, top: u(56), left: u(64) }]).png().toBuffer();
+  } else {
+    base = await compositeText(base, [
+      { text: "PERSPECTIVE", x: 64, y: 92, fontSize: 30, color: "#ffffff", font: "montserrat" },
+      { text: "STUDIO", x: 64, y: 126, fontSize: 30, color: "#ffffff", font: "montserrat" },
+    ]);
+  }
+
   return compositeText(base, [
-    { text: "PERSPECTIVE", x: 64, y: 92, fontSize: 30, color: "#ffffff", font: "montserrat" },
-    { text: "STUDIO", x: 64, y: 126, fontSize: 30, color: "#ffffff", font: "montserrat" },
     { text: d.name, x: 60, y: 455, fontSize: 86, color: "#ffffff", font: "montserrat" },
     ...(d.role ? [{ text: d.role, x: 64, y: 510, fontSize: 34, color: LIME, font: "montserrat" as const }] : []),
     ...(d.website ? [{ text: d.website, x: 64, y: 556, fontSize: 28, color: MUTED, font: "dmsans" as const }] : []),
   ]);
 }
 
-// Small line-icons (orange) drawn next to each contact line. Vector shapes go
-// straight into the background SVG (short paths — no librsvg truncation risk).
+// Small line-icons (orange) next to each contact line. Scaled into the bg SVG.
 function mailIcon(x: number, y: number): string {
-  return `<g transform="translate(${x},${y})"><rect x="0" y="3" width="28" height="19" rx="3.5" fill="none" stroke="${ORANGE}" stroke-width="2.6"/><path d="M1.5 6 L14 15 L26.5 6" fill="none" stroke="${ORANGE}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></g>`;
+  return `<g transform="translate(${u(x)},${u(y)}) scale(${SCALE})"><rect x="0" y="3" width="28" height="19" rx="3.5" fill="none" stroke="${ORANGE}" stroke-width="2.6"/><path d="M1.5 6 L14 15 L26.5 6" fill="none" stroke="${ORANGE}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></g>`;
 }
 function phoneIcon(x: number, y: number): string {
-  return `<g transform="translate(${x},${y})"><rect x="6" y="1" width="16" height="24" rx="3.5" fill="none" stroke="${ORANGE}" stroke-width="2.6"/><line x1="11" y1="20.5" x2="17" y2="20.5" stroke="${ORANGE}" stroke-width="2.6" stroke-linecap="round"/></g>`;
+  return `<g transform="translate(${u(x)},${u(y)}) scale(${SCALE})"><rect x="6" y="1" width="16" height="24" rx="3.5" fill="none" stroke="${ORANGE}" stroke-width="2.6"/><line x1="11" y1="20.5" x2="17" y2="20.5" stroke="${ORANGE}" stroke-width="2.6" stroke-linecap="round"/></g>`;
 }
 function globeIcon(x: number, y: number): string {
-  return `<g transform="translate(${x},${y})"><circle cx="13" cy="13" r="12" fill="none" stroke="${ORANGE}" stroke-width="2.4"/><ellipse cx="13" cy="13" rx="5.5" ry="12" fill="none" stroke="${ORANGE}" stroke-width="2.2"/><line x1="1.5" y1="13" x2="24.5" y2="13" stroke="${ORANGE}" stroke-width="2.2"/></g>`;
+  return `<g transform="translate(${u(x)},${u(y)}) scale(${SCALE})"><circle cx="13" cy="13" r="12" fill="none" stroke="${ORANGE}" stroke-width="2.4"/><ellipse cx="13" cy="13" rx="5.5" ry="12" fill="none" stroke="${ORANGE}" stroke-width="2.2"/><line x1="1.5" y1="13" x2="24.5" y2="13" stroke="${ORANGE}" stroke-width="2.2"/></g>`;
 }
 
 /** Back (lime): wordmark, tagline, contacts, orange pill, navy blob, QR. */
 async function renderBack(d: PerspectiveDetails): Promise<Buffer> {
-  // Each contact line shows only when its value is set; the icon sits ~19px
-  // above the text baseline so they line up.
   const icons = [
     d.email ? mailIcon(60, 405 - 19) : "",
     d.phone ? phoneIcon(60, 450 - 19) : "",
@@ -76,9 +113,9 @@ async function renderBack(d: PerspectiveDetails): Promise<Buffer> {
 
   const bg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
 <rect width="${W}" height="${H}" fill="${LIME}"/>
-<circle cx="${W - 70}" cy="60" r="120" fill="${NAVY}"/>
-<rect x="64" y="540" width="360" height="60" rx="30" fill="${ORANGE}"/>
-<rect x="775" y="392" width="180" height="180" rx="22" fill="#ffffff"/>
+<circle cx="${u(BASE_W - 70)}" cy="${u(60)}" r="${u(120)}" fill="${NAVY}"/>
+<rect x="${u(64)}" y="${u(540)}" width="${u(360)}" height="${u(60)}" rx="${u(30)}" fill="${ORANGE}"/>
+<rect x="${u(775)}" y="${u(392)}" width="${u(180)}" height="${u(180)}" rx="${u(22)}" fill="#ffffff"/>
 ${icons}
 </svg>`;
   let base = await sharp(Buffer.from(bg)).png().toBuffer();
@@ -89,9 +126,7 @@ ${icons}
     { text: "Bold creative work that’s", x: 64, y: 250, fontSize: 42, color: NAVY, font: "montserrat" },
     { text: "impossible to ignore.", x: 64, y: 300, fontSize: 42, color: NAVY, font: "montserrat" },
     { text: "Scan · See the work →", x: 244, y: 578, fontSize: 24, color: "#ffffff", align: "center", font: "montserrat" },
-    { text: "SCAN FOR PORTFOLIO", x: 865, y: 600, fontSize: 16, color: NAVY, align: "center", font: "montserrat" },
   ];
-  // Values sit to the right of the icons (icon column ~60–88).
   const contact = (value: string, y: number): TextSvgOpts[] =>
     value ? [{ text: value, x: 104, y, fontSize: 26, color: NAVY, font: "dmsans" }] : [];
   lines.push(...contact(d.email, 405), ...contact(d.phone, 450), ...contact(d.website, 495));
@@ -99,11 +134,11 @@ ${icons}
   base = await compositeText(base, lines);
 
   const qr = await QRCode.toBuffer(d.profileUrl || "https://pixcards.co.uk", {
-    width: 150,
+    width: u(150),
     margin: 1,
     color: { dark: NAVY, light: "#ffffff" },
   });
-  return sharp(base).composite([{ input: qr, top: 407, left: 790 }]).png().toBuffer();
+  return sharp(base).composite([{ input: qr, top: u(407), left: u(790) }]).png().toBuffer();
 }
 
 /** Render one side of the Perspective Studio card as a print-ready PNG. */

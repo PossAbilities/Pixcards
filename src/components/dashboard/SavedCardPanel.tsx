@@ -1,10 +1,11 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { Icon } from "@/components/Icon";
 import { Card, SectionHeading, buttonClass, inputClass, Label } from "@/components/ui";
-import { orderPresetCard } from "@/lib/actions/checkout";
+import { orderPresetCard, saveCardLogo } from "@/lib/actions/checkout";
 import { money } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 type State = { error?: string } | null;
 
@@ -24,8 +25,44 @@ export function SavedCardPanel({
     null,
   );
 
-  // Cache-bust the previews so they reflect the latest profile details.
-  const v = Date.now();
+  // Cache-bust the previews; bumped when the logo changes so they re-render.
+  const [v, setV] = useState(() => Date.now());
+  const [logoBusy, setLogoBusy] = useState(false);
+  const [logoErr, setLogoErr] = useState<string | null>(null);
+  const [, startLogo] = useTransition();
+
+  function onLogo(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      setLogoErr("Keep the logo under 2 MB.");
+      return;
+    }
+    setLogoErr(null);
+    setLogoBusy(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result || "");
+      startLogo(async () => {
+        const res = await saveCardLogo(dataUrl);
+        setLogoBusy(false);
+        if (res.ok) setV(Date.now());
+        else setLogoErr(res.error ?? "Could not save the logo.");
+      });
+    };
+    reader.onerror = () => { setLogoBusy(false); setLogoErr("Could not read that file."); };
+    reader.readAsDataURL(file);
+  }
+
+  function removeLogo() {
+    setLogoBusy(true);
+    startLogo(async () => {
+      await saveCardLogo(null);
+      setLogoBusy(false);
+      setV(Date.now());
+    });
+  }
 
   return (
     <Card className="mb-8 p-6">
@@ -47,6 +84,22 @@ export function SavedCardPanel({
             />
           </div>
         ))}
+      </div>
+
+      {/* Logo: replaces the top-left wordmark on the front */}
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <label className={cn(buttonClass("outline", "sm"), logoBusy && "pointer-events-none opacity-60")}>
+          <Icon name="upload" className="text-[16px]" />
+          {logoBusy ? "Saving…" : "Upload white logo"}
+          <input type="file" accept="image/png,image/svg+xml,image/webp" onChange={onLogo} className="hidden" />
+        </label>
+        <button type="button" onClick={removeLogo} disabled={logoBusy} className="text-xs font-semibold text-muted hover:text-primary">
+          Remove logo
+        </button>
+        <span className="text-xs text-faint">
+          Replaces the &ldquo;Perspective Studio&rdquo; text top-left. Use a transparent PNG/SVG.
+        </span>
+        {logoErr && <span className="text-sm font-medium text-red-600">{logoErr}</span>}
       </div>
 
       <form action={action} className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -80,7 +133,8 @@ export function SavedCardPanel({
       </form>
 
       <p className="mt-4 text-xs text-faint">
-        Prefer to start from scratch? Use the designer below instead.
+        To change the name, role or contact details, edit your{" "}
+        <strong>Profile</strong> — they flow onto the card automatically.
       </p>
     </Card>
   );

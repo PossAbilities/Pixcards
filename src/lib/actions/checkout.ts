@@ -36,6 +36,20 @@ async function applyPresetProfileTheme(userId: string, preset: string) {
   });
 }
 
+/** Save (or clear) the logo used on the saved card design. */
+export async function saveCardLogo(dataUrl: string | null): Promise<{ ok: boolean; error?: string }> {
+  const user = await getSessionUser();
+  if (!user) return { ok: false, error: "Not signed in." };
+  if (dataUrl && dataUrl.length > 3_000_000) {
+    return { ok: false, error: "That image is too large — keep it under ~2 MB." };
+  }
+  await prisma.profile.updateMany({
+    where: { userId: user.id },
+    data: { cardLogo: dataUrl || null },
+  });
+  return { ok: true };
+}
+
 export async function saveCardPreset(preset: string | null): Promise<{ ok: boolean }> {
   const user = await getSessionUser();
   if (!user) return { ok: false };
@@ -76,6 +90,7 @@ export async function orderPresetCard(
     phone: profile.phone || "",
     website: profile.links[0]?.url ? bareUrl(profile.links[0].url) : "perspectivestudio.co.uk",
     profileUrl,
+    logoUrl: profile.cardLogo,
   };
 
   const [front, back] = await Promise.all([
