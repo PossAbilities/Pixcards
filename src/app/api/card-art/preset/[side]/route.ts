@@ -40,6 +40,7 @@ export async function GET(
     website: websiteLink ? bareUrl(websiteLink) : "perspectivestudio.co.uk",
     profileUrl,
     logoUrl: profile.cardLogo,
+    logoDark: profile.cardLogoDark,
   };
 
   try {

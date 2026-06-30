@@ -23,7 +23,8 @@ export type PerspectiveDetails = {
   phone: string;
   website: string; // shown on the back ("W" line) + front strapline
   profileUrl: string; // QR + NFC target
-  logoUrl?: string | null; // white logo for the front (replaces the wordmark)
+  logoUrl?: string | null; // white logo for the dark front (replaces wordmark)
+  logoDark?: string | null; // dark logo for the light back (replaces wordmark)
 };
 
 /** Decode a data: URL or fetch a URL into image bytes, or null. */
@@ -120,13 +121,23 @@ ${icons}
 </svg>`;
   let base = await sharp(Buffer.from(bg)).png().toBuffer();
 
-  const lines: TextSvgOpts[] = [
-    { text: "PERSPECTIVE", x: 64, y: 120, fontSize: 32, color: NAVY, font: "montserrat" },
-    { text: "STUDIO", x: 64, y: 154, fontSize: 32, color: NAVY, font: "montserrat" },
+  // Top-left: a dark logo if supplied (light background), else the wordmark.
+  const logoD = await toBytes(d.logoDark);
+  const lines: TextSvgOpts[] = [];
+  if (logoD) {
+    const img = await sharp(logoD).resize({ height: u(80), fit: "inside" }).png().toBuffer();
+    base = await sharp(base).composite([{ input: img, top: u(98), left: u(64) }]).png().toBuffer();
+  } else {
+    lines.push(
+      { text: "PERSPECTIVE", x: 64, y: 120, fontSize: 32, color: NAVY, font: "montserrat" },
+      { text: "STUDIO", x: 64, y: 154, fontSize: 32, color: NAVY, font: "montserrat" },
+    );
+  }
+  lines.push(
     { text: "Bold creative work that’s", x: 64, y: 250, fontSize: 42, color: NAVY, font: "montserrat" },
     { text: "impossible to ignore.", x: 64, y: 300, fontSize: 42, color: NAVY, font: "montserrat" },
     { text: "Scan · See the work →", x: 244, y: 578, fontSize: 24, color: "#ffffff", align: "center", font: "montserrat" },
-  ];
+  );
   const contact = (value: string, y: number): TextSvgOpts[] =>
     value ? [{ text: value, x: 104, y, fontSize: 26, color: NAVY, font: "dmsans" }] : [];
   lines.push(...contact(d.email, 405), ...contact(d.phone, 450), ...contact(d.website, 495));

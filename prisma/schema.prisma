@@ -217,9 +217,12 @@ model Profile {
   brandHeader String?
   // Saved physical-card design preset (e.g. "perspective") used when ordering.
   cardPreset  String?
-  // Optional logo for the saved card design (data URL or storage URL).
-  cardLogo    String?
-  published   Boolean @default(true)
+  // Optional logos for the saved card design (data URL or storage URL):
+  // cardLogo = white/light logo for dark sides; cardLogoDark = dark logo for
+  // light sides.
+  cardLogo     String?
+  cardLogoDark String?
+  published    Boolean @default(true)
 
   links  Link[]
   events AnalyticsEvent[]

@@ -31,7 +31,7 @@ export function SavedCardPanel({
   const [logoErr, setLogoErr] = useState<string | null>(null);
   const [, startLogo] = useTransition();
 
-  function onLogo(e: React.ChangeEvent<HTMLInputElement>) {
+  function onLogo(e: React.ChangeEvent<HTMLInputElement>, variant: "light" | "dark") {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
@@ -45,7 +45,7 @@ export function SavedCardPanel({
     reader.onload = () => {
       const dataUrl = String(reader.result || "");
       startLogo(async () => {
-        const res = await saveCardLogo(dataUrl);
+        const res = await saveCardLogo(dataUrl, variant);
         setLogoBusy(false);
         if (res.ok) setV(Date.now());
         else setLogoErr(res.error ?? "Could not save the logo.");
@@ -55,10 +55,10 @@ export function SavedCardPanel({
     reader.readAsDataURL(file);
   }
 
-  function removeLogo() {
+  function removeLogo(variant: "light" | "dark") {
     setLogoBusy(true);
     startLogo(async () => {
-      await saveCardLogo(null);
+      await saveCardLogo(null, variant);
       setLogoBusy(false);
       setV(Date.now());
     });
@@ -86,21 +86,38 @@ export function SavedCardPanel({
         ))}
       </div>
 
-      {/* Logo: replaces the top-left wordmark on the front */}
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <label className={cn(buttonClass("outline", "sm"), logoBusy && "pointer-events-none opacity-60")}>
-          <Icon name="upload" className="text-[16px]" />
-          {logoBusy ? "Saving…" : "Upload white logo"}
-          <input type="file" accept="image/png,image/svg+xml,image/webp" onChange={onLogo} className="hidden" />
-        </label>
-        <button type="button" onClick={removeLogo} disabled={logoBusy} className="text-xs font-semibold text-muted hover:text-primary">
-          Remove logo
-        </button>
-        <span className="text-xs text-faint">
-          Replaces the &ldquo;Perspective Studio&rdquo; text top-left. Use a transparent PNG/SVG.
-        </span>
-        {logoErr && <span className="text-sm font-medium text-red-600">{logoErr}</span>}
+      {/* Logos: replace the top-left wordmark. White on the dark front, dark on
+          the light back. Both optional. */}
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-xl border border-outline p-3">
+          <p className="text-xs font-semibold text-ink">White logo — front (dark)</p>
+          <p className="mt-0.5 text-xs text-faint">Transparent PNG/SVG, light/white artwork.</p>
+          <div className="mt-2 flex items-center gap-3">
+            <label className={cn(buttonClass("outline", "sm"), logoBusy && "pointer-events-none opacity-60")}>
+              <Icon name="upload" className="text-[16px]" /> Upload
+              <input type="file" accept="image/png,image/svg+xml,image/webp" onChange={(e) => onLogo(e, "light")} className="hidden" />
+            </label>
+            <button type="button" onClick={() => removeLogo("light")} disabled={logoBusy} className="text-xs font-semibold text-muted hover:text-primary">
+              Remove
+            </button>
+          </div>
+        </div>
+        <div className="rounded-xl border border-outline p-3">
+          <p className="text-xs font-semibold text-ink">Dark logo — back (light)</p>
+          <p className="mt-0.5 text-xs text-faint">Transparent PNG/SVG, dark/navy artwork.</p>
+          <div className="mt-2 flex items-center gap-3">
+            <label className={cn(buttonClass("outline", "sm"), logoBusy && "pointer-events-none opacity-60")}>
+              <Icon name="upload" className="text-[16px]" /> Upload
+              <input type="file" accept="image/png,image/svg+xml,image/webp" onChange={(e) => onLogo(e, "dark")} className="hidden" />
+            </label>
+            <button type="button" onClick={() => removeLogo("dark")} disabled={logoBusy} className="text-xs font-semibold text-muted hover:text-primary">
+              Remove
+            </button>
+          </div>
+        </div>
       </div>
+      {logoErr && <p className="mt-2 text-sm font-medium text-red-600">{logoErr}</p>}
+      {logoBusy && <p className="mt-2 text-xs text-muted">Saving logo…</p>}
 
       <form action={action} className="mt-5 grid gap-3 sm:grid-cols-2">
         <input type="hidden" name="quantity" value="1" />
