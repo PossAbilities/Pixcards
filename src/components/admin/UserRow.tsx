@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { Icon } from "@/components/Icon";
 import { Badge, ProBadge, buttonClass } from "@/components/ui";
 import {
@@ -45,7 +45,19 @@ export function UserRow({
   currentAdminId: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
   const [proOpen, setProOpen] = useState(false);
+
+  function toggleMenu() {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    const r = btnRef.current?.getBoundingClientRect();
+    if (r) setMenuPos({ top: r.bottom + 6, right: window.innerWidth - r.right });
+    setOpen(true);
+  }
   const [durationDays, setDurationDays] = useState<number | null>(30);
   const [complimentary, setComplimentary] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -170,8 +182,9 @@ export function UserRow({
       </td>
       <td className="px-4 py-3 text-right relative">
         <button
+          ref={btnRef}
           type="button"
-          onClick={() => setOpen((v) => !v)}
+          onClick={toggleMenu}
           disabled={isPending}
           aria-label="Actions"
           className="grid place-items-center w-8 h-8 rounded-lg text-muted hover:bg-surface-high hover:text-ink transition-colors ml-auto"
@@ -192,9 +205,12 @@ export function UserRow({
                 setOpen(false);
                 setProOpen(false);
               }}
-              className="fixed inset-0 z-10 cursor-default"
+              className="fixed inset-0 z-40 cursor-default"
             />
-            <div className="absolute right-4 top-12 z-20 w-60 rounded-xl border border-black/5 bg-surface shadow-lg p-1 text-left">
+            <div
+              className="fixed z-50 w-60 rounded-xl border border-black/5 bg-surface shadow-lg p-1 text-left"
+              style={{ top: menuPos?.top ?? 0, right: menuPos?.right ?? 16 }}
+            >
               <button
                 type="button"
                 onClick={togglePlan}
