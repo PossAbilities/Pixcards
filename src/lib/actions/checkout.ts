@@ -25,6 +25,25 @@ function bareUrl(u: string): string {
 }
 
 /** Remember the user's chosen card preset (or clear it). */
+// Navy header + orange accent so the digital profile matches the card.
+const PRESET_THEME: Record<string, { theme: string; brandHeader: string; accentColor: string }> = {
+  perspective: {
+    theme: "indigo",
+    brandHeader: "linear-gradient(135deg,#1a2046 0%,#0f1330 60%,#0a0d22 100%)",
+    accentColor: "#ff5a1f",
+  },
+};
+
+/** Apply a preset's profile theme (navy/orange for Perspective) to a user. */
+async function applyPresetProfileTheme(userId: string, preset: string) {
+  const t = PRESET_THEME[preset];
+  if (!t) return;
+  await prisma.profile.updateMany({
+    where: { userId },
+    data: { theme: t.theme, brandHeader: t.brandHeader, accentColor: t.accentColor },
+  });
+}
+
 export async function saveCardPreset(preset: string | null): Promise<{ ok: boolean }> {
   const user = await getSessionUser();
   if (!user) return { ok: false };
@@ -32,6 +51,7 @@ export async function saveCardPreset(preset: string | null): Promise<{ ok: boole
     where: { userId: user.id },
     data: { cardPreset: preset || null },
   });
+  if (preset) await applyPresetProfileTheme(user.id, preset);
   return { ok: true };
 }
 
@@ -97,6 +117,7 @@ export async function orderPresetCard(
     },
   });
   await prisma.profile.updateMany({ where: { userId: user!.id }, data: { cardPreset: "perspective" } });
+  await applyPresetProfileTheme(user!.id, "perspective");
   await recordEvent({
     type: "ORDER_PLACED",
     title: `Preset card order from ${user!.name}`,
