@@ -10,6 +10,7 @@ import {
   grantPro,
   revokePro,
   setUserCardPreset,
+  clearUserCardsAndOrders,
 } from "@/lib/actions/admin";
 import { PRESET_OPTIONS } from "@/lib/card-preset-meta";
 import { cn, colorFromString, formatDate, initials } from "@/lib/utils";
@@ -106,6 +107,16 @@ export function UserRow({
   function remove() {
     if (!confirm(`Delete ${user.name}? This cannot be undone.`)) return;
     run(() => deleteUser(user.id));
+  }
+
+  function clearCards() {
+    if (
+      !confirm(
+        `Delete ALL card orders and NFC cards for ${user.name} (${user.email})? This can't be undone.`,
+      )
+    )
+      return;
+    run(() => clearUserCardsAndOrders(user.id));
   }
 
   return (
@@ -298,6 +309,15 @@ export function UserRow({
                 </span>
               </div>
               <div className="my-1 h-px bg-black/5" />
+              <button
+                type="button"
+                onClick={clearCards}
+                disabled={isPending}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40"
+              >
+                <Icon name="credit_card_off" className="text-[18px]" />
+                Clear orders &amp; cards
+              </button>
               <button
                 type="button"
                 onClick={remove}

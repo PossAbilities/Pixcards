@@ -83,6 +83,33 @@ export async function deleteOrder(orderId: string): Promise<AdminResult> {
   return { ok: true };
 }
 
+/** Delete all of a user's card orders and the NFC cards linked to them. */
+export async function clearUserCardsAndOrders(userId: string): Promise<AdminResult> {
+  await requireAdminUser();
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, name: true, email: true },
+  });
+  if (!user) return { ok: false, error: "User not found." };
+
+  const [cards, orders] = await prisma.$transaction([
+    prisma.card.deleteMany({ where: { userId } }),
+    prisma.order.deleteMany({ where: { userId } }),
+  ]);
+
+  await recordEvent({
+    type: "SECURITY",
+    title: `Cleared ${orders.count} order(s) + ${cards.count} card(s) for ${user.email}`,
+    meta: { userId, orders: orders.count, cards: cards.count },
+  });
+  revalidatePath("/admin/orders");
+  revalidatePath("/admin/cards");
+  revalidatePath("/admin/users");
+  revalidatePath("/dashboard/orders");
+  revalidatePath("/dashboard/cards");
+  return { ok: true };
+}
+
 /** Attach (or clear) a saved card preset on a user, applying its profile theme. */
 export async function setUserCardPreset(
   userId: string,
