@@ -2,13 +2,16 @@ import "server-only";
 import sharp from "sharp";
 import QRCode from "qrcode";
 import { nfcMarkSvg } from "@/lib/nfc-logo";
-import { textPath } from "@/lib/text-render";
+import { textPath, textOverlay } from "@/lib/text-render";
 import {
   applyMerge,
   type CardTemplateSpec,
   type MergeData,
   type SideSpec,
 } from "@/lib/card-template";
+
+/** Default output scale — renders at ~2x (≈600 DPI) for crisp printing. */
+export const PRINT_SCALE = 2;
 
 /** NFC mark with the "NFC" label rendered as a font path (server-safe). */
 function nfcMark(ink: string): string {
@@ -126,52 +129,61 @@ export async function renderMemberCardPng(opts: {
 
 /* -------------------------- Template rendering --------------------------- */
 
-/** Render one side of an org card template with a member's details merged in. */
+/**
+ * Render one side of a card template (org or personal) with details merged
+ * in. `scale` multiplies the base CR80 canvas (1013×638) for print-grade
+ * output — text uses sharp's native Pango engine (proper shaping/kerning;
+ * the per-glyph path renderer produces fill artifacts on some heavy/bold
+ * fonts at long line lengths).
+ */
 export async function renderTemplateSidePng(
   side: SideSpec,
   merge: MergeData,
+  scale = PRINT_SCALE,
 ): Promise<Buffer> {
+  const ow = Math.round(W * scale);
+  const oh = Math.round(H * scale);
+
   // Background: image, gradient, or solid colour.
   let base: Buffer;
   const bgImg = side.bg.startsWith("url(")
     ? dataUrlToBuffer(side.bg.slice(side.bg.indexOf("(") + 1, side.bg.lastIndexOf(")")).replace(/['"]/g, ""))
     : null;
   if (bgImg) {
-    base = await sharp(bgImg).resize(W, H, { fit: "cover" }).png().toBuffer();
+    base = await sharp(bgImg).resize(ow, oh, { fit: "cover" }).png().toBuffer();
   } else {
     const grad = gradientDef(side.bg, "bg");
     const fill = grad ? "url(#bg)" : /^#[0-9a-fA-F]{6}$/.test(side.bg) ? side.bg : "#ffffff";
-    const bgSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">${grad ? `<defs>${grad}</defs>` : ""}<rect width="${W}" height="${H}" fill="${fill}"/></svg>`;
+    const bgSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${ow}" height="${oh}">${grad ? `<defs>${grad}</defs>` : ""}<rect width="${ow}" height="${oh}" fill="${fill}"/></svg>`;
     base = await sharp(Buffer.from(bgSvg)).png().toBuffer();
   }
 
   const layers: sharp.OverlayOptions[] = [];
-  const textParts: string[] = [];
 
   for (const el of side.elements) {
-    const left = Math.round(el.x * W);
-    const top = Math.round(el.y * H);
-    const w = Math.max(1, Math.round(el.w * W));
-    const h = Math.max(1, Math.round(el.h * H));
+    const left = Math.round(el.x * ow);
+    const top = Math.round(el.y * oh);
+    const w = Math.max(1, Math.round(el.w * ow));
+    const h = Math.max(1, Math.round(el.h * oh));
 
     if (el.kind === "text") {
       const content = applyMerge(el.text ?? "", merge);
       if (!content) continue;
-      const size = Math.round(el.fontSize ?? 34);
+      const size = Math.round((el.fontSize ?? 34) * scale);
       const color = el.color ?? "#ffffff";
       const tx = el.align === "center" ? left + w / 2 : el.align === "right" ? left + w : left;
       const ty = top + size; // baseline
-      textParts.push(
-        textPath({
-          text: content,
-          x: tx,
-          y: ty,
-          fontSize: size,
-          color,
-          align: el.align ?? "left",
-          bold: (el.fontWeight ?? 600) >= 700,
-        }),
-      );
+      const layer = await textOverlay({
+        text: content,
+        x: tx,
+        y: ty,
+        fontSize: size,
+        color,
+        align: el.align ?? "left",
+        bold: (el.fontWeight ?? 600) >= 700,
+        font: "sans",
+      });
+      if (layer) layers.push(layer);
     } else if (el.kind === "image") {
       const buf = dataUrlToBuffer(el.src);
       if (!buf) continue;
@@ -196,11 +208,6 @@ export async function renderTemplateSidePng(
         .toBuffer();
       layers.push({ input: mark, top, left });
     }
-  }
-
-  if (textParts.length) {
-    const textSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">${textParts.join("")}</svg>`;
-    layers.push({ input: Buffer.from(textSvg), top: 0, left: 0 });
   }
 
   return sharp(base).composite(layers).png().toBuffer();

@@ -6,6 +6,7 @@
 
 export type PresetProfileTheme = {
   theme: string;
+  template: string;
   brandHeader: string;
   accentColor: string;
 };
@@ -13,6 +14,7 @@ export type PresetProfileTheme = {
 export const PRESET_PROFILE_THEME: Record<string, PresetProfileTheme> = {
   perspective: {
     theme: "indigo",
+    template: "brand",
     brandHeader: "linear-gradient(135deg,#1a2046 0%,#0f1330 60%,#0a0d22 100%)",
     accentColor: "#ff5a1f",
   },

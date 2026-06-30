@@ -39,7 +39,7 @@ export default async function ProfilePage() {
   }
 
   const presetLabel = profile.cardPreset
-    ? (PRESET_OPTIONS.find((p) => p.id === profile.cardPreset)?.label ?? null)
+    ? (PRESET_OPTIONS.find((p) => p.id === profile.cardPreset)?.label ?? "Your card design")
     : null;
   const v = profile.updatedAt.getTime();
 
@@ -58,16 +58,16 @@ export default async function ProfilePage() {
         <Card className="mb-6 p-6">
           <SectionHeading icon="bookmark" title={`Your card template — ${presetLabel}`} />
           <p className="-mt-1 mb-4 text-sm text-muted">
-            This branded card is saved to your account. It fills automatically
-            from the details below, and your QR points to this profile. Order it
-            from the button — no need to design anything.
+            Name, role and contact fill in automatically from the details
+            below. Go to <strong>Order a Card</strong> to drag, resize and
+            fully customise the design, or order it as-is.
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             {(["front", "back"] as const).map((side) => (
               <div key={side} className="overflow-hidden rounded-xl border border-outline bg-surface-low">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={`/api/card-art/preset/${side}?v=${v}`}
+                  src={`/api/card-art/my/${side}?v=${v}`}
                   alt={`${side} of your card`}
                   className="block aspect-[1013/638] w-full object-contain"
                 />
@@ -75,8 +75,8 @@ export default async function ProfilePage() {
             ))}
           </div>
           <Link href="/dashboard/order" className={buttonClass("primary", "md", "mt-4")}>
-            <Icon name="shopping_cart_checkout" className="text-[18px]" />
-            Order this card
+            <Icon name="design_services" className="text-[18px]" />
+            Edit & order this card
           </Link>
         </Card>
       )}

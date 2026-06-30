@@ -315,13 +315,17 @@ export function UserRow({
                   disabled={isPending}
                   className="mt-1.5 w-full rounded-lg border border-outline bg-surface px-2.5 py-1.5 text-sm text-ink outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 disabled:opacity-50"
                 >
-                  <option value="">None (custom designer)</option>
+                  <option value="">None</option>
+                  {user.cardPreset === "custom" && (
+                    <option value="custom">Custom (their own edited design)</option>
+                  )}
                   {PRESET_OPTIONS.map((p) => (
                     <option key={p.id} value={p.id}>{p.label}</option>
                   ))}
                 </select>
                 <span className="mt-1 block text-[11px] text-faint">
-                  Attaches the saved card design + themes their digital profile.
+                  Seeds an editable starting design + themes their digital
+                  profile. They can drag/resize/edit it freely afterwards.
                 </span>
               </div>
               <div className="my-1 h-px bg-black/5" />

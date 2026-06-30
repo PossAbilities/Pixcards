@@ -1,6 +1,5 @@
 import "server-only";
 import fs from "fs";
-import path from "path";
 import sharp from "sharp";
 import * as opentype from "opentype.js";
 import { LIBERATION_SANS_B64 } from "@/lib/fonts/liberation-sans";
@@ -29,11 +28,12 @@ const B64: Record<FontKey, string> = {
 };
 
 const written = new Set<FontKey>();
-/** Write a bundled font to a tmp file (once) and return its path + family. */
+/** Write a bundled font to a tmp file (once) and return its path + family.
+ *  Path is a literal "/tmp/<name>" — fully static so bundlers don't trace
+ *  the whole filesystem (Turbopack flags dynamic path.join/fs calls). */
 function fontFile(key: FontKey): { file: string; family: string } {
   const f = FONTS[key];
-  const dir = process.env.TMPDIR || "/tmp";
-  const file = path.join(dir, f.file);
+  const file = /* turbopackIgnore: true */ `/tmp/${f.file}`;
   if (!written.has(key)) {
     try {
       if (!fs.existsSync(file)) fs.writeFileSync(file, Buffer.from(f.b64, "base64"));

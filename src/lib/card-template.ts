@@ -43,6 +43,8 @@ export type MergeData = {
   jobTitle: string;
   company: string;
   url: string;
+  email?: string;
+  phone?: string;
 };
 
 /** True when the org has actually designed a template (vs the empty default). */
@@ -77,14 +79,18 @@ export function applyMerge(text: string, m: MergeData): string {
     .replace(/\{\{\s*name\s*\}\}/gi, m.name)
     .replace(/\{\{\s*(title|jobtitle|role)\s*\}\}/gi, m.jobTitle)
     .replace(/\{\{\s*company\s*\}\}/gi, m.company)
-    .replace(/\{\{\s*(url|link)\s*\}\}/gi, m.url);
+    .replace(/\{\{\s*(url|link)\s*\}\}/gi, m.url)
+    .replace(/\{\{\s*email\s*\}\}/gi, m.email ?? "")
+    .replace(/\{\{\s*phone\s*\}\}/gi, m.phone ?? "");
 }
 
 export const MERGE_FIELDS: { token: string; label: string }[] = [
-  { token: "{{name}}", label: "Member name" },
+  { token: "{{name}}", label: "Name" },
   { token: "{{title}}", label: "Job title" },
   { token: "{{company}}", label: "Company" },
   { token: "{{url}}", label: "Profile URL" },
+  { token: "{{email}}", label: "Email" },
+  { token: "{{phone}}", label: "Phone" },
 ];
 
 export const SAMPLE_MERGE: MergeData = {
@@ -92,4 +98,6 @@ export const SAMPLE_MERGE: MergeData = {
   jobTitle: "Account Manager",
   company: "Your Company",
   url: "pixcards.co.uk/u/alex",
+  email: "alex@yourcompany.com",
+  phone: "+44 7700 900123",
 };

@@ -1,66 +1,26 @@
 import "server-only";
 import sharp from "sharp";
-import QRCode from "qrcode";
-import { textOverlay, type TextSvgOpts } from "@/lib/text-render";
+import { PRINT_SCALE } from "@/lib/card-artwork";
+import type { CardTemplateSpec } from "@/lib/card-template";
 
-// Base CR80 at 300 DPI; rendered at SCALE× for print-grade output (~600 DPI).
+// Base CR80 canvas; decorative chrome is pre-baked at PRINT_SCALE so it stays
+// crisp once it becomes the SideSpec background image.
 const BASE_W = 1013;
 const BASE_H = 638;
-const SCALE = 2;
-const W = BASE_W * SCALE;
-const H = BASE_H * SCALE;
-const u = (n: number) => n * SCALE; // base unit → output px
+const W = BASE_W * PRINT_SCALE;
+const H = BASE_H * PRINT_SCALE;
+const u = (n: number) => n * PRINT_SCALE;
 
 const NAVY = "#12142f";
 const LIME = "#c7ec4f";
 const ORANGE = "#ff5a1f";
-const MUTED = "#9aa6c8";
 
-export type PerspectiveDetails = {
-  name: string;
-  role: string;
-  email: string;
-  phone: string;
-  website: string; // shown on the back ("W" line) + front strapline
-  profileUrl: string; // QR + NFC target
-  logoUrl?: string | null; // white logo for the dark front (replaces wordmark)
-  logoDark?: string | null; // dark logo for the light back (replaces wordmark)
-};
+let _id = 0;
+const eid = () => `seed_${Date.now().toString(36)}_${_id++}`;
 
-/** Decode a data: URL or fetch a URL into image bytes, or null. */
-async function toBytes(value?: string | null): Promise<Buffer | null> {
-  if (!value) return null;
-  try {
-    if (value.startsWith("data:")) {
-      const m = /^data:[^;,]*(;base64)?,([\s\S]*)$/.exec(value);
-      if (!m) return null;
-      return m[1] ? Buffer.from(m[2], "base64") : Buffer.from(decodeURIComponent(m[2]), "utf8");
-    }
-    const res = await fetch(value);
-    if (!res.ok) return null;
-    return Buffer.from(await res.arrayBuffer());
-  } catch {
-    return null;
-  }
-}
-
-/** Collect text lines (scaled), drop empties, composite in one pass. */
-async function compositeText(base: Buffer, lines: TextSvgOpts[]): Promise<Buffer> {
-  const scaled = lines.map((l) => ({
-    ...l,
-    x: u(l.x),
-    y: u(l.y),
-    fontSize: u(l.fontSize),
-  }));
-  const layers = (await Promise.all(scaled.map((l) => textOverlay(l)))).filter(
-    (x): x is { input: Buffer; top: number; left: number } => Boolean(x),
-  );
-  return sharp(base).composite(layers).png().toBuffer();
-}
-
-/** Front (navy): logo (or wordmark), name, lime role, website, ring, strip. */
-async function renderFront(d: PerspectiveDetails): Promise<Buffer> {
-  const bg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
+/** Decorative chrome only (no text) — the editable elements sit on top. */
+async function frontChromeDataUrl(): Promise<string> {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
 <defs>
  <linearGradient id="ng" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1a2046"/><stop offset="0.6" stop-color="#0f1330"/><stop offset="1" stop-color="#0a0d22"/></linearGradient>
  <radialGradient id="glow" cx="0.78" cy="0.18" r="0.42"><stop offset="0" stop-color="#3a4684" stop-opacity="0.55"/><stop offset="1" stop-color="#3a4684" stop-opacity="0"/></radialGradient>
@@ -71,95 +31,93 @@ async function renderFront(d: PerspectiveDetails): Promise<Buffer> {
 <circle cx="${u(930)}" cy="${u(540)}" r="${u(15)}" fill="none" stroke="${ORANGE}" stroke-width="${u(7)}"/>
 <rect x="0" y="${u(BASE_H - 18)}" width="${W}" height="${u(18)}" fill="url(#strip)"/>
 </svg>`;
-  let base = await sharp(Buffer.from(bg)).png().toBuffer();
-
-  // Top-left: a white logo if supplied, else the typographic wordmark.
-  const logo = await toBytes(d.logoUrl);
-  if (logo) {
-    const logoH = u(80);
-    const img = await sharp(logo).resize({ height: logoH, fit: "inside" }).png().toBuffer();
-    base = await sharp(base).composite([{ input: img, top: u(56), left: u(64) }]).png().toBuffer();
-  } else {
-    base = await compositeText(base, [
-      { text: "PERSPECTIVE", x: 64, y: 92, fontSize: 30, color: "#ffffff", font: "montserrat" },
-      { text: "STUDIO", x: 64, y: 126, fontSize: 30, color: "#ffffff", font: "montserrat" },
-    ]);
-  }
-
-  return compositeText(base, [
-    { text: d.name, x: 60, y: 455, fontSize: 86, color: "#ffffff", font: "montserrat" },
-    ...(d.role ? [{ text: d.role, x: 64, y: 510, fontSize: 34, color: LIME, font: "montserrat" as const }] : []),
-    ...(d.website ? [{ text: d.website, x: 64, y: 556, fontSize: 28, color: MUTED, font: "dmsans" as const }] : []),
-  ]);
+  const png = await sharp(Buffer.from(svg)).png().toBuffer();
+  return `data:image/png;base64,${png.toString("base64")}`;
 }
 
-// Small line-icons (orange) next to each contact line. Scaled into the bg SVG.
-function mailIcon(x: number, y: number): string {
-  return `<g transform="translate(${u(x)},${u(y)}) scale(${SCALE})"><rect x="0" y="3" width="28" height="19" rx="3.5" fill="none" stroke="${ORANGE}" stroke-width="2.6"/><path d="M1.5 6 L14 15 L26.5 6" fill="none" stroke="${ORANGE}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></g>`;
-}
-function phoneIcon(x: number, y: number): string {
-  return `<g transform="translate(${u(x)},${u(y)}) scale(${SCALE})"><rect x="6" y="1" width="16" height="24" rx="3.5" fill="none" stroke="${ORANGE}" stroke-width="2.6"/><line x1="11" y1="20.5" x2="17" y2="20.5" stroke="${ORANGE}" stroke-width="2.6" stroke-linecap="round"/></g>`;
-}
-function globeIcon(x: number, y: number): string {
-  return `<g transform="translate(${u(x)},${u(y)}) scale(${SCALE})"><circle cx="13" cy="13" r="12" fill="none" stroke="${ORANGE}" stroke-width="2.4"/><ellipse cx="13" cy="13" rx="5.5" ry="12" fill="none" stroke="${ORANGE}" stroke-width="2.2"/><line x1="1.5" y1="13" x2="24.5" y2="13" stroke="${ORANGE}" stroke-width="2.2"/></g>`;
-}
-
-/** Back (lime): wordmark, tagline, contacts, orange pill, navy blob, QR. */
-async function renderBack(d: PerspectiveDetails): Promise<Buffer> {
-  const icons = [
-    d.email ? mailIcon(60, 405 - 19) : "",
-    d.phone ? phoneIcon(60, 450 - 19) : "",
-    d.website ? globeIcon(60, 495 - 19) : "",
-  ].join("");
-
-  const bg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
+/** Decorative chrome only (no text) — lime, navy blob, white QR plate, pill. */
+async function backChromeDataUrl(): Promise<string> {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
 <rect width="${W}" height="${H}" fill="${LIME}"/>
 <circle cx="${u(BASE_W - 70)}" cy="${u(60)}" r="${u(120)}" fill="${NAVY}"/>
 <rect x="${u(64)}" y="${u(540)}" width="${u(360)}" height="${u(60)}" rx="${u(30)}" fill="${ORANGE}"/>
 <rect x="${u(775)}" y="${u(392)}" width="${u(180)}" height="${u(180)}" rx="${u(22)}" fill="#ffffff"/>
-${icons}
 </svg>`;
-  let base = await sharp(Buffer.from(bg)).png().toBuffer();
+  const png = await sharp(Buffer.from(svg)).png().toBuffer();
+  return `data:image/png;base64,${png.toString("base64")}`;
+}
 
-  // Top-left: a dark logo if supplied (light background), else the wordmark.
-  const logoD = await toBytes(d.logoDark);
-  const lines: TextSvgOpts[] = [];
-  if (logoD) {
-    const img = await sharp(logoD).resize({ height: u(80), fit: "inside" }).png().toBuffer();
-    base = await sharp(base).composite([{ input: img, top: u(98), left: u(64) }]).png().toBuffer();
-  } else {
-    lines.push(
-      { text: "PERSPECTIVE", x: 64, y: 120, fontSize: 32, color: NAVY, font: "montserrat" },
-      { text: "STUDIO", x: 64, y: 154, fontSize: 32, color: NAVY, font: "montserrat" },
-    );
+async function iconDataUrl(kind: "mail" | "phone" | "globe"): Promise<string> {
+  const shapes: Record<typeof kind, string> = {
+    mail: `<rect x="0" y="3" width="28" height="19" rx="3.5" fill="none" stroke="${ORANGE}" stroke-width="2.6"/><path d="M1.5 6 L14 15 L26.5 6" fill="none" stroke="${ORANGE}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`,
+    phone: `<rect x="6" y="1" width="16" height="24" rx="3.5" fill="none" stroke="${ORANGE}" stroke-width="2.6"/><line x1="11" y1="20.5" x2="17" y2="20.5" stroke="${ORANGE}" stroke-width="2.6" stroke-linecap="round"/>`,
+    globe: `<circle cx="13" cy="13" r="12" fill="none" stroke="${ORANGE}" stroke-width="2.4"/><ellipse cx="13" cy="13" rx="5.5" ry="12" fill="none" stroke="${ORANGE}" stroke-width="2.2"/><line x1="1.5" y1="13" x2="24.5" y2="13" stroke="${ORANGE}" stroke-width="2.2"/>`,
+  };
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${u(28)}" height="${u(26)}" viewBox="0 0 28 26"><g transform="scale(${PRINT_SCALE})">${shapes[kind]}</g></svg>`;
+  const png = await sharp(Buffer.from(svg)).png().toBuffer();
+  return `data:image/png;base64,${png.toString("base64")}`;
+}
+
+let _cache: Promise<{
+  front: string;
+  back: string;
+  mail: string;
+  phone: string;
+  globe: string;
+}> | null = null;
+/** Bake (once per server instance) and cache the decorative chrome + icons. */
+function chromeBackgrounds() {
+  if (!_cache) {
+    _cache = Promise.all([
+      frontChromeDataUrl(),
+      backChromeDataUrl(),
+      iconDataUrl("mail"),
+      iconDataUrl("phone"),
+      iconDataUrl("globe"),
+    ]).then(([front, back, mail, phone, globe]) => ({ front, back, mail, phone, globe }));
   }
-  lines.push(
-    { text: "Bold creative work that’s", x: 64, y: 250, fontSize: 42, color: NAVY, font: "montserrat" },
-    { text: "impossible to ignore.", x: 64, y: 300, fontSize: 42, color: NAVY, font: "montserrat" },
-    { text: "Scan · See the work →", x: 244, y: 578, fontSize: 24, color: "#ffffff", align: "center", font: "montserrat" },
-  );
-  const contact = (value: string, y: number): TextSvgOpts[] =>
-    value ? [{ text: value, x: 104, y, fontSize: 26, color: NAVY, font: "dmsans" }] : [];
-  lines.push(...contact(d.email, 405), ...contact(d.phone, 450), ...contact(d.website, 495));
-
-  base = await compositeText(base, lines);
-
-  const qr = await QRCode.toBuffer(d.profileUrl || "https://pixcards.co.uk", {
-    width: u(150),
-    margin: 1,
-    color: { dark: NAVY, light: "#ffffff" },
-  });
-  return sharp(base).composite([{ input: qr, top: u(407), left: u(790) }]).png().toBuffer();
+  return _cache;
 }
 
-/** Render one side of the Perspective Studio card as a print-ready PNG. */
-export async function renderPerspectiveSide(
-  side: "front" | "back",
-  d: PerspectiveDetails,
-): Promise<Buffer> {
-  return side === "front" ? renderFront(d) : renderBack(d);
+/**
+ * The "Perspective Studio" starting template: polished navy/lime chrome as
+ * the background, with name/role/contact/CTA as real, fully-editable text
+ * elements (move, resize, restyle, delete, or replace with a logo image —
+ * same drag/drop tools as the organisation card designer).
+ */
+export async function defaultPerspectiveSpec(): Promise<CardTemplateSpec> {
+  const chrome = await chromeBackgrounds();
+  return {
+    front: {
+      bg: `url("${chrome.front}")`,
+      elements: [
+        { id: eid(), kind: "text", x: 0.063, y: 0.121, w: 0.45, h: 0.06, text: "PERSPECTIVE", color: "#ffffff", fontSize: 30, fontWeight: 700, align: "left" },
+        { id: eid(), kind: "text", x: 0.063, y: 0.179, w: 0.45, h: 0.06, text: "STUDIO", color: "#ffffff", fontSize: 30, fontWeight: 700, align: "left" },
+        { id: eid(), kind: "text", x: 0.059, y: 0.58, w: 0.75, h: 0.16, text: "{{name}}", color: "#ffffff", fontSize: 86, fontWeight: 800, align: "left" },
+        { id: eid(), kind: "text", x: 0.063, y: 0.73, w: 0.7, h: 0.08, text: "{{title}}", color: LIME, fontSize: 34, fontWeight: 700, align: "left" },
+        { id: eid(), kind: "text", x: 0.063, y: 0.81, w: 0.7, h: 0.07, text: "perspectivestudio.co.uk", color: "#9aa6c8", fontSize: 28, fontWeight: 500, align: "left" },
+      ],
+    },
+    back: {
+      bg: `url("${chrome.back}")`,
+      elements: [
+        { id: eid(), kind: "text", x: 0.063, y: 0.157, w: 0.5, h: 0.06, text: "PERSPECTIVE", color: NAVY, fontSize: 32, fontWeight: 700, align: "left" },
+        { id: eid(), kind: "text", x: 0.063, y: 0.213, w: 0.5, h: 0.06, text: "STUDIO", color: NAVY, fontSize: 32, fontWeight: 700, align: "left" },
+        { id: eid(), kind: "text", x: 0.063, y: 0.345, w: 0.65, h: 0.09, text: "Bold creative work that’s", color: NAVY, fontSize: 42, fontWeight: 800, align: "left" },
+        { id: eid(), kind: "text", x: 0.063, y: 0.42, w: 0.65, h: 0.09, text: "impossible to ignore.", color: NAVY, fontSize: 42, fontWeight: 800, align: "left" },
+        { id: eid(), kind: "image", x: 0.059, y: 0.578, w: 0.028, h: 0.042, src: chrome.mail },
+        { id: eid(), kind: "text", x: 0.103, y: 0.578, w: 0.45, h: 0.06, text: "{{email}}", color: NAVY, fontSize: 26, fontWeight: 500, align: "left" },
+        { id: eid(), kind: "image", x: 0.059, y: 0.673, w: 0.028, h: 0.042, src: chrome.phone },
+        { id: eid(), kind: "text", x: 0.103, y: 0.673, w: 0.45, h: 0.06, text: "{{phone}}", color: NAVY, fontSize: 26, fontWeight: 500, align: "left" },
+        { id: eid(), kind: "image", x: 0.059, y: 0.768, w: 0.028, h: 0.042, src: chrome.globe },
+        { id: eid(), kind: "text", x: 0.103, y: 0.768, w: 0.45, h: 0.06, text: "perspectivestudio.co.uk", color: NAVY, fontSize: 26, fontWeight: 500, align: "left" },
+        { id: eid(), kind: "text", x: 0.24, y: 0.879, w: 0.32, h: 0.07, text: "Scan · See the work →", color: "#ffffff", fontSize: 24, fontWeight: 700, align: "center" },
+        { id: eid(), kind: "qr", x: 0.765, y: 0.614, w: 0.178, h: 0.282 },
+      ],
+    },
+  };
 }
 
-/** Registry of built-in card presets (extensible). */
+/** Registry of built-in card starting templates (extensible). */
 export const CARD_PRESETS = ["perspective"] as const;
 export type CardPreset = (typeof CARD_PRESETS)[number];

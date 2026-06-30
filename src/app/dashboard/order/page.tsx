@@ -4,6 +4,7 @@ import { Icon } from "@/components/Icon";
 import { CardStudio } from "@/components/dashboard/CardStudio";
 import { SavedCardPanel } from "@/components/dashboard/SavedCardPanel";
 import { appUrl, material } from "@/lib/constants";
+import { loadMyCard } from "@/lib/mycard";
 
 export default async function OrderPage({
   searchParams,
@@ -17,9 +18,10 @@ export default async function OrderPage({
     where: { userId: user.id },
     select: { jobTitle: true, username: true, avatarUrl: true, cardPreset: true },
   });
-  // The bespoke template is shown to the owner (admin) and anyone who's saved
-  // it, so it isn't surfaced to unrelated users.
-  const showPreset = profile?.cardPreset === "perspective" || user.role === "ADMIN";
+  // The saved-card panel is shown once the user has chosen a card template
+  // (via the admin attach or by saving their own design).
+  const showSavedCard = Boolean(profile?.cardPreset);
+  const myCard = showSavedCard ? await loadMyCard(user.id) : null;
   const presetPrice = material("white-gloss").priceCents;
   const defaultTitle =
     profile?.jobTitle && profile.jobTitle.trim().length > 0
@@ -48,9 +50,14 @@ export default async function OrderPage({
         </div>
       )}
 
-      {showPreset ? (
+      {showSavedCard && myCard ? (
         <>
-          <SavedCardPanel unitPriceCents={presetPrice} defaultName={user.name} />
+          <SavedCardPanel
+            unitPriceCents={presetPrice}
+            defaultName={user.name}
+            spec={myCard.spec}
+            merge={myCard.merge}
+          />
           <details className="group rounded-2xl border border-outline bg-surface">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-5">
               <span className="flex items-center gap-2 text-sm font-semibold text-ink">

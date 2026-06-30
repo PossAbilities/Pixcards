@@ -215,14 +215,14 @@ model Profile {
   // Optional custom brand header gradient (overrides the preset theme header).
   // Set by the AI brand analysis / org branding so real brand colours render.
   brandHeader String?
-  // Saved physical-card design preset (e.g. "perspective") used when ordering.
+  // Saved physical-card design preset (e.g. "perspective") — flags that the
+  // user has a custom card design (drives showing the order panel) and which
+  // starting template to seed cardDesign from on first edit.
   cardPreset  String?
-  // Optional logos for the saved card design (data URL or storage URL):
-  // cardLogo = white/light logo for dark sides; cardLogoDark = dark logo for
-  // light sides.
-  cardLogo     String?
-  cardLogoDark String?
-  published    Boolean @default(true)
+  // The user's own editable front+back card design (CardTemplateSpec JSON,
+  // same drag/resize/merge-token format the org card designer uses).
+  cardDesign  String?
+  published   Boolean @default(true)
 
   links  Link[]
   events AnalyticsEvent[]

@@ -356,6 +356,76 @@ export function DigitalCard({
     color: t.ink,
   };
 
+  /* --- BRAND — mirrors the printed card's structure --------------------- */
+  if (template === "brand") {
+    return (
+      <div className={wrapperCls} style={wrapperStyle}>
+        {/* Hero — bold name + role on the brand header, like the card front */}
+        <div className="relative shrink-0 px-6 pt-8 pb-7" style={{ background: headerBg }}>
+          <div className="flex items-center gap-4">
+            {avatarNode(72)}
+            <div className="min-w-0">
+              <h1 className="font-display text-[26px] font-bold leading-tight tracking-tight text-white truncate">
+                {data.name || "Your Name"}
+              </h1>
+              {(data.jobTitle || data.company) && (
+                <p className="mt-0.5 truncate text-sm font-semibold text-white/85">
+                  {[data.jobTitle, data.company].filter(Boolean).join(" · ")}
+                </p>
+              )}
+              {data.location && (
+                <span className="mt-1 inline-flex items-center gap-1 text-xs text-white/70">
+                  <Icon name="location_on" className="text-[14px]" />
+                  {data.location}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="absolute inset-x-0 bottom-0 h-1.5" style={{ background: accent }} aria-hidden />
+        </div>
+
+        {/* Tagline block — mirrors the card back's bold statement */}
+        {data.bio && (
+          <div className="px-6 py-6" style={{ background: `${accent}14` }}>
+            <p className="font-display text-lg font-bold leading-snug" style={{ color: t.ink }}>
+              {data.bio}
+            </p>
+          </div>
+        )}
+
+        {/* Pill CTAs — mirrors the card's rounded action pill */}
+        <div className="px-5 mt-5">
+          <button
+            type="button"
+            onClick={interactive ? saveContact : undefined}
+            className="flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold text-white transition active:scale-95"
+            style={{ background: accent, boxShadow: `0 10px 24px -8px ${accent}99` }}
+          >
+            <Icon name="person_add" className="text-[20px]" />
+            Save Contact
+          </button>
+          <button
+            type="button"
+            onClick={interactive ? share : undefined}
+            className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-full border-2 py-3 text-sm font-semibold transition active:scale-95"
+            style={{ borderColor: dark ? "#334155" : "#e6e8ec", color: t.ink }}
+          >
+            <Icon name={copied ? "check" : "ios_share"} className="text-[18px]" />
+            {copied ? "Copied!" : "Share my card"}
+          </button>
+        </div>
+
+        <div className="px-5 mt-6 flex flex-col gap-3 flex-1">
+          {contactRows}
+          {sectionLabel}
+          {linkRows}
+        </div>
+
+        {footer}
+      </div>
+    );
+  }
+
   /* --- SPOTLIGHT ------------------------------------------------------- */
   if (template === "spotlight") {
     return (

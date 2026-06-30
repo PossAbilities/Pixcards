@@ -139,6 +139,13 @@ export const CARD_TEMPLATES: CardTemplate[] = [
     pro: true,
     icon: "wallpaper",
   },
+  {
+    id: "brand",
+    name: "Brand",
+    description: "Mirrors your printed card — bold hero, tagline block, pill CTA.",
+    pro: true,
+    icon: "style",
+  },
 ];
 
 export function cardTemplate(id: string): CardTemplate {

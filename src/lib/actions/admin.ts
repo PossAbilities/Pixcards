@@ -8,6 +8,7 @@ import { generateCardCode } from "@/lib/cards";
 import { sendOrderShipped } from "@/lib/email/dispatch";
 import { recordEvent } from "@/lib/events";
 import { PRESET_PROFILE_THEME } from "@/lib/card-preset-meta";
+import { defaultPerspectiveSpec } from "@/lib/preset-cards";
 import type { OrderStatus, Plan, Role } from "@prisma/client";
 
 async function requireAdminUser() {
@@ -116,7 +117,12 @@ export async function clearUserCardsAndOrders(userId: string): Promise<AdminResu
   }
 }
 
-/** Attach (or clear) a saved card preset on a user, applying its profile theme. */
+/**
+ * Attach (or clear) a starting card template on a user: sets their profile
+ * theme to match, and — if they haven't customised a design yet — seeds an
+ * editable copy of the template's design so they have something to tweak in
+ * their own card designer rather than a blank canvas.
+ */
 export async function setUserCardPreset(
   userId: string,
   preset: string | null,
@@ -126,13 +132,17 @@ export async function setUserCardPreset(
     const profile = await prisma.profile.findUnique({ where: { userId } });
     if (!profile) return { ok: false, error: "That user has no profile yet." };
     const t = preset ? PRESET_PROFILE_THEME[preset] : null;
-    await prisma.profile.update({
-      where: { userId },
-      data: {
-        cardPreset: preset || null,
-        ...(t ? { theme: t.theme, brandHeader: t.brandHeader, accentColor: t.accentColor } : {}),
-      },
-    });
+    const data: Record<string, unknown> = { cardPreset: preset || null };
+    if (t) {
+      data.theme = t.theme;
+      data.template = t.template;
+      data.brandHeader = t.brandHeader;
+      data.accentColor = t.accentColor;
+    }
+    if (preset === "perspective" && !profile.cardDesign) {
+      data.cardDesign = JSON.stringify(await defaultPerspectiveSpec());
+    }
+    await prisma.profile.update({ where: { userId }, data });
     await recordEvent({
       type: "SECURITY",
       title: `Card preset ${preset ? `"${preset}" attached to` : "cleared from"} a user`,
