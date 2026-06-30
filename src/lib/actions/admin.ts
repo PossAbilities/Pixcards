@@ -60,54 +60,60 @@ export async function updateOrderStatus(
  * can be cleanly re-placed); any already-encoded cards are kept but unlinked.
  */
 export async function deleteOrder(orderId: string): Promise<AdminResult> {
-  await requireAdminUser();
-  const order = await prisma.order.findUnique({
-    where: { id: orderId },
-    include: { cards: true },
-  });
-  if (!order) return { ok: false, error: "Order not found." };
+  try {
+    await requireAdminUser();
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { cards: true },
+    });
+    if (!order) return { ok: false, error: "Order not found." };
 
-  await prisma.card.deleteMany({
-    where: { orderId, encoded: false },
-  });
-  await prisma.order.delete({ where: { id: orderId } });
+    await prisma.card.deleteMany({ where: { orderId, encoded: false } });
+    await prisma.order.delete({ where: { id: orderId } });
 
-  await recordEvent({
-    type: "ORDER_STATUS",
-    title: `Order ${orderId.slice(-8).toUpperCase()} deleted`,
-    meta: { orderId, cards: order.cards.length },
-  });
-  revalidatePath("/admin/orders");
-  revalidatePath("/admin");
-  revalidatePath("/dashboard/orders");
-  return { ok: true };
+    await recordEvent({
+      type: "ORDER_STATUS",
+      title: `Order ${orderId.slice(-8).toUpperCase()} deleted`,
+      meta: { orderId, cards: order.cards.length },
+    });
+    revalidatePath("/admin/orders");
+    revalidatePath("/admin");
+    revalidatePath("/dashboard/orders");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Could not delete the order." };
+  }
 }
 
 /** Delete all of a user's card orders and the NFC cards linked to them. */
 export async function clearUserCardsAndOrders(userId: string): Promise<AdminResult> {
-  await requireAdminUser();
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { id: true, name: true, email: true },
-  });
-  if (!user) return { ok: false, error: "User not found." };
+  try {
+    await requireAdminUser();
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, email: true },
+    });
+    if (!user) return { ok: false, error: "User not found." };
 
-  const [cards, orders] = await prisma.$transaction([
-    prisma.card.deleteMany({ where: { userId } }),
-    prisma.order.deleteMany({ where: { userId } }),
-  ]);
+    // Unlink the user's cards from any orders first, then delete both —
+    // avoids FK issues and works even on shared/team orders.
+    await prisma.card.deleteMany({ where: { userId } });
+    const orders = await prisma.order.deleteMany({ where: { userId } });
 
-  await recordEvent({
-    type: "SECURITY",
-    title: `Cleared ${orders.count} order(s) + ${cards.count} card(s) for ${user.email}`,
-    meta: { userId, orders: orders.count, cards: cards.count },
-  });
-  revalidatePath("/admin/orders");
-  revalidatePath("/admin/cards");
-  revalidatePath("/admin/users");
-  revalidatePath("/dashboard/orders");
-  revalidatePath("/dashboard/cards");
-  return { ok: true };
+    await recordEvent({
+      type: "SECURITY",
+      title: `Cleared ${orders.count} order(s) + cards for ${user.email}`,
+      meta: { userId, orders: orders.count },
+    });
+    revalidatePath("/admin/orders");
+    revalidatePath("/admin/cards");
+    revalidatePath("/admin/users");
+    revalidatePath("/dashboard/orders");
+    revalidatePath("/dashboard/cards");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Could not clear cards & orders." };
+  }
 }
 
 /** Attach (or clear) a saved card preset on a user, applying its profile theme. */
@@ -115,31 +121,30 @@ export async function setUserCardPreset(
   userId: string,
   preset: string | null,
 ): Promise<AdminResult> {
-  await requireAdminUser();
-  const profile = await prisma.profile.findUnique({ where: { userId } });
-  if (!profile) return { ok: false, error: "That user has no profile yet." };
-  await prisma.profile.update({
-    where: { userId },
-    data: { cardPreset: preset || null },
-  });
-  if (preset) {
-    const t = PRESET_PROFILE_THEME[preset];
-    if (t) {
-      await prisma.profile.update({
-        where: { userId },
-        data: { theme: t.theme, brandHeader: t.brandHeader, accentColor: t.accentColor },
-      });
-    }
+  try {
+    await requireAdminUser();
+    const profile = await prisma.profile.findUnique({ where: { userId } });
+    if (!profile) return { ok: false, error: "That user has no profile yet." };
+    const t = preset ? PRESET_PROFILE_THEME[preset] : null;
+    await prisma.profile.update({
+      where: { userId },
+      data: {
+        cardPreset: preset || null,
+        ...(t ? { theme: t.theme, brandHeader: t.brandHeader, accentColor: t.accentColor } : {}),
+      },
+    });
+    await recordEvent({
+      type: "SECURITY",
+      title: `Card preset ${preset ? `"${preset}" attached to` : "cleared from"} a user`,
+      meta: { userId, preset },
+    });
+    revalidatePath("/admin/users");
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/order");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Could not update card template." };
   }
-  await recordEvent({
-    type: "SECURITY",
-    title: `Card preset ${preset ? `"${preset}" attached to` : "cleared from"} a user`,
-    meta: { userId, preset },
-  });
-  revalidatePath("/admin/users");
-  revalidatePath("/dashboard");
-  revalidatePath("/dashboard/order");
-  return { ok: true };
 }
 
 export async function setUserPlan(
