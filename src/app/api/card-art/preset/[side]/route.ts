@@ -37,7 +37,7 @@ export async function GET(
     role: profile.jobTitle || "",
     email: profile.email || user.email,
     phone: profile.phone || "",
-    website: websiteLink ? bareUrl(websiteLink) : bareUrl(profileUrl),
+    website: websiteLink ? bareUrl(websiteLink) : "perspectivestudio.co.uk",
     profileUrl,
   };
 

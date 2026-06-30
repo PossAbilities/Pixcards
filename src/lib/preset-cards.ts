@@ -52,13 +52,34 @@ async function renderFront(d: PerspectiveDetails): Promise<Buffer> {
   ]);
 }
 
+// Small line-icons (orange) drawn next to each contact line. Vector shapes go
+// straight into the background SVG (short paths — no librsvg truncation risk).
+function mailIcon(x: number, y: number): string {
+  return `<g transform="translate(${x},${y})"><rect x="0" y="3" width="28" height="19" rx="3.5" fill="none" stroke="${ORANGE}" stroke-width="2.6"/><path d="M1.5 6 L14 15 L26.5 6" fill="none" stroke="${ORANGE}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></g>`;
+}
+function phoneIcon(x: number, y: number): string {
+  return `<g transform="translate(${x},${y})"><rect x="6" y="1" width="16" height="24" rx="3.5" fill="none" stroke="${ORANGE}" stroke-width="2.6"/><line x1="11" y1="20.5" x2="17" y2="20.5" stroke="${ORANGE}" stroke-width="2.6" stroke-linecap="round"/></g>`;
+}
+function globeIcon(x: number, y: number): string {
+  return `<g transform="translate(${x},${y})"><circle cx="13" cy="13" r="12" fill="none" stroke="${ORANGE}" stroke-width="2.4"/><ellipse cx="13" cy="13" rx="5.5" ry="12" fill="none" stroke="${ORANGE}" stroke-width="2.2"/><line x1="1.5" y1="13" x2="24.5" y2="13" stroke="${ORANGE}" stroke-width="2.2"/></g>`;
+}
+
 /** Back (lime): wordmark, tagline, contacts, orange pill, navy blob, QR. */
 async function renderBack(d: PerspectiveDetails): Promise<Buffer> {
+  // Each contact line shows only when its value is set; the icon sits ~19px
+  // above the text baseline so they line up.
+  const icons = [
+    d.email ? mailIcon(60, 405 - 19) : "",
+    d.phone ? phoneIcon(60, 450 - 19) : "",
+    d.website ? globeIcon(60, 495 - 19) : "",
+  ].join("");
+
   const bg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
 <rect width="${W}" height="${H}" fill="${LIME}"/>
 <circle cx="${W - 70}" cy="60" r="120" fill="${NAVY}"/>
 <rect x="64" y="540" width="360" height="60" rx="30" fill="${ORANGE}"/>
 <rect x="775" y="392" width="180" height="180" rx="22" fill="#ffffff"/>
+${icons}
 </svg>`;
   let base = await sharp(Buffer.from(bg)).png().toBuffer();
 
@@ -70,14 +91,10 @@ async function renderBack(d: PerspectiveDetails): Promise<Buffer> {
     { text: "Scan · See the work →", x: 244, y: 578, fontSize: 24, color: "#ffffff", align: "center", font: "montserrat" },
     { text: "SCAN FOR PORTFOLIO", x: 865, y: 600, fontSize: 16, color: NAVY, align: "center", font: "montserrat" },
   ];
-  const contact = (label: string, value: string, y: number): TextSvgOpts[] =>
-    value
-      ? [
-          { text: label, x: 64, y, fontSize: 26, color: ORANGE, font: "montserrat" },
-          { text: value, x: 108, y, fontSize: 26, color: NAVY, font: "dmsans" },
-        ]
-      : [];
-  lines.push(...contact("E", d.email, 405), ...contact("T", d.phone, 450), ...contact("W", d.website, 495));
+  // Values sit to the right of the icons (icon column ~60–88).
+  const contact = (value: string, y: number): TextSvgOpts[] =>
+    value ? [{ text: value, x: 104, y, fontSize: 26, color: NAVY, font: "dmsans" }] : [];
+  lines.push(...contact(d.email, 405), ...contact(d.phone, 450), ...contact(d.website, 495));
 
   base = await compositeText(base, lines);
 

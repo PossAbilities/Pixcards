@@ -62,7 +62,7 @@ export async function orderPresetCard(
     role: profile.jobTitle || "",
     email: profile.email || user!.email,
     phone: profile.phone || "",
-    website: profile.links[0]?.url ? bareUrl(profile.links[0].url) : bareUrl(profileUrl),
+    website: profile.links[0]?.url ? bareUrl(profile.links[0].url) : "perspectivestudio.co.uk",
     profileUrl,
   };
 
