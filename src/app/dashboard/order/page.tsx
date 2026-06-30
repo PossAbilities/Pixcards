@@ -2,7 +2,8 @@ import { requireUser } from "@/lib/guards";
 import { prisma } from "@/lib/db";
 import { Icon } from "@/components/Icon";
 import { CardStudio } from "@/components/dashboard/CardStudio";
-import { appUrl } from "@/lib/constants";
+import { SavedCardPanel } from "@/components/dashboard/SavedCardPanel";
+import { appUrl, material } from "@/lib/constants";
 
 export default async function OrderPage({
   searchParams,
@@ -14,8 +15,12 @@ export default async function OrderPage({
 
   const profile = await prisma.profile.findUnique({
     where: { userId: user.id },
-    select: { jobTitle: true, username: true, avatarUrl: true },
+    select: { jobTitle: true, username: true, avatarUrl: true, cardPreset: true },
   });
+  // The bespoke template is shown to the owner (admin) and anyone who's saved
+  // it, so it isn't surfaced to unrelated users.
+  const showPreset = profile?.cardPreset === "perspective" || user.role === "ADMIN";
+  const presetPrice = material("white-gloss").priceCents;
   const defaultTitle =
     profile?.jobTitle && profile.jobTitle.trim().length > 0
       ? profile.jobTitle
@@ -41,6 +46,10 @@ export default async function OrderPage({
           <Icon name="info" className="text-[20px] mt-0.5 shrink-0" />
           <span>Checkout cancelled — your order was not placed.</span>
         </div>
+      )}
+
+      {showPreset && (
+        <SavedCardPanel unitPriceCents={presetPrice} defaultName={user.name} />
       )}
 
       <CardStudio

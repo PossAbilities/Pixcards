@@ -215,6 +215,8 @@ model Profile {
   // Optional custom brand header gradient (overrides the preset theme header).
   // Set by the AI brand analysis / org branding so real brand colours render.
   brandHeader String?
+  // Saved physical-card design preset (e.g. "perspective") used when ordering.
+  cardPreset  String?
   published   Boolean @default(true)
 
   links  Link[]
