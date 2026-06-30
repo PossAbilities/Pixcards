@@ -13,6 +13,34 @@ export const metadata: Metadata = {
 };
 
 const BRAND = "linear-gradient(135deg,#6366f1 0%,#4f46e5 55%,#3525cd 100%)";
+
+// Carrier styling per card design. The Perspective Studio preset gets a navy
+// cover with lime accents to match its card.
+type CarrierTheme = {
+  cover: string; // cover background
+  accent: string; // step badges + inside icons
+  kicker: string; // "Welcome" kicker + cover accent
+  brandName: string;
+  footerUrl: string;
+  strip?: string; // optional gradient strip along the cover bottom
+};
+const THEMES: Record<string, CarrierTheme> = {
+  default: {
+    cover: BRAND,
+    accent: "#4f46e5",
+    kicker: "rgba(255,255,255,0.85)",
+    brandName: "Pixcards",
+    footerUrl: "pixcards.co.uk",
+  },
+  perspective: {
+    cover: "linear-gradient(160deg,#1a2046 0%,#0f1330 60%,#0a0d22 100%)",
+    accent: "#12142f",
+    kicker: "#c7ec4f",
+    brandName: "PERSPECTIVE STUDIO",
+    footerUrl: "perspectivestudio.co.uk",
+    strip: "linear-gradient(90deg,#c7ec4f 0%,#5aa0e0 50%,#ff5a1f 100%)",
+  },
+};
 const INK = "#191c1e";
 const MUTED = "#5b6166";
 const FAINT = "#9aa0a6";
@@ -87,10 +115,12 @@ function InsertSheet({
   firstName,
   tapUrl,
   code,
+  theme,
 }: {
   firstName: string;
   tapUrl: string;
   code: string;
+  theme: CarrierTheme;
 }) {
   const qrSrc = `/api/qr?data=${encodeURIComponent(tapUrl)}&color=${encodeURIComponent(INK)}`;
   const prettyUrl = tapUrl.replace(/^https?:\/\//, "");
@@ -130,7 +160,7 @@ function InsertSheet({
               fontSize: "7.5pt",
               fontWeight: 800,
               letterSpacing: "0.18em",
-              color: "#4f46e5",
+              color: theme.accent,
             }}
           >
             {greeting.kicker}
@@ -217,7 +247,7 @@ function InsertSheet({
                       width: "5.5mm",
                       height: "5.5mm",
                       borderRadius: "9999px",
-                      background: BRAND,
+                      background: theme.accent,
                       color: "#fff",
                       fontWeight: 700,
                       fontSize: "8pt",
@@ -312,7 +342,7 @@ function InsertSheet({
       <div
         style={{
           height: "105mm",
-          background: BRAND,
+          background: theme.cover,
           color: "#fff",
           padding: "14mm 12mm",
           display: "flex",
@@ -371,7 +401,7 @@ function InsertSheet({
               letterSpacing: "-0.01em",
             }}
           >
-            Pixcards
+            {theme.brandName}
           </span>
         </div>
 
@@ -380,8 +410,8 @@ function InsertSheet({
             style={{
               margin: 0,
               fontSize: "10pt",
-              opacity: 0.85,
-              fontWeight: 600,
+              color: theme.kicker,
+              fontWeight: 700,
               letterSpacing: "0.12em",
               textTransform: "uppercase",
             }}
@@ -417,8 +447,22 @@ function InsertSheet({
           }}
         >
           <span>The last business card you&apos;ll ever need.</span>
-          <span style={{ fontWeight: 700 }}>pixcards.co.uk</span>
+          <span style={{ fontWeight: 700 }}>{theme.footerUrl}</span>
         </div>
+
+        {theme.strip && (
+          <span
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: "4mm",
+              background: theme.strip,
+            }}
+            aria-hidden
+          />
+        )}
       </div>
     </div>
   );
@@ -442,6 +486,15 @@ export default async function CardInsertPage({
   if (!order) notFound();
 
   const firstName = (order.user.name || "there").split(" ")[0];
+  // Pick the carrier theme from the order's card design preset.
+  let preset = "default";
+  try {
+    const d = JSON.parse(order.design) as { spec?: { preset?: string } };
+    if (d?.spec?.preset && THEMES[d.spec.preset]) preset = d.spec.preset;
+  } catch {
+    /* default */
+  }
+  const theme = THEMES[preset];
   // Prefer real card codes; if none generated yet, fall back to the profile
   // URL so the insert is still printable.
   const username = order.user.profile?.username;
@@ -482,6 +535,7 @@ export default async function CardInsertPage({
               firstName={firstName}
               tapUrl={s.tapUrl}
               code={s.code}
+              theme={theme}
             />
           ))}
         </div>
