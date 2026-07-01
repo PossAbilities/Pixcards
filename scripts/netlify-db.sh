@@ -10,7 +10,10 @@ if [ -z "$DATABASE_URL" ]; then
 fi
 
 echo "→ Syncing schema to database (prisma db push)…"
-npx prisma db push --skip-generate
+# Non-fatal: an unreachable/misconfigured DB string here (e.g. how some CLI
+# build environments pass it through) must never block the whole deploy —
+# the app doesn't need DB access at build time, only at runtime.
+npx prisma db push --skip-generate || echo "  (schema push skipped — continuing build)"
 
 # Non-fatal: a hiccup here must never block the deploy.
 echo "→ Ensuring the owner account is admin (and purging demo accounts in prod)…"
