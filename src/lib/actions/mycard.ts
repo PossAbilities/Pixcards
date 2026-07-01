@@ -10,8 +10,43 @@ import { material, appUrl, APP_NAME } from "@/lib/constants";
 import { recordEvent } from "@/lib/events";
 import { loadMyCard } from "@/lib/mycard";
 import { renderTemplateSidePng } from "@/lib/card-artwork";
+import { PRESET_PROFILE_THEME } from "@/lib/card-preset-meta";
 
 export type ActionResult = { ok: boolean; error?: string };
+
+/**
+ * Apply the brand theme (header gradient, accent, panel colour, and the
+ * "Brand" profile layout) that matches the saved card design. Editing the
+ * card design itself never touches these profile fields, so this is the
+ * one-click fix when the digital profile hasn't picked them up yet — no
+ * admin step required.
+ */
+export async function applyMyCardBrandTheme(): Promise<ActionResult> {
+  const user = await getSessionUser();
+  if (!user) return { ok: false, error: "Not signed in." };
+  const profile = await prisma.profile.findUnique({ where: { userId: user.id } });
+  if (!profile) return { ok: false, error: "Profile not found." };
+  if (!profile.cardPreset) {
+    return { ok: false, error: "You don't have a saved card design yet." };
+  }
+  // Only one starting brand exists today (Perspective Studio) — both a
+  // freshly-attached preset and a since-customised ("custom") design
+  // originated from it, so the same theme applies either way.
+  const t = PRESET_PROFILE_THEME.perspective;
+  await prisma.profile.update({
+    where: { userId: user.id },
+    data: {
+      theme: t.theme,
+      template: t.template,
+      accentColor: t.accentColor,
+      brandHeader: t.brandHeader,
+      panelColor: t.panelColor,
+    },
+  });
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/order");
+  return { ok: true };
+}
 
 /** Save the user's own front+back card design (JSON CardTemplateSpec). */
 export async function updateMyCardDesign(specJson: string): Promise<ActionResult> {

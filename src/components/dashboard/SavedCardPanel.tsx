@@ -1,10 +1,10 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useState, useTransition } from "react";
 import QRCode from "qrcode";
 import { Icon } from "@/components/Icon";
 import { Card, SectionHeading, buttonClass, inputClass, Label } from "@/components/ui";
-import { orderMyCard } from "@/lib/actions/mycard";
+import { orderMyCard, applyMyCardBrandTheme } from "@/lib/actions/mycard";
 import { money } from "@/lib/constants";
 import type { CardTemplateSpec, MergeData } from "@/lib/card-template";
 import { PersonalCardDesigner } from "./PersonalCardDesigner";
@@ -35,12 +35,25 @@ export function SavedCardPanel({
   const [editing, setEditing] = useState(false);
   const [v, setV] = useState(() => Date.now());
   const [qrPreview, setQrPreview] = useState("");
+  const [themeMsg, setThemeMsg] = useState<string | null>(null);
+  const [themeErr, setThemeErr] = useState<string | null>(null);
+  const [themePending, startTheme] = useTransition();
 
   useEffect(() => {
     QRCode.toDataURL(merge.url, { margin: 1, width: 256 })
       .then(setQrPreview)
       .catch(() => {});
   }, [merge.url]);
+
+  function applyBrandTheme() {
+    setThemeMsg(null);
+    setThemeErr(null);
+    startTheme(async () => {
+      const res = await applyMyCardBrandTheme();
+      if (res.ok) setThemeMsg("Done — your digital profile now matches this card.");
+      else setThemeErr(res.error ?? "Could not update your profile.");
+    });
+  }
 
   return (
     <Card className="mb-8 p-6">
@@ -50,6 +63,29 @@ export function SavedCardPanel({
         in your logo — then order it. Name/role/contact fields stay linked to
         your Profile.
       </p>
+
+      {/* Digital profile doesn't auto-update when you edit the card design —
+          this pushes the matching brand look (colours + layout) to it. */}
+      <div className="mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-dashed border-outline bg-surface-low p-4">
+        <Icon name="auto_awesome" className="text-[22px] text-primary" />
+        <p className="flex-1 text-sm text-muted">
+          Your shared profile page has its own look and doesn&apos;t update
+          automatically when you edit the card above.
+        </p>
+        <button type="button" onClick={applyBrandTheme} disabled={themePending} className={buttonClass("outline", "sm")}>
+          {themePending ? "Applying…" : "Match my profile to this card"}
+        </button>
+      </div>
+      {themeMsg && (
+        <p className="-mt-3 mb-5 flex items-center gap-1.5 text-sm font-semibold text-emerald-600">
+          <Icon name="check_circle" className="text-[16px]" />
+          {themeMsg}{" "}
+          <a href={merge.url} target="_blank" rel="noopener noreferrer" className="underline">
+            View my profile ↗
+          </a>
+        </p>
+      )}
+      {themeErr && <p className="-mt-3 mb-5 text-sm font-medium text-red-600">{themeErr}</p>}
 
       {editing ? (
         <PersonalCardDesigner
