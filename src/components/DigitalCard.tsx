@@ -51,12 +51,14 @@ export function DigitalCard({
   profileId,
   shareUrl,
   className,
+  hideBranding = false,
 }: {
   data: CardData;
   interactive?: boolean;
   profileId?: string;
   shareUrl?: string;
   className?: string;
+  hideBranding?: boolean;
 }) {
   const t = getTheme(data.themeId);
   const headerBg = data.brandHeader || t.header;
@@ -353,7 +355,7 @@ export function DigitalCard({
     </div>
   );
 
-  const footer = (
+  const footer = hideBranding ? null : (
     <div className="py-6 flex flex-col items-center gap-1 mt-auto">
       <span
         className="text-[11px] font-bold tracking-widest opacity-60 font-display"

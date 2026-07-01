@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { DigitalCard, type CardData } from "@/components/DigitalCard";
 import { SharePanel } from "@/components/public/SharePanel";
 import { prisma } from "@/lib/db";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser, isPro } from "@/lib/auth";
 import { appUrl, theme as getTheme, APP_NAME } from "@/lib/constants";
 
 async function getProfile(username: string) {
@@ -84,6 +84,7 @@ export default async function PublicCardPage({
     }
   }
 
+  const pro = isPro(profile.user);
   const shareUrl = `${appUrl()}/u/${username}`;
   const t = getTheme(profile.theme);
   const accent = profile.accentColor || t.accent;
@@ -141,6 +142,7 @@ export default async function PublicCardPage({
             interactive
             profileId={profile.id}
             shareUrl={shareUrl}
+            hideBranding={pro}
           />
         </div>
 
@@ -152,21 +154,24 @@ export default async function PublicCardPage({
         />
 
 
-        {/* CTA + powered-by footer (kept subtle) */}
-        <div className="flex flex-col items-center gap-1.5 pt-1 text-center">
-          <Link
-            href={`/register?from=${encodeURIComponent(`/u/${username}`)}`}
-            className="text-xs font-medium text-faint hover:text-primary transition-colors"
-          >
-            Create your own free card →
-          </Link>
-          <Link
-            href="/"
-            className="text-[10px] font-medium uppercase tracking-wider text-faint/70 hover:text-faint transition-colors"
-          >
-            Powered by {APP_NAME}
-          </Link>
-        </div>
+        {/* CTA + powered-by footer (kept subtle) — Pro accounts get custom
+            branding, so this growth-loop CTA only shows on free accounts. */}
+        {!pro && (
+          <div className="flex flex-col items-center gap-1.5 pt-1 text-center">
+            <Link
+              href={`/register?from=${encodeURIComponent(`/u/${username}`)}`}
+              className="text-xs font-medium text-faint hover:text-primary transition-colors"
+            >
+              Create your own free card →
+            </Link>
+            <Link
+              href="/"
+              className="text-[10px] font-medium uppercase tracking-wider text-faint/70 hover:text-faint transition-colors"
+            >
+              Powered by {APP_NAME}
+            </Link>
+          </div>
+        )}
       </div>
     </main>
   );
