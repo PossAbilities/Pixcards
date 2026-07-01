@@ -10,10 +10,15 @@ if [ -z "$DATABASE_URL" ]; then
 fi
 
 echo "→ Syncing schema to database (prisma db push)…"
-# Non-fatal: an unreachable/misconfigured DB string here (e.g. how some CLI
-# build environments pass it through) must never block the whole deploy —
+# --accept-data-loss: this runs non-interactively on every deploy, so Prisma
+# can never prompt for confirmation on a destructive change (e.g. a dropped
+# column) — we accept that here since schema changes are already reviewed
+# before they're committed.
+#
+# Also non-fatal: an unreachable/misconfigured DB string here (e.g. how some
+# CLI build environments pass it through) must never block the whole deploy —
 # the app doesn't need DB access at build time, only at runtime.
-npx prisma db push --skip-generate || echo "  (schema push skipped — continuing build)"
+npx prisma db push --skip-generate --accept-data-loss || echo "  (schema push skipped — continuing build)"
 
 # Non-fatal: a hiccup here must never block the deploy.
 echo "→ Ensuring the owner account is admin (and purging demo accounts in prod)…"
