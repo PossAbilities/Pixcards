@@ -1,6 +1,11 @@
 // Pixcards data model
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // Netlify Functions run on Amazon Linux (Node 22 / AL2023), which differs
+  // from whatever OS actually runs `prisma generate` (e.g. a developer's Mac
+  // deploying locally) — without this, a locally-built deploy bundles a
+  // macOS-only query engine that crashes at runtime on Netlify.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
