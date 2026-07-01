@@ -11,15 +11,15 @@ import type { Plan, Role } from "@prisma/client";
 
 type NavItem = { href: string; label: string; icon: string };
 
-const NAV: NavItem[] = [
+const BASE_NAV: NavItem[] = [
   { href: "/dashboard", label: "Profile", icon: "contact_page" },
   { href: "/dashboard/analytics", label: "Analytics", icon: "monitoring" },
   { href: "/dashboard/orders", label: "Orders", icon: "inventory_2" },
   { href: "/dashboard/cards", label: "My Cards", icon: "contactless" },
-  { href: "/dashboard/org", label: "Organisation", icon: "corporate_fare" },
   { href: "/dashboard/order", label: "Order a Card", icon: "add_card" },
   { href: "/dashboard/settings", label: "Settings", icon: "settings" },
 ];
+const ORG_NAV_ITEM: NavItem = { href: "/dashboard/org", label: "Organisation", icon: "corporate_fare" };
 
 export type SidebarUser = {
   name: string;
@@ -32,8 +32,14 @@ function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function Sidebar({ user }: { user: SidebarUser }) {
+export function Sidebar({ user, hasOrg = false }: { user: SidebarUser; hasOrg?: boolean }) {
   const pathname = usePathname();
+  // "Organisation" only appears for users who are actually part of one —
+  // regular personal accounts (Gmail/Outlook users just making a card) never
+  // see it. Orgs are set up by us on request, not self-serve.
+  const NAV = hasOrg
+    ? [...BASE_NAV.slice(0, 4), ORG_NAV_ITEM, ...BASE_NAV.slice(4)]
+    : BASE_NAV;
 
   return (
     <>

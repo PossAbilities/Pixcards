@@ -158,6 +158,47 @@ export async function setUserCardPreset(
   }
 }
 
+/**
+ * Set up a new organisation for a user and make them its owner. Org creation
+ * is sales-assisted rather than self-serve — a user gets in touch, and we
+ * create it here.
+ */
+export async function adminCreateOrganisation(
+  userId: string,
+  name: string,
+): Promise<AdminResult> {
+  try {
+    await requireAdminUser();
+    const clean = name.trim().slice(0, 80);
+    if (!clean) return { ok: false, error: "Enter an organisation name." };
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return { ok: false, error: "User not found." };
+
+    const existing = await prisma.orgMember.findUnique({ where: { userId } });
+    if (existing) return { ok: false, error: "This user is already part of an organisation." };
+
+    await prisma.organisation.create({
+      data: {
+        name: clean,
+        company: clean,
+        members: { create: { userId, role: "OWNER" } },
+      },
+    });
+    await recordEvent({
+      type: "SECURITY",
+      title: `Organisation "${clean}" created for ${user.email}`,
+      meta: { userId },
+    });
+    revalidatePath("/admin/users");
+    revalidatePath("/dashboard/org");
+    revalidatePath("/dashboard");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Could not create the organisation." };
+  }
+}
+
 export async function setUserPlan(
   userId: string,
   plan: Plan,

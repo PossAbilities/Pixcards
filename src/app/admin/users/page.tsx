@@ -10,6 +10,7 @@ export default async function AdminUsersPage() {
     orderBy: { createdAt: "desc" },
     include: {
       profile: { select: { username: true, cardPreset: true } },
+      orgMembership: { include: { org: { select: { name: true } } } },
       _count: { select: { orders: true } },
     },
   });
@@ -24,6 +25,7 @@ export default async function AdminUsersPage() {
     proComplimentary: u.proComplimentary,
     role: u.role,
     cardPreset: u.profile?.cardPreset ?? null,
+    orgName: u.orgMembership?.org.name ?? null,
     ordersCount: u._count.orders,
     createdAt: u.createdAt.toISOString(),
   }));

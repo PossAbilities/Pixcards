@@ -256,35 +256,6 @@ export async function assignMemberDepartment(
   return { ok: true };
 }
 
-export async function createOrganisation(name: string): Promise<OrgResult> {
-  const user = await getSessionUser();
-  if (!user) return { ok: false, error: "Not signed in." };
-  const clean = name.trim().slice(0, 80);
-  if (!clean) return { ok: false, error: "Enter an organisation name." };
-
-  const existing = await prisma.orgMember.findUnique({
-    where: { userId: user.id },
-  });
-  if (existing) {
-    return { ok: false, error: "You're already part of an organisation." };
-  }
-
-  await prisma.organisation.create({
-    data: {
-      name: clean,
-      company: clean,
-      members: { create: { userId: user.id, role: "OWNER" } },
-    },
-  });
-  await recordEvent({
-    type: "SECURITY",
-    title: `Organisation created: ${clean}`,
-    meta: { userId: user.id },
-  });
-  revalidatePath("/dashboard/org");
-  return { ok: true };
-}
-
 export async function updateOrgBranding(input: {
   name: string;
   company: string;

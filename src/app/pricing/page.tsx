@@ -297,6 +297,34 @@ export default async function PricingPage({
           </div>
         </section>
 
+        {/* Organisations teaser */}
+        <section className="px-4 md:px-12 py-16">
+          <Reveal className="mx-auto max-w-3xl">
+            <div className="flex flex-col items-center gap-5 rounded-3xl border border-black/5 bg-surface p-8 text-center shadow-sm sm:p-10">
+              <span className="grid h-14 w-14 place-items-center rounded-2xl bg-primary-soft text-primary-deep">
+                <Icon name="corporate_fare" className="text-[28px]" />
+              </span>
+              <div>
+                <h2 className="font-display text-2xl font-bold text-ink">
+                  Ordering for a whole team?
+                </h2>
+                <p className="mx-auto mt-2 max-w-xl text-muted">
+                  Organisations get shared branding, a locked card design for
+                  every member, central team management, and one bulk order —
+                  all set up for you. Get in touch and we&apos;ll set it up.
+                </p>
+              </div>
+              <a
+                href="mailto:hello@pixcards.co.uk?subject=Setting%20up%20an%20organisation"
+                className={buttonClass("primary", "md")}
+              >
+                <Icon name="mail" className="text-[18px]" />
+                Get in touch
+              </a>
+            </div>
+          </Reveal>
+        </section>
+
         {/* CTA band */}
         <section className="relative overflow-hidden bg-primary px-4 md:px-12 py-20 text-center text-white">
           <div className="absolute -bottom-24 -left-24 h-96 w-96 rounded-full border-[40px] border-white/5" />

@@ -13,7 +13,6 @@ import {
 import { THEMES, CARD_TEMPLATES, ORG_SEAT_PRICE_CENTS, money, material, PLATFORMS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import {
-  createOrganisation,
   updateOrgBranding,
   addMemberDirect,
   inviteMember,
@@ -89,48 +88,28 @@ export function OrgManager({ data }: { data: OrgData }) {
 
 /* ------------------------------- Create ---------------------------------- */
 
+/**
+ * Organisations are set up for a customer by us, not self-serve — this is a
+ * sales-assisted feature (shared branding, seats, team billing). Anyone
+ * landing here without one sees an invitation to get in touch rather than a
+ * form, so we can set them up as the org's admin ourselves.
+ */
 function CreateOrg() {
-  const [name, setName] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
-
-  function create() {
-    setError(null);
-    startTransition(async () => {
-      const res = await createOrganisation(name);
-      if (!res.ok) setError(res.error ?? "Could not create organisation.");
-    });
-  }
-
   return (
     <Card className="p-6">
-      <SectionHeading icon="corporate_fare" title="Create an organisation" />
-      <p className="-mt-1 mb-3 text-sm text-muted">
-        Manage business cards for your whole team under one brand — shared
-        design, central member management and team ordering.
+      <SectionHeading icon="corporate_fare" title="Organisations" />
+      <p className="-mt-1 mb-4 text-sm text-muted">
+        Manage business cards for a whole team under one brand — shared
+        design, central member management, team ordering and billing. This is
+        set up for you by our team.
       </p>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-        <div className="flex-1">
-          <Label htmlFor="org-name">Organisation name</Label>
-          <input
-            id="org-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Perspective Studios"
-            className={inputClass}
-          />
-        </div>
-        <button
-          type="button"
-          onClick={create}
-          disabled={isPending || !name.trim()}
-          className={buttonClass("primary", "md")}
-        >
-          <Icon name="add_business" className="text-[18px]" />
-          Create
-        </button>
-      </div>
-      {error && <p className="mt-3 text-sm font-medium text-red-600">{error}</p>}
+      <a
+        href="mailto:hello@pixcards.co.uk?subject=Set%20up%20an%20organisation"
+        className={buttonClass("primary", "md")}
+      >
+        <Icon name="mail" className="text-[18px]" />
+        Get in touch
+      </a>
     </Card>
   );
 }

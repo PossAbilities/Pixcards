@@ -11,6 +11,7 @@ import {
   revokePro,
   setUserCardPreset,
   clearUserCardsAndOrders,
+  adminCreateOrganisation,
 } from "@/lib/actions/admin";
 import { PRESET_OPTIONS } from "@/lib/card-preset-meta";
 import { cn, colorFromString, formatDate, initials } from "@/lib/utils";
@@ -25,6 +26,7 @@ export type AdminUser = {
   proComplimentary: boolean;
   role: "USER" | "ADMIN";
   cardPreset: string | null;
+  orgName: string | null;
   ordersCount: number;
   createdAt: string;
 };
@@ -60,10 +62,24 @@ export function UserRow({
   }
   const [durationDays, setDurationDays] = useState<number | null>(30);
   const [complimentary, setComplimentary] = useState(false);
+  const [orgName, setOrgName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const isSelf = user.id === currentAdminId;
   const isPro = user.plan === "PRO";
+
+  function createOrg() {
+    if (!orgName.trim()) return;
+    setError(null);
+    startTransition(async () => {
+      const res = await adminCreateOrganisation(user.id, orgName.trim());
+      if (res.ok) setOrgName("");
+      else {
+        setError(res.error ?? "Could not create organisation.");
+        alert(res.error ?? "Could not create organisation.");
+      }
+    });
+  }
 
   function run(fn: () => Promise<{ ok: boolean; error?: string }>) {
     setError(null);
@@ -301,6 +317,42 @@ export function UserRow({
                 <Icon name="shield_person" className="text-[18px] text-primary" />
                 {user.role === "ADMIN" ? "Revoke admin" : "Make admin"}
               </button>
+              <div className="my-1 h-px bg-black/5" />
+              <div className="px-3 py-2">
+                <span className="flex items-center gap-2 text-sm text-ink">
+                  <Icon name="corporate_fare" className="text-[18px] text-primary" />
+                  Organisation
+                </span>
+                {user.orgName ? (
+                  <p className="mt-1.5 text-xs text-muted">
+                    Member of <strong className="text-ink">{user.orgName}</strong>.
+                    Manage it from that org&apos;s dashboard.
+                  </p>
+                ) : (
+                  <div className="mt-1.5 flex gap-2">
+                    <input
+                      value={orgName}
+                      onChange={(e) => setOrgName(e.target.value)}
+                      placeholder="Organisation name"
+                      disabled={isPending}
+                      className="min-w-0 flex-1 rounded-lg border border-outline bg-surface px-2.5 py-1.5 text-sm text-ink outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 disabled:opacity-50"
+                    />
+                    <button
+                      type="button"
+                      onClick={createOrg}
+                      disabled={isPending || !orgName.trim()}
+                      className={buttonClass("outline", "sm")}
+                    >
+                      Create
+                    </button>
+                  </div>
+                )}
+                {!user.orgName && (
+                  <span className="mt-1 block text-[11px] text-faint">
+                    Creates it and makes this user the owner/admin.
+                  </span>
+                )}
+              </div>
               <div className="my-1 h-px bg-black/5" />
               <div className="px-3 py-2">
                 <span className="flex items-center gap-2 text-sm text-ink">
