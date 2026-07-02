@@ -6,8 +6,10 @@
 
 [build]
   # Generate the Prisma client; sync the schema (and optionally seed demo data
-  # when SEED_DEMO=true) only when a database is configured; then build.
-  command = "prisma generate && bash scripts/netlify-db.sh && next build"
+  # when SEED_DEMO=true) only when a database is configured; make sure sharp's
+  # Linux binaries exist even when this build runs on a Mac (local `netlify
+  # deploy --build`); then build.
+  command = "prisma generate && bash scripts/netlify-db.sh && node scripts/ensure-linux-sharp.mjs && next build"
   # The Next.js runtime requires the publish dir to be .next (not the repo root).
   publish = ".next"
 
