@@ -11,6 +11,7 @@ import { recordEvent } from "@/lib/events";
 import { loadMyCard } from "@/lib/mycard";
 import { renderTemplateSidePng } from "@/lib/card-artwork";
 import { PRESET_PROFILE_THEME } from "@/lib/card-preset-meta";
+import { defaultPerspectiveSpec } from "@/lib/preset-cards";
 
 export type ActionResult = { ok: boolean; error?: string };
 
@@ -46,6 +47,27 @@ export async function applyMyCardBrandTheme(): Promise<ActionResult> {
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/order");
   return { ok: true };
+}
+
+/**
+ * Replace the user's saved design with a freshly-generated starting template.
+ * The design saved at attach-time is a snapshot — layout fixes to the seed
+ * (element positions, icon artwork) never reach it, so this is the
+ * self-service way to pick those up. Discards any customisations.
+ */
+export async function resetMyCardDesign(): Promise<ActionResult & { spec?: string }> {
+  const user = await getSessionUser();
+  if (!user) return { ok: false, error: "Not signed in." };
+  const profile = await prisma.profile.findUnique({ where: { userId: user.id } });
+  if (!profile) return { ok: false, error: "Profile not found." };
+  const spec = JSON.stringify(await defaultPerspectiveSpec());
+  await prisma.profile.update({
+    where: { userId: user.id },
+    data: { cardDesign: spec, cardPreset: "perspective" },
+  });
+  revalidatePath("/dashboard/order");
+  revalidatePath("/dashboard");
+  return { ok: true, spec };
 }
 
 /** Save the user's own front+back card design (JSON CardTemplateSpec). */

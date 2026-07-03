@@ -53,7 +53,10 @@ async function iconDataUrl(kind: "mail" | "phone" | "globe"): Promise<string> {
     phone: `<rect x="6" y="1" width="16" height="24" rx="3.5" fill="none" stroke="${ORANGE}" stroke-width="2.6"/><line x1="11" y1="20.5" x2="17" y2="20.5" stroke="${ORANGE}" stroke-width="2.6" stroke-linecap="round"/>`,
     globe: `<circle cx="13" cy="13" r="12" fill="none" stroke="${ORANGE}" stroke-width="2.4"/><ellipse cx="13" cy="13" rx="5.5" ry="12" fill="none" stroke="${ORANGE}" stroke-width="2.2"/><line x1="1.5" y1="13" x2="24.5" y2="13" stroke="${ORANGE}" stroke-width="2.2"/>`,
   };
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${u(28)}" height="${u(26)}" viewBox="0 0 28 26"><g transform="scale(${PRINT_SCALE})">${shapes[kind]}</g></svg>`;
+  // The width/viewBox ratio already rasterises at PRINT_SCALE — no transform
+  // (an extra scale() here double-scales and crops the artwork to a corner).
+  // The 2-unit padding keeps stroke edges from clipping at the viewBox.
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${u(32)}" height="${u(30)}" viewBox="-2 -2 32 30">${shapes[kind]}</svg>`;
   const png = await sharp(Buffer.from(svg)).png().toBuffer();
   return `data:image/png;base64,${png.toString("base64")}`;
 }
@@ -111,7 +114,9 @@ export async function defaultPerspectiveSpec(): Promise<CardTemplateSpec> {
         { id: eid(), kind: "text", x: 0.103, y: 0.673, w: 0.45, h: 0.06, text: "{{phone}}", color: NAVY, fontSize: 26, fontWeight: 500, align: "left" },
         { id: eid(), kind: "image", x: 0.059, y: 0.768, w: 0.028, h: 0.042, src: chrome.globe },
         { id: eid(), kind: "text", x: 0.103, y: 0.768, w: 0.45, h: 0.06, text: "perspectivestudio.co.uk", color: NAVY, fontSize: 26, fontWeight: 500, align: "left" },
-        { id: eid(), kind: "text", x: 0.24, y: 0.879, w: 0.32, h: 0.07, text: "Scan · See the work →", color: "#ffffff", fontSize: 24, fontWeight: 700, align: "center" },
+        // Sits exactly over the orange pill baked into the chrome (x 64→424,
+        // y 540→600 base px) — same x/width so centred text stays inside it.
+        { id: eid(), kind: "text", x: 0.063, y: 0.868, w: 0.355, h: 0.07, text: "Scan · See the work →", color: "#ffffff", fontSize: 24, fontWeight: 700, align: "center" },
         { id: eid(), kind: "qr", x: 0.765, y: 0.614, w: 0.178, h: 0.282 },
       ],
     },

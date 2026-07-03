@@ -15,7 +15,7 @@ import {
   type SideSpec,
   type TemplateElement,
 } from "@/lib/card-template";
-import { updateMyCardDesign } from "@/lib/actions/mycard";
+import { resetMyCardDesign, updateMyCardDesign } from "@/lib/actions/mycard";
 
 const ED_W = 506;
 const ED_H = Math.round(ED_W / CARD_RATIO);
@@ -150,6 +150,25 @@ export function PersonalCardDesigner({
         onSaved?.();
       } else {
         setError(res.error ?? "Could not save.");
+      }
+    });
+  }
+
+  /** Swap in a freshly-generated starting template (already persisted by the
+   *  action) — picks up layout/artwork fixes a saved snapshot can't. */
+  function resetToStartingDesign() {
+    if (!window.confirm("Reset to the starting design? This replaces your current layout on both sides.")) return;
+    setError(null);
+    setSaved(false);
+    startTransition(async () => {
+      const res = await resetMyCardDesign();
+      if (res.ok && res.spec) {
+        setSpec(JSON.parse(res.spec) as CardTemplateSpec);
+        setSelectedId(null);
+        setSaved(true);
+        onSaved?.();
+      } else {
+        setError(res.error ?? "Could not reset the design.");
       }
     });
   }
@@ -411,6 +430,9 @@ export function PersonalCardDesigner({
           <div className="flex flex-wrap items-center gap-3 pt-1">
             <button type="button" onClick={save} disabled={isPending} className={buttonClass("primary", "md")}>
               <Icon name="save" className="text-[18px]" /> Save card design
+            </button>
+            <button type="button" onClick={resetToStartingDesign} disabled={isPending} className={buttonClass("outline", "md")}>
+              <Icon name="restart_alt" className="text-[18px]" /> Reset to starting design
             </button>
             {saved && !isPending && (
               <span className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-600">
