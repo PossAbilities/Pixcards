@@ -14,7 +14,9 @@ export async function requireUser(
 /** Require an admin; redirect home otherwise. */
 export async function requireAdmin(): Promise<SessionUser> {
   const user = await getSessionUser();
-  if (!user) redirect("/login");
-  if (user.role !== "ADMIN") redirect("/dashboard");
+  // The normal login form doubles as the admin login — admin accounts are
+  // routed to /admin after signing in, so send them back here afterwards.
+  if (!user) redirect("/login?next=/admin");
+  if (user.role !== "ADMIN") redirect("/dashboard?admin=denied");
   return user;
 }

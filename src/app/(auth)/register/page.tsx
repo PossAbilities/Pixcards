@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { Icon } from "@/components/Icon";
 import { CardMockup } from "@/components/CardMockup";
 import { AuthForm } from "@/components/auth/AuthForm";
+import { getSessionUser } from "@/lib/auth";
 
 const features: { icon: string; text: string }[] = [
   { icon: "contactless", text: "NFC tap & QR code sharing — no app to download" },
@@ -16,6 +18,11 @@ export default async function RegisterPage({
   searchParams: Promise<{ next?: string; from?: string }>;
 }) {
   const { next, from } = await searchParams;
+
+  // Already signed in — no point showing the sign-up form.
+  const user = await getSessionUser();
+  if (user) redirect(user.role === "ADMIN" ? "/admin" : "/dashboard");
+
   // Where the back button goes — the page they came from (e.g. a profile),
   // falling back to the home page. Only same-site relative paths are allowed.
   const safeFrom =

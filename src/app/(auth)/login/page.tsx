@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { Icon } from "@/components/Icon";
 import { CardMockup } from "@/components/CardMockup";
 import { AuthForm } from "@/components/auth/AuthForm";
+import { getSessionUser } from "@/lib/auth";
 
 const trust = [
   "Tap-to-share NFC cards & dynamic QR codes",
@@ -16,6 +18,16 @@ export default async function LoginPage({
   searchParams: Promise<{ next?: string }>;
 }) {
   const { next } = await searchParams;
+
+  // Already signed in? Don't show the form again (it reads as a redirect
+  // loop) — go where they were headed, or to the right home for their role.
+  const user = await getSessionUser();
+  if (user) {
+    const safeNext =
+      next && next.startsWith("/") && !next.startsWith("//") ? next : null;
+    redirect(safeNext ?? (user.role === "ADMIN" ? "/admin" : "/dashboard"));
+  }
+
   return (
     <main className="min-h-screen flex bg-background">
       {/* Brand panel */}

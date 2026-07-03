@@ -8,8 +8,13 @@ import { Card, SectionHeading, buttonClass } from "@/components/ui";
 import { ProfileEditor } from "@/components/dashboard/ProfileEditor";
 import { PRESET_OPTIONS } from "@/lib/card-preset-meta";
 
-export default async function ProfilePage() {
+export default async function ProfilePage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ admin?: string }>;
+}) {
   const user = await requireUser();
+  const adminDenied = (await searchParams)?.admin === "denied";
   const profile = await prisma.profile.findUnique({
     where: { userId: user.id },
     include: { links: { orderBy: { position: "asc" } } },
@@ -45,6 +50,16 @@ export default async function ProfilePage() {
 
   return (
     <div>
+      {adminDenied && (
+        <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <Icon name="shield_person" className="mt-0.5 text-[18px]" />
+          <span>
+            The admin panel needs an admin account — you&apos;re signed in as{" "}
+            <strong>{user.email}</strong>. Log out, then sign in with your
+            admin account to access it.
+          </span>
+        </div>
+      )}
       <header className="mb-6 md:mb-8">
         <h1 className="font-display text-3xl font-bold text-ink">
           Edit Your Digital Profile
