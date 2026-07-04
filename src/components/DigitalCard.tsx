@@ -376,8 +376,28 @@ export function DigitalCard({
          gradient strip, blob cut-out, pill CTA ------------------------- */
   if (template === "brand") {
     const strip = `linear-gradient(90deg, ${panel} 0%, #5aa0e0 50%, ${accent} 100%)`;
+    // Icon-only square action tile (email/phone) — same visual weight as the
+    // social BrandTiles beside it.
+    const actionTile = (icon: string, href: string, label: string) => {
+      const inner = (
+        <span
+          className="grid place-items-center rounded-2xl"
+          style={{ width: 56, height: 56, background: accent, color: "#fff", boxShadow: "0 6px 16px -8px rgba(0,0,0,0.35)" }}
+        >
+          <Icon name={icon} className="text-[26px]" />
+        </span>
+      );
+      return interactive ? (
+        <a key={icon} href={href} aria-label={label} className="transition hover:-translate-y-0.5 active:scale-95">
+          {inner}
+        </a>
+      ) : (
+        <div key={icon}>{inner}</div>
+      );
+    };
+    const hasTiles = Boolean(data.email || data.phone || data.links.length > 0);
     return (
-      <div className={wrapperCls} style={{ ...wrapperStyle, background: "#fff" }}>
+      <div className={wrapperCls} style={{ ...wrapperStyle, background: panel }}>
         {/* Hero — navy card-front: small avatar badge, bold name, role, ring */}
         <div className="relative shrink-0 overflow-hidden px-6 pb-9 pt-8" style={{ background: headerBg }}>
           <span
@@ -409,15 +429,17 @@ export function DigitalCard({
           <div className="absolute inset-x-0 bottom-0 h-2" style={{ background: strip }} aria-hidden />
         </div>
 
-        {/* Panel — lime card-back echo: blob cut-out, tagline, CTA pills */}
-        <div className="relative -mt-px overflow-hidden px-6 pb-7 pt-7" style={{ background: panel }}>
+        {/* Panel — lime card-back echo runs to the bottom of the page:
+            blob cut-out, tagline, CTA pills, icon-square actions */}
+        <div className="relative -mt-px flex flex-1 flex-col overflow-hidden px-6 pb-7 pt-7" style={{ background: panel }}>
           <span
             className="pointer-events-none absolute -right-6 -top-12 h-28 w-28 rounded-full"
             style={{ background: headerBg }}
             aria-hidden
           />
           {data.bio && (
-            <p className="relative font-display text-[19px] font-bold leading-snug" style={{ color: panelInk }}>
+            /* pr keeps the tagline's opening lines clear of the blob cut-out */
+            <p className="relative pr-14 font-display text-[19px] font-bold leading-snug" style={{ color: panelInk }}>
               {data.bio}
             </p>
           )}
@@ -443,16 +465,25 @@ export function DigitalCard({
             </button>
           </div>
 
-          {contactRows && <div className="relative mt-5">{contactRows}</div>}
-        </div>
+          {/* Icon squares — email/phone first, then the social links.
+              Each square IS the action (mailto / tel / open link). */}
+          {hasTiles && (
+            <div className="relative mt-6 flex flex-wrap gap-3">
+              {data.email && actionTile("mail", `mailto:${data.email}`, "Email")}
+              {data.phone && actionTile("call", `tel:${data.phone}`, "Call")}
+              {data.links.map((link) =>
+                wrapLink(
+                  link,
+                  "transition hover:-translate-y-0.5 active:scale-95",
+                  {},
+                  <BrandTile platform={link.platform} size={56} radius={16} />,
+                ),
+              )}
+            </div>
+          )}
 
-        {/* White body — links, easiest to scan on a plain background */}
-        <div className="flex flex-1 flex-col gap-3 px-5 pt-6" style={{ color: t.ink }}>
-          {sectionLabel}
-          {linkRows}
+          {footer}
         </div>
-
-        {footer}
       </div>
     );
   }
