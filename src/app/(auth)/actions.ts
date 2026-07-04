@@ -144,6 +144,19 @@ export async function loginAction(
     return { error: "Incorrect email or password." };
   }
 
+  // Self-healing owner promotion: the build-time ensure-admin script is
+  // skipped whenever a deploy's DB step fails, which can leave the owner
+  // account without its admin role. Logging in as the owner email restores it.
+  const adminEmail = (
+    process.env.ADMIN_EMAIL || "digital@possabilities.org.uk"
+  ).toLowerCase();
+  if (user.email === adminEmail && user.role !== "ADMIN") {
+    user = await prisma.user.update({
+      where: { id: user.id },
+      data: { role: "ADMIN" },
+    });
+  }
+
   await createSession(user.id);
   const next = safeNext(formData.get("next"));
   redirect(next ?? (user.role === "ADMIN" ? "/admin" : "/dashboard"));
