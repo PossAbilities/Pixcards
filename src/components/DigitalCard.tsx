@@ -387,7 +387,8 @@ export function DigitalCard({
           />
           <div className="flex items-center gap-3.5">
             {avatarNode(60)}
-            <div className="min-w-0">
+            {/* pr keeps the name/role clear of the ring accent pinned top-right */}
+            <div className="min-w-0 pr-8">
               <h1 className="font-display text-2xl font-bold leading-tight tracking-tight text-white truncate">
                 {data.name || "Your Name"}
               </h1>
