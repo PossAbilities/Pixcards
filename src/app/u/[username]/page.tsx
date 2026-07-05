@@ -6,6 +6,18 @@ import { prisma } from "@/lib/db";
 import { getSessionUser, isPro } from "@/lib/auth";
 import { appUrl, theme as getTheme, APP_NAME } from "@/lib/constants";
 
+
+/** Safe-parse the saved tile order (JSON array of tokens). */
+function parseTileOrder(raw: string | null): string[] | null {
+  if (!raw) return null;
+  try {
+    const v = JSON.parse(raw) as unknown;
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : null;
+  } catch {
+    return null;
+  }
+}
+
 async function getProfile(username: string) {
   return prisma.profile.findUnique({
     where: { username },
@@ -113,6 +125,7 @@ export default async function PublicCardPage({
     panelColor: profile.panelColor || undefined,
     tileSize: profile.tileSize,
     avatarSize: profile.avatarSize,
+    tileOrder: parseTileOrder(profile.tileOrder),
     links: profile.links.map((l) => ({
       id: l.id,
       platform: l.platform,

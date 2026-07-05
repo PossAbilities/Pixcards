@@ -6,6 +6,18 @@ import { Icon } from "@/components/Icon";
 import type { CardData } from "@/components/DigitalCard";
 import { ProfileShowcase } from "@/components/dashboard/ProfileShowcase";
 
+
+/** Safe-parse the saved tile order (JSON array of tokens). */
+function parseTileOrder(raw: string | null): string[] | null {
+  if (!raw) return null;
+  try {
+    const v = JSON.parse(raw) as unknown;
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : null;
+  } catch {
+    return null;
+  }
+}
+
 export default async function ProfilePage({
   searchParams,
 }: {
@@ -50,6 +62,7 @@ export default async function ProfilePage({
     panelColor: profile.panelColor || undefined,
     tileSize: profile.tileSize,
     avatarSize: profile.avatarSize,
+    tileOrder: parseTileOrder(profile.tileOrder),
     links: profile.links.map((l) => ({
       id: l.id,
       platform: l.platform,

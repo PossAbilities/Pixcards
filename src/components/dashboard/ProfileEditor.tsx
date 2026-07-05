@@ -1,6 +1,17 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState, useTransition } from "react";
+import {
+  DndContext,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Icon } from "@/components/Icon";
 import {
   Card,
@@ -21,7 +32,7 @@ import {
   platform,
   theme as getTheme,
 } from "@/lib/constants";
-import { cn } from "@/lib/utils";
+import { cn, orderByTokens } from "@/lib/utils";
 import {
   addLink,
   deleteLink,
@@ -29,6 +40,7 @@ import {
   setTemplate,
   setTileSize,
   setAvatarSize,
+  reorderTiles,
   updateImages,
   updateLink,
   updateProfile,
@@ -56,6 +68,7 @@ type ProfileState = {
   panelColor?: string | null;
   tileSize?: string | null;
   avatarSize?: string | null;
+  tileOrder?: string[] | null;
 };
 
 type LinkDraft = { platform: string; label: string; url: string };
@@ -110,6 +123,7 @@ export function ProfileEditor({
       panelColor: form.panelColor,
       tileSize: form.tileSize,
       avatarSize: form.avatarSize,
+      tileOrder: form.tileOrder,
       links,
     }),
     [form, links],
@@ -198,6 +212,14 @@ export function ProfileEditor({
       } else {
         showToast("Photo size updated", "success");
       }
+    });
+  }
+
+  function applyTileOrder(tokens: string[]) {
+    set("tileOrder", tokens);
+    startTransition(async () => {
+      const res = await reorderTiles(tokens);
+      if (!res.ok) showToast(res.error ?? "Could not save the new order", "error");
     });
   }
 
@@ -334,6 +356,11 @@ export function ProfileEditor({
           isPending={isPending}
           showToast={showToast}
           allowedPlatforms={allowedPlatforms}
+          email={form.email}
+          phone={form.phone}
+          accent={form.accentColor}
+          tileOrder={form.tileOrder}
+          onReorder={applyTileOrder}
         />
 
         {/* Layout, sizes & colours */}
@@ -476,6 +503,37 @@ export function ProfileEditor({
 }
 
 /* ----------------------------- Sub-components ---------------------------- */
+
+/** One draggable square in the links grid (dnd-kit sortable). */
+function SortableTile({
+  id,
+  label,
+  children,
+}: {
+  id: string;
+  label: string;
+  children: React.ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        touchAction: "manipulation",
+        zIndex: isDragging ? 20 : undefined,
+        opacity: isDragging ? 0.85 : 1,
+      }}
+      className="flex w-16 cursor-grab flex-col items-center gap-1 active:cursor-grabbing"
+    >
+      {children}
+      <span className="w-full truncate text-center text-[10px] font-medium text-muted">{label}</span>
+    </div>
+  );
+}
 
 /** Collapsible option group — keeps the editor compact (preview-first). */
 function Section({
@@ -699,6 +757,11 @@ function LinksCard({
   isPending,
   showToast,
   allowedPlatforms,
+  email,
+  phone,
+  accent,
+  tileOrder,
+  onReorder,
 }: {
   links: EditorLink[];
   setLinks: React.Dispatch<React.SetStateAction<EditorLink[]>>;
@@ -707,7 +770,18 @@ function LinksCard({
   isPending: boolean;
   showToast: (m: string, k: "success" | "error") => void;
   allowedPlatforms?: string[];
+  email?: string;
+  phone?: string;
+  accent?: string | null;
+  tileOrder?: string[] | null;
+  onReorder: (tokens: string[]) => void;
 }) {
+  // Hold-and-drag reordering: a small movement threshold on mouse keeps
+  // plain clicks working; touch requires a hold so scrolling isn't hijacked.
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
+  );
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
 
@@ -780,7 +854,7 @@ function LinksCard({
   const editing = links.find((l) => l.id === editingId) ?? null;
 
   return (
-    <Section icon="link" title="Links" subtitle={links.length ? `${links.length} on your page — tap one to edit` : "Add your website and socials"}>
+    <Section icon="link" title="Links" subtitle={links.length ? `${links.length} on your page — tap to edit, hold & drag to reorder` : "Add your website and socials"}>
       {adding && (
         <LinkForm
           onSubmit={submitAdd}
@@ -804,56 +878,111 @@ function LinksCard({
         />
       )}
 
-      {/* App-icon style tiles — the pencil badge edits, the + tile adds. */}
-      <div className="flex flex-wrap gap-x-3 gap-y-4">
-        {links.map((link) => (
-          <div key={link.id} className="flex w-16 flex-col items-center gap-1">
-            <button
-              type="button"
-              onClick={() => {
-                if (link.orgLocked) return;
-                setEditingId(editingId === link.id ? null : link.id);
-                setAdding(false);
-              }}
-              className="relative transition active:scale-95"
-              aria-label={`Edit ${link.label}`}
-            >
-              <BrandTile platform={link.platform} size={56} radius={16} />
-              {link.orgLocked ? (
-                <span className="absolute -right-1.5 -top-1.5 grid h-6 w-6 place-items-center rounded-full bg-ink text-white shadow">
-                  <Icon name="lock" className="text-[12px]" />
-                </span>
-              ) : (
-                <span
-                  className={cn(
-                    "absolute -right-1.5 -top-1.5 grid h-6 w-6 place-items-center rounded-full bg-surface text-ink shadow ring-1 ring-black/10",
-                    editingId === link.id && "bg-primary text-white ring-primary",
-                  )}
-                >
-                  <Icon name="edit" className="text-[13px]" />
-                </span>
-              )}
-            </button>
-            <span className="w-full truncate text-center text-[10px] font-medium text-muted">{link.label}</span>
-          </div>
-        ))}
-        {!atLimit && (
-          <div className="flex w-16 flex-col items-center gap-1">
-            <button
-              type="button"
-              onClick={() => {
-                setAdding((v) => !v);
-                setEditingId(null);
-              }}
-              aria-label="Add link"
-              className="grid h-14 w-14 place-items-center rounded-2xl border-2 border-dashed border-outline text-muted transition hover:border-primary hover:text-primary active:scale-95"
-            >
-              <Icon name="add" className="text-[26px]" />
-            </button>
-            <span className="text-[10px] font-medium text-muted">Add</span>
-          </div>
-        )}
-      </div>
+      {/* App-icon tiles — tap the pencil to edit, hold & drag to reorder.
+          Email and phone are part of the same order. */}
+      {(() => {
+        const tiles: { key: string; label: string; node: React.ReactNode }[] = [
+          ...(email
+            ? [{
+                key: "email",
+                label: "Email",
+                node: (
+                  <span
+                    className="grid h-14 w-14 place-items-center rounded-2xl text-white shadow"
+                    style={{ background: accent || "#4f46e5" }}
+                  >
+                    <Icon name="mail" className="text-[26px]" />
+                  </span>
+                ),
+              }]
+            : []),
+          ...(phone
+            ? [{
+                key: "phone",
+                label: "Phone",
+                node: (
+                  <span
+                    className="grid h-14 w-14 place-items-center rounded-2xl text-white shadow"
+                    style={{ background: accent || "#4f46e5" }}
+                  >
+                    <Icon name="call" className="text-[26px]" />
+                  </span>
+                ),
+              }]
+            : []),
+          ...links.map((link) => ({
+            key: link.id,
+            label: link.label,
+            node: (
+              <button
+                type="button"
+                onClick={() => {
+                  if (link.orgLocked) return;
+                  setEditingId(editingId === link.id ? null : link.id);
+                  setAdding(false);
+                }}
+                className="relative transition active:scale-95"
+                aria-label={`Edit ${link.label}`}
+              >
+                <BrandTile platform={link.platform} size={56} radius={16} />
+                {link.orgLocked ? (
+                  <span className="absolute -right-1.5 -top-1.5 grid h-6 w-6 place-items-center rounded-full bg-ink text-white shadow">
+                    <Icon name="lock" className="text-[12px]" />
+                  </span>
+                ) : (
+                  <span
+                    className={cn(
+                      "absolute -right-1.5 -top-1.5 grid h-6 w-6 place-items-center rounded-full bg-surface text-ink shadow ring-1 ring-black/10",
+                      editingId === link.id && "bg-primary text-white ring-primary",
+                    )}
+                  >
+                    <Icon name="edit" className="text-[13px]" />
+                  </span>
+                )}
+              </button>
+            ),
+          })),
+        ];
+        const ordered = orderByTokens(tiles, (t) => t.key, tileOrder);
+        const tokens = ordered.map((t) => t.key);
+        function onDragEnd(e: DragEndEvent) {
+          const { active, over } = e;
+          if (!over || active.id === over.id) return;
+          const next = arrayMove(tokens, tokens.indexOf(String(active.id)), tokens.indexOf(String(over.id)));
+          const idOrder = next.filter((k) => k !== "email" && k !== "phone");
+          setLinks((ls) => [...ls].sort((a, b) => idOrder.indexOf(a.id) - idOrder.indexOf(b.id)));
+          onReorder(next);
+        }
+        return (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+            <SortableContext items={tokens} strategy={rectSortingStrategy}>
+              <div className="flex flex-wrap gap-x-3 gap-y-4">
+                {ordered.map((t) => (
+                  <SortableTile key={t.key} id={t.key} label={t.label}>
+                    {t.node}
+                  </SortableTile>
+                ))}
+                {!atLimit && (
+                  <div className="flex w-16 flex-col items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAdding((v) => !v);
+                        setEditingId(null);
+                      }}
+                      aria-label="Add link"
+                      className="grid h-14 w-14 place-items-center rounded-2xl border-2 border-dashed border-outline text-muted transition hover:border-primary hover:text-primary active:scale-95"
+                    >
+                      <Icon name="add" className="text-[26px]" />
+                    </button>
+                    <span className="text-[10px] font-medium text-muted">Add</span>
+                  </div>
+                )}
+              </div>
+            </SortableContext>
+          </DndContext>
+        );
+      })()}
 
       {links.length === 0 && !adding && (
         <p className="mt-3 text-sm text-muted">No links yet — tap + to add your first.</p>

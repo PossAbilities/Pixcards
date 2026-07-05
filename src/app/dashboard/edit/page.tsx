@@ -6,6 +6,18 @@ import { appUrl } from "@/lib/constants";
 import { Icon } from "@/components/Icon";
 import { ProfileEditor } from "@/components/dashboard/ProfileEditor";
 
+
+/** Safe-parse the saved tile order (JSON array of tokens). */
+function parseTileOrder(raw: string | null): string[] | null {
+  if (!raw) return null;
+  try {
+    const v = JSON.parse(raw) as unknown;
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : null;
+  } catch {
+    return null;
+  }
+}
+
 export default async function EditProfilePage() {
   const user = await requireUser();
   const profile = await prisma.profile.findUnique({
@@ -73,6 +85,7 @@ export default async function EditProfilePage() {
           panelColor: profile.panelColor,
           tileSize: profile.tileSize,
           avatarSize: profile.avatarSize,
+          tileOrder: parseTileOrder(profile.tileOrder),
         }}
         links={profile.links.map((l) => ({
           id: l.id,

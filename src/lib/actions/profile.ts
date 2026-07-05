@@ -159,6 +159,37 @@ export async function setAvatarSize(size: string): Promise<ActionResult> {
   return { ok: true };
 }
 
+/**
+ * Persist the drag & drop order of the contact/social squares. Tokens are
+ * "email", "phone" and link ids; link positions are rewritten to match so
+ * every layout (not just the icon grid) follows the same order.
+ */
+export async function reorderTiles(tokens: string[]): Promise<ActionResult> {
+  const { profile } = await myProfile();
+  if (
+    !Array.isArray(tokens) ||
+    tokens.length > 100 ||
+    tokens.some((t) => typeof t !== "string" || t.length > 64)
+  ) {
+    return { ok: false, error: "Invalid order." };
+  }
+  const ids = tokens.filter((t) => t !== "email" && t !== "phone");
+  await prisma.$transaction([
+    ...ids.map((id, i) =>
+      prisma.link.updateMany({
+        where: { id, profileId: profile.id },
+        data: { position: i },
+      }),
+    ),
+    prisma.profile.update({
+      where: { id: profile.id },
+      data: { tileOrder: JSON.stringify(tokens) },
+    }),
+  ]);
+  revalidatePath(`/u/${profile.username}`);
+  return { ok: true };
+}
+
 export async function setTemplate(templateId: string): Promise<ActionResult> {
   const { user, profile } = await myProfile();
   if (await prisma.orgMember.findUnique({ where: { userId: user.id } })) {

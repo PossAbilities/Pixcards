@@ -120,3 +120,20 @@ export function formatDate(date: Date | string): string {
     year: "numeric",
   });
 }
+
+/**
+ * Order items by a saved token list (e.g. the profile's tile order).
+ * Tokens missing from the list keep their original relative order at the end.
+ */
+export function orderByTokens<T>(
+  items: T[],
+  key: (item: T) => string,
+  order?: string[] | null,
+): T[] {
+  if (!order || order.length === 0) return items;
+  const pos = new Map(order.map((k, i) => [k, i]));
+  const fallback = (item: T) => order.length + items.indexOf(item);
+  return [...items].sort(
+    (a, b) => (pos.get(key(a)) ?? fallback(a)) - (pos.get(key(b)) ?? fallback(b)),
+  );
+}

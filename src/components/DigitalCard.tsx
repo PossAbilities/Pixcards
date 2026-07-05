@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Icon } from "./Icon";
 import { BrandTile } from "./BrandIcon";
 import { theme as getTheme } from "@/lib/constants";
-import { buildVCard, initials, cn } from "@/lib/utils";
+import { buildVCard, initials, cn, orderByTokens } from "@/lib/utils";
 
 /** Black or white, whichever reads better on a given hex colour. */
 function readableInk(hex?: string | null): string {
@@ -46,6 +46,8 @@ export type CardData = {
   tileSize?: string | null;
   /** Size of the profile photo: sm | md | lg */
   avatarSize?: string | null;
+  /** Drag & drop order of the icon squares ("email", "phone", link ids). */
+  tileOrder?: string[] | null;
   links: CardLink[];
 };
 
@@ -478,21 +480,32 @@ export function DigitalCard({
             </button>
           </div>
 
-          {/* Icon squares — email/phone first, then the social links.
-              Each square IS the action (mailto / tel / open link). */}
+          {/* Icon squares — each square IS the action (mailto / tel / open
+              link), shown in the user's drag & drop order. */}
           {hasTiles && (
             <div className="relative mt-6 flex flex-wrap gap-3">
-              {data.email && actionTile("mail", `mailto:${data.email}`, "Email")}
-              {data.phone && actionTile("call", `tel:${data.phone}`, "Call")}
-              {data.links.map((link) =>
-                wrapLink(
-                  link,
-                  "transition hover:-translate-y-0.5 active:scale-95",
-                  {},
-                  /* solid: brand-coloured tiles stand out on the lime panel */
-                  <BrandTile platform={link.platform} size={tile.px} radius={tile.r} solid />,
-                ),
-              )}
+              {orderByTokens(
+                [
+                  ...(data.email
+                    ? [{ key: "email", node: actionTile("mail", `mailto:${data.email}`, "Email") }]
+                    : []),
+                  ...(data.phone
+                    ? [{ key: "phone", node: actionTile("call", `tel:${data.phone}`, "Call") }]
+                    : []),
+                  ...data.links.map((link) => ({
+                    key: link.id,
+                    node: wrapLink(
+                      link,
+                      "transition hover:-translate-y-0.5 active:scale-95",
+                      {},
+                      /* solid: brand-coloured tiles stand out on the lime panel */
+                      <BrandTile platform={link.platform} size={tile.px} radius={tile.r} solid />,
+                    ),
+                  })),
+                ],
+                (t) => t.key,
+                data.tileOrder,
+              ).map((t) => t.node)}
             </div>
           )}
 

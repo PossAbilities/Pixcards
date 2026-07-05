@@ -227,6 +227,9 @@ model Profile {
   tileSize    String  @default("md")
   // Size of the profile photo on the public page: sm | md | lg
   avatarSize  String  @default("md")
+  // Display order of the contact/social squares (JSON array of "email",
+  // "phone" and link ids) — set by drag & drop in the profile editor.
+  tileOrder   String?
   // Saved physical-card design preset (e.g. "perspective") — flags that the
   // user has a custom card design (drives showing the order panel) and which
   // starting template to seed cardDesign from on first edit.
