@@ -139,6 +139,40 @@ export async function renderMemberCardPng(opts: {
     .toBuffer();
 }
 
+/**
+ * Fit a rendered card side onto an Apple Wallet "strip" canvas at all three
+ * required resolutions. The card keeps its aspect ratio (contained, never
+ * cropped) and any letterbox is filled with the card's own background colour
+ * so it reads as one seamless branded banner rather than a boxed-in image.
+ *
+ * Standard storeCard strip sizes: 375×123pt → 1x 375×123, 2x 750×246,
+ * 3x 1125×369.
+ */
+export async function renderWalletStripSet(
+  cardSide: Buffer,
+  bgHex: string,
+): Promise<{ x1: Buffer; x2: Buffer; x3: Buffer }> {
+  const background = /^#[0-9a-fA-F]{6}$/.test(bgHex) ? bgHex : "#12142f";
+  const make = async (w: number, h: number) =>
+    sharp(cardSide)
+      .resize(w, h, { fit: "contain", background })
+      .png()
+      .toBuffer();
+  const [x1, x2, x3] = await Promise.all([
+    make(375, 123),
+    make(750, 246),
+    make(1125, 369),
+  ]);
+  return { x1, x2, x3 };
+}
+
+/** First #hex colour in a CSS value (gradient or plain), or null. */
+export function firstHex(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const m = /#[0-9a-fA-F]{6}/.exec(value);
+  return m ? m[0] : null;
+}
+
 /* -------------------------- Template rendering --------------------------- */
 
 /**

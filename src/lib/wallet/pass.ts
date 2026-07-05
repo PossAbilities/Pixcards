@@ -69,6 +69,8 @@ function hexToRgb(hex: string): string {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
+export type WalletStrip = { x1: Buffer; x2: Buffer; x3: Buffer };
+
 export type WalletPassInput = {
   serial: string;
   name: string;
@@ -76,7 +78,14 @@ export type WalletPassInput = {
   company?: string;
   themeId: string;
   profileUrl: string;
+  email?: string;
+  phone?: string;
   thumbnail?: Buffer | null;
+  /** Card-front artwork as a Wallet strip — turns the pass into a branded
+   *  storeCard that mirrors the printed card. */
+  strip?: WalletStrip | null;
+  /** Brand background colour (hex) — the card's, when a strip is supplied. */
+  backgroundHex?: string | null;
 };
 
 /** Build a signed .pkpass buffer for a profile. Throws if not configured. */
@@ -98,6 +107,46 @@ export async function buildWalletPass(input: WalletPassInput): Promise<Buffer> {
       : []),
   ];
 
+  const backFields = [
+    { key: "profile", label: "Profile", value: input.profileUrl },
+    ...(input.email
+      ? [{ key: "email", label: "Email", value: input.email }]
+      : []),
+    ...(input.phone
+      ? [{ key: "phone", label: "Phone", value: input.phone }]
+      : []),
+    {
+      key: "about",
+      label: "About",
+      value:
+        "Tap the link or scan the QR code to view this Pixcards digital business card.",
+    },
+  ];
+
+  const useStrip = Boolean(input.strip);
+  const bg = input.backgroundHex && /^#[0-9a-fA-F]{6}$/.test(input.backgroundHex)
+    ? hexToRgb(input.backgroundHex)
+    : hexToRgb(t.accent);
+
+  // With a strip, the card front already carries the name/role visually, so
+  // the fields sit below it. Without one, keep the original text-forward pass.
+  const style = useStrip
+    ? {
+        storeCard: {
+          headerFields: [],
+          primaryFields: [],
+          secondaryFields,
+          backFields,
+        },
+      }
+    : {
+        generic: {
+          primaryFields: [{ key: "name", label: "", value: input.name }],
+          secondaryFields,
+          backFields,
+        },
+      };
+
   const passJson = {
     formatVersion: 1,
     passTypeIdentifier: env("APPLE_PASS_TYPE_ID"),
@@ -109,7 +158,7 @@ export async function buildWalletPass(input: WalletPassInput): Promise<Buffer> {
     foregroundColor: "rgb(255, 255, 255)",
     // Apple Wallet only accepts #hex or rgb() — rgba() fails validation.
     labelColor: "rgb(225, 225, 235)",
-    backgroundColor: hexToRgb(t.accent),
+    backgroundColor: bg,
     barcodes: [
       {
         format: "PKBarcodeFormatQR",
@@ -118,23 +167,7 @@ export async function buildWalletPass(input: WalletPassInput): Promise<Buffer> {
         altText: input.profileUrl.replace(/^https?:\/\//, ""),
       },
     ],
-    generic: {
-      primaryFields: [{ key: "name", label: "", value: input.name }],
-      secondaryFields,
-      backFields: [
-        {
-          key: "profile",
-          label: "Profile",
-          value: input.profileUrl,
-        },
-        {
-          key: "about",
-          label: "About",
-          value:
-            "Tap the link or scan the QR code to view this Pixcards digital business card.",
-        },
-      ],
-    },
+    ...style,
   };
 
   const files: Record<string, Buffer> = {
@@ -144,7 +177,11 @@ export async function buildWalletPass(input: WalletPassInput): Promise<Buffer> {
     "logo.png": logo,
     "logo@2x.png": logo,
   };
-  if (input.thumbnail && input.thumbnail.length > 0) {
+  if (input.strip) {
+    files["strip.png"] = input.strip.x1;
+    files["strip@2x.png"] = input.strip.x2;
+    files["strip@3x.png"] = input.strip.x3;
+  } else if (input.thumbnail && input.thumbnail.length > 0) {
     files["thumbnail.png"] = input.thumbnail;
     files["thumbnail@2x.png"] = input.thumbnail;
   }

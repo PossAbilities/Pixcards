@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
 import { appUrl } from "@/lib/constants";
-import { isWalletConfigured, buildWalletPass } from "@/lib/wallet/pass";
+import { isWalletConfigured, buildWalletPass, type WalletStrip } from "@/lib/wallet/pass";
+import {
+  renderTemplateSidePng,
+  renderWalletStripSet,
+  firstHex,
+} from "@/lib/card-artwork";
+import { hasTemplate, parseTemplate, type MergeData } from "@/lib/card-template";
 
 export const runtime = "nodejs";
 
@@ -36,7 +42,7 @@ export async function GET(
   const { username } = await params;
   const profile = await prisma.profile.findUnique({
     where: { username },
-    include: { user: { select: { id: true, name: true } } },
+    include: { user: { select: { id: true, name: true, email: true } } },
   });
   if (!profile) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -48,6 +54,32 @@ export async function GET(
     }
   }
 
+  const profileUrl = `${appUrl()}/u/${profile.username}`;
+
+  // When the user has designed a card, render its front as the pass strip so
+  // the Wallet card mirrors the printed one. Never fatal — fall back to the
+  // plain themed pass if rendering fails.
+  let strip: WalletStrip | null = null;
+  let backgroundHex: string | null = null;
+  const spec = parseTemplate(profile.cardDesign);
+  if (hasTemplate(spec) && spec) {
+    try {
+      const merge: MergeData = {
+        name: profile.user.name || "Your Name",
+        jobTitle: profile.jobTitle || "",
+        company: profile.company || "",
+        url: profileUrl,
+        email: profile.email || profile.user.email,
+        phone: profile.phone || "",
+      };
+      const front = await renderTemplateSidePng(spec.front, merge, 2);
+      backgroundHex = firstHex(spec.front.bg) || firstHex(profile.brandHeader) || profile.accentColor;
+      strip = await renderWalletStripSet(front, backgroundHex || "#12142f");
+    } catch (e) {
+      console.error("wallet strip render failed", e);
+    }
+  }
+
   try {
     const buffer = await buildWalletPass({
       serial: profile.id,
@@ -55,8 +87,12 @@ export async function GET(
       jobTitle: profile.jobTitle || undefined,
       company: profile.company || undefined,
       themeId: profile.theme,
-      profileUrl: `${appUrl()}/u/${profile.username}`,
+      profileUrl,
+      email: profile.email || undefined,
+      phone: profile.phone || undefined,
       thumbnail: await loadThumbnail(profile.avatarUrl),
+      strip,
+      backgroundHex,
     });
 
     return new NextResponse(new Uint8Array(buffer), {
