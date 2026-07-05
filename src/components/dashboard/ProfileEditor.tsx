@@ -6,7 +6,6 @@ import {
   Card,
   Label,
   ProBadge,
-  SectionHeading,
   buttonClass,
   inputClass,
 } from "@/components/ui";
@@ -203,8 +202,23 @@ export function ProfileEditor({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      {/* ------------------------------ LEFT ------------------------------- */}
-      <div className="lg:col-span-8 flex flex-col gap-6">
+      {/* Preview — the live page is the hero: first on mobile, right rail on desktop */}
+      <div className="order-1 lg:order-2 lg:col-span-4">
+        <div className="lg:sticky lg:top-8 flex flex-col items-center gap-4">
+          <div className="w-[260px] sm:w-[280px] max-w-full border-8 border-ink rounded-[32px] overflow-hidden shadow-xl bg-surface">
+            <div className="h-[430px] sm:h-[560px] overflow-y-auto">
+              <DigitalCard data={liveData} />
+            </div>
+          </div>
+          <p className="text-center text-xs text-muted">
+            Your live page — it updates as you edit below.
+          </p>
+          <PreviewActions shareUrl={shareUrl} accent={getTheme(form.theme).accent} />
+        </div>
+      </div>
+
+      {/* -------------------- Options — compact sections -------------------- */}
+      <div className="order-2 lg:order-1 lg:col-span-8 flex flex-col gap-4">
         <ImagesCard
           headerUrl={form.headerUrl}
           avatarUrl={form.avatarUrl}
@@ -223,8 +237,7 @@ export function ProfileEditor({
         />
 
         {/* Personal details */}
-        <Card className="p-6">
-          <SectionHeading icon="person" title="Personal Details" />
+        <Section icon="person" title="Profile details" subtitle="Name, role, bio and contact info" defaultOpen>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Full Name">
               <input
@@ -313,7 +326,7 @@ export function ProfileEditor({
               Save Changes
             </button>
           </div>
-        </Card>
+        </Section>
 
         {/* Links */}
         <LinksCard
@@ -326,10 +339,9 @@ export function ProfileEditor({
           allowedPlatforms={allowedPlatforms}
         />
 
-        {/* Layout template */}
-        <Card className="p-6">
-          <SectionHeading icon="dashboard_customize" title="Card layout" />
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {/* Layout, sizes & colours */}
+        <Section icon="tune" title="Appearance & layout" subtitle="Layout, icon sizes and colours">
+          <div className="grid grid-cols-3 gap-2">
             {CARD_TEMPLATES.map((tpl) => {
               const active = form.template === tpl.id;
               const locked = tpl.pro && !isPro;
@@ -339,7 +351,7 @@ export function ProfileEditor({
                   type="button"
                   onClick={() => chooseTemplate(tpl.id, tpl.pro)}
                   className={cn(
-                    "relative rounded-2xl border-2 p-3 text-left transition-all",
+                    "relative rounded-2xl border-2 p-2 text-left transition-all",
                     active
                       ? "border-primary ring-2 ring-primary/30"
                       : "border-black/5 hover:border-primary/40",
@@ -360,7 +372,7 @@ export function ProfileEditor({
                       />
                     )}
                   </div>
-                  <p className="mt-0.5 text-[11px] leading-snug text-muted">
+                  <p className="mt-0.5 hidden sm:block text-[11px] leading-snug text-muted">
                     {tpl.description}
                   </p>
                   {tpl.pro && (
@@ -417,70 +429,48 @@ export function ProfileEditor({
               ))}
             </div>
           </div>
-        </Card>
-
-        {/* Appearance */}
-        <Card className="p-6">
-          <SectionHeading icon="palette" title="Custom Appearance" />
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {THEMES.map((t) => {
-              const active = form.theme === t.id;
-              const locked = t.pro && !isPro;
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => chooseTheme(t.id, t.pro)}
-                  className={cn(
-                    "relative rounded-2xl overflow-hidden border-2 text-left transition-all",
-                    active
-                      ? "border-primary ring-2 ring-primary/30"
-                      : "border-black/5 hover:border-primary/40",
-                  )}
-                >
-                  <div className="h-16" style={{ background: t.header }} />
-                  <div className="flex items-center justify-between px-3 py-2 bg-surface">
-                    <span className="text-xs font-semibold text-ink truncate">
-                      {t.name}
-                    </span>
-                    {active && (
-                      <Icon
-                        name="check_circle"
-                        fill
-                        className="text-primary text-[18px]"
-                      />
-                    )}
-                  </div>
-                  {t.pro && (
-                    <span className="absolute top-2 right-2">
-                      <ProBadge />
-                    </span>
-                  )}
-                  {locked && (
-                    <span className="absolute top-2 left-2 grid place-items-center w-6 h-6 rounded-full bg-black/40 text-white">
-                      <Icon name="lock" className="text-[14px]" />
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </Card>
-      </div>
-
-      {/* ------------------------------ RIGHT ------------------------------ */}
-      <div className="lg:col-span-4">
-        <div className="lg:sticky lg:top-8 flex flex-col items-center gap-5">
-          <span className="text-xs font-semibold uppercase tracking-widest text-muted">
-            Live Preview
-          </span>
-          <div className="w-[280px] max-w-full border-8 border-ink rounded-[32px] overflow-hidden shadow-xl bg-surface">
-            <div className="h-[560px] overflow-y-auto">
-              <DigitalCard data={liveData} />
+          {/* Colour theme — hidden while the Brand layout drives the colours */}
+          {form.template === "brand" ? (
+            <p className="mt-5 rounded-xl border border-dashed border-outline bg-surface-low p-3 text-xs text-muted">
+              Colours come from your card branding while the Brand layout is on.
+            </p>
+          ) : (
+            <div className="mt-5">
+              <p className="mb-2 text-sm font-semibold text-ink">Colour theme</p>
+              <div className="flex flex-wrap gap-3">
+                {THEMES.map((t) => {
+                  const active = form.theme === t.id;
+                  const locked = t.pro && !isPro;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => chooseTheme(t.id, t.pro)}
+                      title={t.name}
+                      className="flex w-14 flex-col items-center gap-1.5"
+                    >
+                      <span
+                        className={cn(
+                          "relative grid h-11 w-11 place-items-center rounded-full transition",
+                          active ? "ring-2 ring-primary ring-offset-2" : "ring-1 ring-black/10",
+                        )}
+                        style={{ background: t.header }}
+                      >
+                        {active && <Icon name="check" className="text-[18px] text-white drop-shadow" />}
+                        {locked && (
+                          <span className="absolute -bottom-1 -right-1 grid h-[18px] w-[18px] place-items-center rounded-full bg-ink text-white">
+                            <Icon name="lock" className="text-[10px]" />
+                          </span>
+                        )}
+                      </span>
+                      <span className="w-full truncate text-center text-[10px] font-medium text-muted">{t.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-          <PreviewActions shareUrl={shareUrl} accent={getTheme(form.theme).accent} />
-        </div>
+          )}
+        </Section>
       </div>
 
       <Toast toast={toast} onClose={() => setToast(null)} />
@@ -489,6 +479,43 @@ export function ProfileEditor({
 }
 
 /* ----------------------------- Sub-components ---------------------------- */
+
+/** Collapsible option group — keeps the editor compact (preview-first). */
+function Section({
+  icon,
+  title,
+  subtitle,
+  defaultOpen = false,
+  children,
+}: {
+  icon: string;
+  title: string;
+  subtitle?: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <Card className="overflow-hidden p-0">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-3 px-5 py-4 text-left"
+      >
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary-soft/60 text-primary">
+          <Icon name={icon} className="text-[20px]" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-bold text-ink">{title}</span>
+          {subtitle && <span className="block truncate text-xs text-muted">{subtitle}</span>}
+        </span>
+        <Icon name={open ? "expand_less" : "expand_more"} className="text-[22px] text-muted" />
+      </button>
+      {open && <div className="px-5 pb-5">{children}</div>}
+    </Card>
+  );
+}
 
 function Field({
   label,
@@ -567,11 +594,9 @@ function ImagesCard({
   }
 
   return (
-    <Card className="p-6">
-      <SectionHeading icon="image" title="Images" />
-
+    <Section icon="image" title="Photos" subtitle="Header image and profile photo">
       {/* Header banner */}
-      <div className="relative h-32 rounded-xl overflow-hidden">
+      <div className="relative h-24 rounded-xl overflow-hidden">
         <div
           className="absolute inset-0"
           style={{
@@ -608,7 +633,7 @@ function ImagesCard({
       <div className="mt-4 flex items-center gap-4">
         <div className="relative">
           <div
-            className="w-20 h-20 rounded-full overflow-hidden grid place-items-center text-white font-bold text-xl shadow"
+            className="w-16 h-16 rounded-full overflow-hidden grid place-items-center text-white font-bold text-xl shadow"
             style={{ background: t.accent }}
           >
             {avatarUrl ? (
@@ -665,7 +690,7 @@ function ImagesCard({
           onSave={uploadCropped}
         />
       )}
-    </Card>
+    </Section>
   );
 }
 
@@ -755,36 +780,10 @@ function LinksCard({
     });
   }
 
-  return (
-    <Card className="p-6">
-      <SectionHeading
-        icon="link"
-        title="Active Links"
-        action={
-          atLimit ? (
-            <a
-              href="/pricing"
-              className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1"
-            >
-              <Icon name="lock" className="text-[14px]" />
-              Upgrade for unlimited
-            </a>
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                setAdding((v) => !v);
-                setEditingId(null);
-              }}
-              className={buttonClass("secondary", "sm")}
-            >
-              <Icon name="add" className="text-[18px]" />
-              Add New Link
-            </button>
-          )
-        }
-      />
+  const editing = links.find((l) => l.id === editingId) ?? null;
 
+  return (
+    <Section icon="link" title="Links" subtitle={links.length ? `${links.length} on your page — tap one to edit` : "Add your website and socials"}>
       {adding && (
         <LinkForm
           onSubmit={submitAdd}
@@ -793,80 +792,85 @@ function LinksCard({
           allowedPlatforms={allowedPlatforms}
         />
       )}
+      {editing && !editing.orgLocked && (
+        <LinkForm
+          key={editing.id}
+          initial={{ platform: editing.platform, label: editing.label, url: editing.url }}
+          onSubmit={(d) => submitEdit(editing.id, d)}
+          onCancel={() => setEditingId(null)}
+          onDelete={() => {
+            remove(editing.id);
+            setEditingId(null);
+          }}
+          disabled={isPending}
+          allowedPlatforms={allowedPlatforms}
+        />
+      )}
 
-      <div className="flex flex-col gap-2 mt-1">
-        {links.length === 0 && !adding && (
-          <p className="text-sm text-muted py-4 text-center">
-            No links yet. Add your first one above.
-          </p>
-        )}
-        {links.map((link) =>
-          editingId === link.id && !link.orgLocked ? (
-            <LinkForm
-              key={link.id}
-              initial={{
-                platform: link.platform,
-                label: link.label,
-                url: link.url,
+      {/* App-icon style tiles — the pencil badge edits, the + tile adds. */}
+      <div className="flex flex-wrap gap-x-3 gap-y-4">
+        {links.map((link) => (
+          <div key={link.id} className="flex w-16 flex-col items-center gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                if (link.orgLocked) return;
+                setEditingId(editingId === link.id ? null : link.id);
+                setAdding(false);
               }}
-              onSubmit={(d) => submitEdit(link.id, d)}
-              onCancel={() => setEditingId(null)}
-              disabled={isPending}
-              allowedPlatforms={allowedPlatforms}
-            />
-          ) : (
-            <div
-              key={link.id}
-              className="flex items-center gap-3 p-3 rounded-xl border border-black/5 bg-surface-low"
+              className="relative transition active:scale-95"
+              aria-label={`Edit ${link.label}`}
             >
-              <BrandTile platform={link.platform} size={36} radius={10} />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-ink truncate">
-                  {link.label}
-                </p>
-                <p className="text-xs text-faint truncate">{link.url}</p>
-              </div>
+              <BrandTile platform={link.platform} size={56} radius={16} />
               {link.orgLocked ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-surface-high px-2.5 py-1 text-[11px] font-medium text-muted">
-                  <Icon name="lock" className="text-[14px]" />
-                  Team link
+                <span className="absolute -right-1.5 -top-1.5 grid h-6 w-6 place-items-center rounded-full bg-ink text-white shadow">
+                  <Icon name="lock" className="text-[12px]" />
                 </span>
               ) : (
-                <>
-                  <button
-                    type="button"
-                    aria-label="Edit link"
-                    onClick={() => {
-                      setEditingId(link.id);
-                      setAdding(false);
-                    }}
-                    className="grid place-items-center w-8 h-8 rounded-lg text-muted hover:bg-surface-high hover:text-ink"
-                  >
-                    <Icon name="edit" className="text-[18px]" />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Delete link"
-                    onClick={() => remove(link.id)}
-                    disabled={isPending}
-                    className="grid place-items-center w-8 h-8 rounded-lg text-muted hover:bg-red-50 hover:text-red-600"
-                  >
-                    <Icon name="delete" className="text-[18px]" />
-                  </button>
-                </>
+                <span
+                  className={cn(
+                    "absolute -right-1.5 -top-1.5 grid h-6 w-6 place-items-center rounded-full bg-surface text-ink shadow ring-1 ring-black/10",
+                    editingId === link.id && "bg-primary text-white ring-primary",
+                  )}
+                >
+                  <Icon name="edit" className="text-[13px]" />
+                </span>
               )}
-            </div>
-          ),
+            </button>
+            <span className="w-full truncate text-center text-[10px] font-medium text-muted">{link.label}</span>
+          </div>
+        ))}
+        {!atLimit && (
+          <div className="flex w-16 flex-col items-center gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                setAdding((v) => !v);
+                setEditingId(null);
+              }}
+              aria-label="Add link"
+              className="grid h-14 w-14 place-items-center rounded-2xl border-2 border-dashed border-outline text-muted transition hover:border-primary hover:text-primary active:scale-95"
+            >
+              <Icon name="add" className="text-[26px]" />
+            </button>
+            <span className="text-[10px] font-medium text-muted">Add</span>
+          </div>
         )}
       </div>
 
+      {links.length === 0 && !adding && (
+        <p className="mt-3 text-sm text-muted">No links yet — tap + to add your first.</p>
+      )}
       {atLimit && (
         <p className="text-xs text-amber-600 mt-3 flex items-center gap-1">
           <Icon name="info" className="text-[14px]" />
-          Free plan allows up to {FREE_LINK_LIMIT} links.
+          Free plan allows up to {FREE_LINK_LIMIT} links.{" "}
+          <a href="/pricing" className="font-semibold text-primary hover:underline">
+            Upgrade
+          </a>
         </p>
       )}
-    </Card>
+    </Section>
   );
 }
 
@@ -874,12 +878,14 @@ function LinkForm({
   initial,
   onSubmit,
   onCancel,
+  onDelete,
   disabled,
   allowedPlatforms,
 }: {
   initial?: LinkDraft;
   onSubmit: (draft: LinkDraft) => void;
   onCancel: () => void;
+  onDelete?: () => void;
   disabled?: boolean;
   allowedPlatforms?: string[];
 }) {
@@ -958,7 +964,18 @@ function LinkForm({
           placeholder={p.placeholder}
         />
       </div>
-      <div className="flex justify-end gap-2">
+      <div className="flex items-center justify-end gap-2">
+        {onDelete && (
+          <button
+            type="button"
+            onClick={onDelete}
+            disabled={disabled}
+            className="mr-auto inline-flex items-center gap-1 text-xs font-semibold text-red-600 hover:underline"
+          >
+            <Icon name="delete" className="text-[15px]" />
+            Remove link
+          </button>
+        )}
         <button
           type="button"
           onClick={onCancel}

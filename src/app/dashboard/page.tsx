@@ -73,11 +73,9 @@ export default async function ProfilePage({
         <Card className="mb-6 p-6">
           <SectionHeading icon="bookmark" title={`Your card template — ${presetLabel}`} />
           <p className="-mt-1 mb-4 text-sm text-muted">
-            Name, role and contact fill in automatically from the details
-            below. Go to <strong>Order a Card</strong> to drag, resize and
-            fully customise the design, or order it as-is.
+            Fills in automatically from your profile details.
           </p>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-2 gap-3">
             {(["front", "back"] as const).map((side) => (
               <div key={side} className="overflow-hidden rounded-xl border border-outline bg-surface-low">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
