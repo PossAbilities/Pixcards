@@ -9,7 +9,8 @@ import {
   buttonClass,
   inputClass,
 } from "@/components/ui";
-import { DigitalCard, type CardLink } from "@/components/DigitalCard";
+import { type CardLink } from "@/components/DigitalCard";
+import { PhonePreview } from "./PhonePreview";
 import { BrandTile } from "@/components/BrandIcon";
 import { ImageCropperModal } from "./ImageCropperModal";
 import { Toast, type ToastState } from "@/components/dashboard/Toast";
@@ -205,11 +206,7 @@ export function ProfileEditor({
       {/* Preview — the live page is the hero: first on mobile, right rail on desktop */}
       <div className="order-1 lg:order-2 lg:col-span-4">
         <div className="lg:sticky lg:top-8 flex flex-col items-center gap-4">
-          <div className="w-[260px] sm:w-[280px] max-w-full border-8 border-ink rounded-[32px] overflow-hidden shadow-xl bg-surface">
-            <div className="h-[430px] sm:h-[560px] overflow-y-auto">
-              <DigitalCard data={liveData} />
-            </div>
-          </div>
+          <PhonePreview data={liveData} width={260} />
           <p className="text-center text-xs text-muted">
             Your live page — it updates as you edit below.
           </p>
