@@ -61,18 +61,23 @@ export function BrandGlyph({
   return <Icon size={size} className={className} aria-hidden />;
 }
 
-/** Rounded, brand-tinted tile (used in link lists, editor, and the card). */
+/** Rounded, brand-tinted tile (used in link lists, editor, and the card).
+ *  `solid` renders the brand colour as the tile background with a white
+ *  glyph (app-icon style) — needed on coloured page backgrounds where the
+ *  default low-alpha tint blends in. */
 export function BrandTile({
   platform,
   size = 40,
   radius = 12,
   dark = false,
+  solid = false,
   className,
 }: {
   platform: string;
   size?: number;
   radius?: number;
   dark?: boolean;
+  solid?: boolean;
   className?: string;
 }) {
   const { Icon, color } = brand(platform);
@@ -83,8 +88,9 @@ export function BrandTile({
         width: size,
         height: size,
         borderRadius: radius,
-        background: `${color}${dark ? "33" : "1f"}`,
-        color,
+        background: solid ? color : `${color}${dark ? "33" : "1f"}`,
+        color: solid ? "#ffffff" : color,
+        boxShadow: solid ? "0 6px 16px -8px rgba(0,0,0,0.35)" : undefined,
       }}
     >
       <Icon size={Math.round(size * 0.5)} aria-hidden />

@@ -42,6 +42,8 @@ export type CardData = {
   accent?: string | null;
   /** Optional second brand colour (e.g. a lime panel) for the "brand" template. */
   panelColor?: string | null;
+  /** Size of the contact/social icon squares: sm | md | lg */
+  tileSize?: string | null;
   links: CardLink[];
 };
 
@@ -376,15 +378,18 @@ export function DigitalCard({
          gradient strip, blob cut-out, pill CTA ------------------------- */
   if (template === "brand") {
     const strip = `linear-gradient(90deg, ${panel} 0%, #5aa0e0 50%, ${accent} 100%)`;
+    // User-selectable icon-square size (Profile → Appearance).
+    const TILE = { sm: { px: 44, r: 12, icon: 20 }, md: { px: 56, r: 16, icon: 26 }, lg: { px: 72, r: 20, icon: 34 } } as const;
+    const tile = TILE[(data.tileSize as keyof typeof TILE) ?? "md"] ?? TILE.md;
     // Icon-only square action tile (email/phone) — same visual weight as the
     // social BrandTiles beside it.
     const actionTile = (icon: string, href: string, label: string) => {
       const inner = (
         <span
-          className="grid place-items-center rounded-2xl"
-          style={{ width: 56, height: 56, background: accent, color: "#fff", boxShadow: "0 6px 16px -8px rgba(0,0,0,0.35)" }}
+          className="grid place-items-center"
+          style={{ width: tile.px, height: tile.px, borderRadius: tile.r, background: accent, color: "#fff", boxShadow: "0 6px 16px -8px rgba(0,0,0,0.35)" }}
         >
-          <Icon name={icon} className="text-[26px]" />
+          <Icon name={icon} style={{ fontSize: tile.icon }} />
         </span>
       );
       return interactive ? (
@@ -476,7 +481,8 @@ export function DigitalCard({
                   link,
                   "transition hover:-translate-y-0.5 active:scale-95",
                   {},
-                  <BrandTile platform={link.platform} size={56} radius={16} />,
+                  /* solid: brand-coloured tiles stand out on the lime panel */
+                  <BrandTile platform={link.platform} size={tile.px} radius={tile.r} solid />,
                 ),
               )}
             </div>

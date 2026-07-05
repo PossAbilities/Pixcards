@@ -27,6 +27,7 @@ import {
   deleteLink,
   setTheme,
   setTemplate,
+  setTileSize,
   updateImages,
   updateLink,
   updateProfile,
@@ -52,6 +53,7 @@ type ProfileState = {
   accentColor?: string | null;
   brandHeader?: string | null;
   panelColor?: string | null;
+  tileSize?: string | null;
 };
 
 type LinkDraft = { platform: string; label: string; url: string };
@@ -104,6 +106,7 @@ export function ProfileEditor({
       brandHeader: form.brandHeader,
       accent: form.accentColor,
       panelColor: form.panelColor,
+      tileSize: form.tileSize,
       links,
     }),
     [form, links],
@@ -163,6 +166,20 @@ export function ProfileEditor({
         showToast(res.error ?? "Could not change template", "error");
       } else {
         showToast("Template updated", "success");
+      }
+    });
+  }
+
+  function chooseTileSize(size: string) {
+    const prev = form.tileSize;
+    set("tileSize", size);
+    startTransition(async () => {
+      const res = await setTileSize(size);
+      if (!res.ok) {
+        set("tileSize", prev);
+        showToast(res.error ?? "Could not change icon size", "error");
+      } else {
+        showToast("Icon size updated", "success");
       }
     });
   }
@@ -342,6 +359,26 @@ export function ProfileEditor({
                 </button>
               );
             })}
+          </div>
+
+          {/* Contact/social icon size (used by layouts with icon squares) */}
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <span className="text-sm font-semibold text-ink">Contact icon size</span>
+            <div className="inline-flex rounded-lg border border-outline p-0.5">
+              {([["sm", "Small"], ["md", "Medium"], ["lg", "Large"]] as const).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => chooseTileSize(id)}
+                  className={cn(
+                    "rounded-md px-3 py-1.5 text-xs font-semibold transition",
+                    (form.tileSize ?? "md") === id ? "bg-primary text-white" : "text-muted hover:text-ink",
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </Card>
 
