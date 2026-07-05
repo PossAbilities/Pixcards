@@ -9,6 +9,7 @@ import {
   firstHex,
 } from "@/lib/card-artwork";
 import { hasTemplate, parseTemplate, type MergeData } from "@/lib/card-template";
+import { defaultPerspectiveSpec } from "@/lib/preset-cards";
 
 export const runtime = "nodejs";
 
@@ -56,13 +57,21 @@ export async function GET(
 
   const profileUrl = `${appUrl()}/u/${profile.username}`;
 
-  // When the user has designed a card, render its front as the pass strip so
-  // the Wallet card mirrors the printed one. Never fatal — fall back to the
-  // plain themed pass if rendering fails.
+  // When the user has a designed/branded card, render its front as the pass
+  // strip so the Wallet card mirrors the printed one. Resolve the spec the
+  // same way the rest of the app does: a saved design if present, else the
+  // seeded default for anyone who has the preset attached. Plain accounts
+  // (no preset, no saved design) keep the simple themed pass. Never fatal —
+  // fall back to the plain pass if rendering fails.
   let strip: WalletStrip | null = null;
   let backgroundHex: string | null = null;
-  const spec = parseTemplate(profile.cardDesign);
-  if (hasTemplate(spec) && spec) {
+  const saved = parseTemplate(profile.cardDesign);
+  const spec = hasTemplate(saved)
+    ? saved
+    : profile.cardPreset
+      ? await defaultPerspectiveSpec()
+      : null;
+  if (spec) {
     try {
       const merge: MergeData = {
         name: profile.user.name || "Your Name",
