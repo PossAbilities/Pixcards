@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { DigitalCard, type CardData } from "@/components/DigitalCard";
-import { SharePanel } from "@/components/public/SharePanel";
 import { prisma } from "@/lib/db";
 import { getSessionUser, isPro } from "@/lib/auth";
 import { appUrl, theme as getTheme, APP_NAME } from "@/lib/constants";
@@ -146,14 +145,6 @@ export default async function PublicCardPage({
             hideBranding={pro}
           />
         </div>
-
-        {/* Share tools */}
-        <SharePanel
-          shareUrl={shareUrl}
-          accentColor={accent}
-          name={data.name}
-        />
-
 
         {/* CTA + powered-by footer (kept subtle) — Pro accounts get custom
             branding, so this growth-loop CTA only shows on free accounts. */}
