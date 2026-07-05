@@ -77,15 +77,14 @@ function ArtworkPanel({
         )}
       </div>
       {image && (
+        /* Served by the print route: re-rendered at 900dpi when the order
+           stores its design, else the baked artwork — never a scaled preview. */
         <a
-          href={image}
-          download={`card-${orderId}-${side}.png`}
-          target="_blank"
-          rel="noopener noreferrer"
+          href={`/api/print/${orderId}/${side}?scale=3`}
           className={buttonClass("primary", "sm", "mt-3 w-full")}
         >
-          <Icon name="download" className="text-[16px]" />
-          Download {label} PNG
+          <Icon name="print" className="text-[16px]" />
+          Download {label} — print quality
         </a>
       )}
     </div>

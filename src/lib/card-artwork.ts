@@ -80,7 +80,11 @@ export async function renderMemberCardPng(opts: {
   profileUrl: string;
   /** Bake the official NFC "tap" logo onto the card. */
   nfcLogo?: boolean;
+  scale?: number;
 }): Promise<Buffer> {
+  const scale = opts.scale ?? PRINT_SCALE;
+  const ow = Math.round(W * scale);
+  const oh = Math.round(H * scale);
   const accent = /^#[0-9a-fA-F]{6}$/.test(opts.accentColor)
     ? opts.accentColor
     : "#4f46e5";
@@ -89,42 +93,50 @@ export async function renderMemberCardPng(opts: {
   // Gradients here always run brand colours → assume light text; for a solid
   // fill choose the readable ink for that colour.
   const ink = grad ? "#ffffff" : readableInk(accent);
-  const fade = ink === "#ffffff" ? "0.92" : "0.78";
+  const fade = ink === "#ffffff" ? 0.92 : 0.78;
 
   const subs = [opts.jobTitle, opts.company].filter(
     (x): x is string => Boolean(x && x.trim()),
   );
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
+  const bgSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${ow}" height="${oh}">
     ${grad ? `<defs>${grad}</defs>` : ""}
-    <rect width="${W}" height="${H}" fill="${fill}"/>
-    ${textPath({ text: opts.name, x: 64, y: H - 150, fontSize: 62, color: ink, bold: true })}
-    ${subs[0] ? textPath({ text: subs[0], x: 66, y: H - 98, fontSize: 33, color: ink, opacity: Number(fade) }) : ""}
-    ${subs[1] ? textPath({ text: subs[1], x: 66, y: H - 54, fontSize: 33, color: ink, opacity: Number(fade) }) : ""}
+    <rect width="${ow}" height="${oh}" fill="${fill}"/>
   </svg>`;
+  const base = await sharp(Buffer.from(bgSvg)).png().toBuffer();
 
-  const base = await sharp(Buffer.from(svg)).png().toBuffer();
+  const text = await Promise.all([
+    textOverlay({ text: opts.name, x: 64 * scale, y: (H - 150) * scale, fontSize: 62 * scale, color: ink, bold: true }),
+    subs[0] ? textOverlay({ text: subs[0], x: 66 * scale, y: (H - 98) * scale, fontSize: 33 * scale, color: ink, opacity: fade }) : null,
+    subs[1] ? textOverlay({ text: subs[1], x: 66 * scale, y: (H - 54) * scale, fontSize: 33 * scale, color: ink, opacity: fade }) : null,
+  ]);
+
   const qr = await QRCode.toBuffer(opts.profileUrl, {
-    width: 210,
+    width: Math.round(210 * scale),
     margin: 2,
     color: { dark: "#191c1e", light: "#ffffff" },
   });
 
   const layers: sharp.OverlayOptions[] = [
-    { input: qr, top: 64, left: W - 210 - 64 },
+    ...text.filter((t): t is NonNullable<typeof t> => Boolean(t)),
+    { input: qr, top: Math.round(64 * scale), left: Math.round((W - 210 - 64) * scale) },
   ];
 
   if (opts.nfcLogo) {
-    const markH = 150;
+    const markH = Math.round(150 * scale);
     const mark = await sharp(Buffer.from(nfcMark(ink)))
       .resize({ height: markH })
       .png()
       .toBuffer();
     // Bottom-right corner, clear of the name (bottom-left) and QR (top-right).
-    layers.push({ input: mark, top: H - markH - 48, left: W - 120 - 64 });
+    layers.push({ input: mark, top: oh - markH - Math.round(48 * scale), left: Math.round((W - 120 - 64) * scale) });
   }
 
-  return sharp(base).composite(layers).png().toBuffer();
+  return sharp(base)
+    .composite(layers)
+    .withMetadata({ density: Math.round(300 * scale) })
+    .png()
+    .toBuffer();
 }
 
 /* -------------------------- Template rendering --------------------------- */
@@ -210,7 +222,13 @@ export async function renderTemplateSidePng(
     }
   }
 
-  return sharp(base).composite(layers).png().toBuffer();
+  // Tag the true DPI (base canvas is CR80 at 300dpi) — without it, print
+  // software assumes 72dpi and rescales, softening the output.
+  return sharp(base)
+    .composite(layers)
+    .withMetadata({ density: Math.round(300 * scale) })
+    .png()
+    .toBuffer();
 }
 
 /**
@@ -227,6 +245,7 @@ export async function renderCardSide(opts: {
   brandHeader?: string | null;
   profileUrl: string;
   nfcLogo?: boolean;
+  scale?: number;
 }): Promise<Buffer> {
   const merge: MergeData = {
     name: opts.name,
@@ -236,7 +255,7 @@ export async function renderCardSide(opts: {
   };
   if (opts.template) {
     const side = opts.side === "front" ? opts.template.front : opts.template.back;
-    return renderTemplateSidePng(side, merge);
+    return renderTemplateSidePng(side, merge, opts.scale ?? PRINT_SCALE);
   }
   // No template — auto layout.
   if (opts.side === "front") {
@@ -248,6 +267,7 @@ export async function renderCardSide(opts: {
       brandHeader: opts.brandHeader,
       profileUrl: opts.profileUrl,
       nfcLogo: opts.nfcLogo,
+      scale: opts.scale,
     });
   }
   return renderAutoBackPng(opts);
@@ -260,31 +280,42 @@ async function renderAutoBackPng(opts: {
   accentColor: string;
   brandHeader?: string | null;
   nfcLogo?: boolean;
+  scale?: number;
 }): Promise<Buffer> {
+  const scale = opts.scale ?? PRINT_SCALE;
+  const ow = Math.round(W * scale);
+  const oh = Math.round(H * scale);
   const accent = /^#[0-9a-fA-F]{6}$/.test(opts.accentColor) ? opts.accentColor : "#4f46e5";
   const grad = gradientDef(opts.brandHeader ?? undefined, "bg");
   const fill = grad ? "url(#bg)" : accent;
   const ink = grad ? "#ffffff" : readableInk(accent);
   const title = opts.company || opts.name;
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
+  const bgSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${ow}" height="${oh}">
     ${grad ? `<defs>${grad}</defs>` : ""}
-    <rect width="${W}" height="${H}" fill="${fill}"/>
-    ${textPath({ text: title, x: W / 2, y: H / 2 - 6, fontSize: 56, color: ink, align: "center", bold: true })}
-    ${textPath({ text: "Tap to connect", x: W / 2, y: H / 2 + 52, fontSize: 28, color: ink, align: "center", opacity: 0.8 })}
+    <rect width="${ow}" height="${oh}" fill="${fill}"/>
   </svg>`;
-  const base = await sharp(Buffer.from(svg)).png().toBuffer();
+  const base = await sharp(Buffer.from(bgSvg)).png().toBuffer();
 
+  const text = (
+    await Promise.all([
+      textOverlay({ text: title, x: (W / 2) * scale, y: (H / 2 - 6) * scale, fontSize: 56 * scale, color: ink, align: "center", bold: true }),
+      textOverlay({ text: "Tap to connect", x: (W / 2) * scale, y: (H / 2 + 52) * scale, fontSize: 28 * scale, color: ink, align: "center", opacity: 0.8 }),
+    ])
+  ).filter((t): t is NonNullable<typeof t> => Boolean(t));
+
+  const layers: sharp.OverlayOptions[] = [...text];
   if (opts.nfcLogo) {
-    const markH = 150;
+    const markH = Math.round(150 * scale);
     const mark = await sharp(Buffer.from(nfcMark(ink)))
       .resize({ height: markH })
       .png()
       .toBuffer();
-    return sharp(base)
-      .composite([{ input: mark, top: H - markH - 40, left: Math.round(W / 2 - 60) }])
-      .png()
-      .toBuffer();
+    layers.push({ input: mark, top: oh - markH - Math.round(40 * scale), left: Math.round((W / 2 - 60) * scale) });
   }
-  return base;
+  return sharp(base)
+    .composite(layers)
+    .withMetadata({ density: Math.round(300 * scale) })
+    .png()
+    .toBuffer();
 }

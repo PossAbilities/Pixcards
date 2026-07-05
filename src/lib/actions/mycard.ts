@@ -122,6 +122,10 @@ export async function orderMyCard(formData: FormData): Promise<{ error: string }
   const design = JSON.stringify({
     frontImage: toDataUrl(front),
     backImage: toDataUrl(back),
+    // Keep the editable design + merge data so print exports can re-render
+    // at any resolution later instead of being stuck with the baked pixels.
+    templateSpec: card.spec,
+    merge: card.merge,
     spec: { cardName: `${user.name} — card` },
   });
 

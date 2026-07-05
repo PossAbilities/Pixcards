@@ -149,7 +149,10 @@ export async function textOverlay(
       opts.opacity !== undefined && opts.opacity < 1
         ? ` alpha="${Math.max(1, Math.round(opts.opacity * 100))}%"`
         : "";
-    const markup = `<span foreground="${opts.color}"${alpha}>${escapePango(opts.text)}</span>`;
+    // weight must be in the markup — Pango won't bold otherwise (bold text
+    // silently rendered regular before this, softening print output).
+    const weight = opts.bold ? ' weight="bold"' : "";
+    const markup = `<span foreground="${opts.color}"${alpha}${weight}>${escapePango(opts.text)}</span>`;
     const buf = await sharp({
       text: {
         text: markup,

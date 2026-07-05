@@ -3,12 +3,22 @@ import JSZip from "jszip";
 import { prisma } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
 import { appUrl } from "@/lib/constants";
-import { renderCardSide } from "@/lib/card-artwork";
-import { parseTemplate } from "@/lib/card-template";
+import { renderCardSide, renderTemplateSidePng } from "@/lib/card-artwork";
+import {
+  hasTemplate,
+  parseTemplate,
+  type CardTemplateSpec,
+  type MergeData,
+} from "@/lib/card-template";
 
 export const runtime = "nodejs";
 
-type Design = { frontImage?: string; backImage?: string };
+type Design = {
+  frontImage?: string;
+  backImage?: string;
+  templateSpec?: CardTemplateSpec;
+  merge?: MergeData;
+};
 
 /** Decode a data-URI or fetch a URL into PNG bytes. */
 async function toBytes(value?: string): Promise<Buffer | null> {
@@ -133,9 +143,22 @@ export async function GET(
       );
     }
   } else {
-    // Single order — use the artwork designed in the studio.
-    const front = await toBytes(design.frontImage);
-    const back = await toBytes(design.backImage);
+    // Single order — re-render fresh from the stored design when we have it
+    // (sharpest possible output), else use the artwork baked at order time.
+    let front: Buffer | null = null;
+    let back: Buffer | null = null;
+    if (design.templateSpec && design.merge && hasTemplate(design.templateSpec)) {
+      try {
+        [front, back] = await Promise.all([
+          renderTemplateSidePng(design.templateSpec.front, design.merge),
+          renderTemplateSidePng(design.templateSpec.back, design.merge),
+        ]);
+      } catch {
+        /* fall back to baked artwork */
+      }
+    }
+    front = front ?? (await toBytes(design.frontImage));
+    back = back ?? (await toBytes(design.backImage));
     if (front) zip.file("front.png", front);
     if (back) zip.file("back.png", back);
     const p = order.user.profile;
