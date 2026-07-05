@@ -8,7 +8,7 @@ import { generateCardCode } from "@/lib/cards";
 import { sendOrderShipped } from "@/lib/email/dispatch";
 import { recordEvent } from "@/lib/events";
 import { PRESET_PROFILE_THEME } from "@/lib/card-preset-meta";
-import { defaultPerspectiveSpec } from "@/lib/preset-cards";
+import { presetSpec } from "@/lib/preset-cards";
 import type { OrderStatus, Plan, Role } from "@prisma/client";
 
 async function requireAdminUser() {
@@ -140,8 +140,10 @@ export async function setUserCardPreset(
       data.accentColor = t.accentColor;
       data.panelColor = t.panelColor;
     }
-    if (preset === "perspective" && !profile.cardDesign) {
-      data.cardDesign = JSON.stringify(await defaultPerspectiveSpec());
+    // Seed an editable starting design for any known preset (only if the
+    // user hasn't already customised one).
+    if (t && preset && !profile.cardDesign) {
+      data.cardDesign = JSON.stringify(await presetSpec(preset));
     }
     await prisma.profile.update({ where: { userId }, data });
     await recordEvent({

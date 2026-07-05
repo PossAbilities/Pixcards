@@ -2,7 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { appUrl } from "@/lib/constants";
 import { parseTemplate, hasTemplate, type CardTemplateSpec, type MergeData } from "@/lib/card-template";
-import { defaultPerspectiveSpec } from "@/lib/preset-cards";
+import { presetSpec } from "@/lib/preset-cards";
 
 export type MyCard = {
   spec: CardTemplateSpec;
@@ -33,6 +33,6 @@ export async function loadMyCard(userId: string): Promise<MyCard | null> {
   };
 
   const stored = parseTemplate(profile.cardDesign);
-  const spec = hasTemplate(stored) ? stored! : await defaultPerspectiveSpec();
+  const spec = hasTemplate(stored) ? stored! : await presetSpec(profile.cardPreset);
   return { spec, merge, profileUrl };
 }

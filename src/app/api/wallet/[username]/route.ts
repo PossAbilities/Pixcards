@@ -7,9 +7,11 @@ import {
   renderTemplateSidePng,
   renderWalletStripSet,
   firstHex,
+  dominantHex,
+  hexDistance,
 } from "@/lib/card-artwork";
 import { hasTemplate, parseTemplate, type MergeData } from "@/lib/card-template";
-import { defaultPerspectiveSpec } from "@/lib/preset-cards";
+import { presetSpec } from "@/lib/preset-cards";
 
 export const runtime = "nodejs";
 
@@ -69,7 +71,7 @@ export async function GET(
   const spec = hasTemplate(saved)
     ? saved
     : profile.cardPreset
-      ? await defaultPerspectiveSpec()
+      ? await presetSpec(profile.cardPreset)
       : null;
   if (spec) {
     try {
@@ -81,9 +83,23 @@ export async function GET(
         email: profile.email || profile.user.email,
         phone: profile.phone || "",
       };
-      const front = await renderTemplateSidePng(spec.front, merge, 2);
-      backgroundHex = firstHex(spec.front.bg) || firstHex(profile.brandHeader) || profile.accentColor;
-      strip = await renderWalletStripSet(front, backgroundHex || "#12142f");
+      // Use whichever card side's colour best matches the brand background,
+      // so the banner blends into the pass (navy front for Perspective, the
+      // purple wordmark back for PossAbilities) rather than sitting in
+      // clashing letterbox bars.
+      const [front, back] = await Promise.all([
+        renderTemplateSidePng(spec.front, merge, 2),
+        renderTemplateSidePng(spec.back, merge, 2),
+      ]);
+      const target = firstHex(profile.brandHeader) || profile.accentColor || "#12142f";
+      const [frontHex, backHex] = await Promise.all([
+        dominantHex(front),
+        dominantHex(back),
+      ]);
+      const useFront = hexDistance(frontHex, target) <= hexDistance(backHex, target);
+      const chosen = useFront ? front : back;
+      backgroundHex = useFront ? frontHex : backHex;
+      strip = await renderWalletStripSet(chosen, backgroundHex);
     } catch (e) {
       console.error("wallet strip render failed", e);
     }

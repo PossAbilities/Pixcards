@@ -11,7 +11,7 @@ import { recordEvent } from "@/lib/events";
 import { loadMyCard } from "@/lib/mycard";
 import { renderTemplateSidePng } from "@/lib/card-artwork";
 import { PRESET_PROFILE_THEME } from "@/lib/card-preset-meta";
-import { defaultPerspectiveSpec } from "@/lib/preset-cards";
+import { presetSpec } from "@/lib/preset-cards";
 
 export type ActionResult = { ok: boolean; error?: string };
 
@@ -30,10 +30,11 @@ export async function applyMyCardBrandTheme(): Promise<ActionResult> {
   if (!profile.cardPreset) {
     return { ok: false, error: "You don't have a saved card design yet." };
   }
-  // Only one starting brand exists today (Perspective Studio) — both a
-  // freshly-attached preset and a since-customised ("custom") design
-  // originated from it, so the same theme applies either way.
-  const t = PRESET_PROFILE_THEME.perspective;
+  // Apply the theme for the account's attached preset. "custom" designs
+  // originated from a preset too, but we can't tell which — default to the
+  // one non-generic brand a customiser most likely started from.
+  const t =
+    PRESET_PROFILE_THEME[profile.cardPreset ?? ""] ?? PRESET_PROFILE_THEME.perspective;
   await prisma.profile.update({
     where: { userId: user.id },
     data: {
@@ -60,10 +61,11 @@ export async function resetMyCardDesign(): Promise<ActionResult & { spec?: strin
   if (!user) return { ok: false, error: "Not signed in." };
   const profile = await prisma.profile.findUnique({ where: { userId: user.id } });
   if (!profile) return { ok: false, error: "Profile not found." };
-  const spec = JSON.stringify(await defaultPerspectiveSpec());
+  const preset = profile.cardPreset ?? "perspective";
+  const spec = JSON.stringify(await presetSpec(preset));
   await prisma.profile.update({
     where: { userId: user.id },
-    data: { cardDesign: spec, cardPreset: "perspective" },
+    data: { cardDesign: spec, cardPreset: preset },
   });
   revalidatePath("/dashboard/order");
   revalidatePath("/dashboard");

@@ -173,6 +173,28 @@ export function firstHex(value: string | null | undefined): string | null {
   return m ? m[0] : null;
 }
 
+/** Dominant colour of an image (average, via a 1×1 downscale) as #hex. */
+export async function dominantHex(png: Buffer): Promise<string> {
+  const { data } = await sharp(png)
+    .resize(1, 1, { fit: "fill" })
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const hex = (n: number) => n.toString(16).padStart(2, "0");
+  return `#${hex(data[0])}${hex(data[1])}${hex(data[2])}`;
+}
+
+/** Squared RGB distance between two #hex colours (0 = identical). */
+export function hexDistance(a: string, b: string): number {
+  const rgb = (h: string) => {
+    const s = h.replace("#", "");
+    return [0, 2, 4].map((i) => parseInt(s.slice(i, i + 2), 16) || 0);
+  };
+  const [r1, g1, b1] = rgb(a);
+  const [r2, g2, b2] = rgb(b);
+  return (r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2;
+}
+
 /* -------------------------- Template rendering --------------------------- */
 
 /**
