@@ -44,6 +44,8 @@ export type CardData = {
   panelColor?: string | null;
   /** Size of the contact/social icon squares: sm | md | lg */
   tileSize?: string | null;
+  /** Size of the profile photo: sm | md | lg */
+  avatarSize?: string | null;
   links: CardLink[];
 };
 
@@ -378,9 +380,11 @@ export function DigitalCard({
          gradient strip, blob cut-out, pill CTA ------------------------- */
   if (template === "brand") {
     const strip = `linear-gradient(90deg, ${panel} 0%, #5aa0e0 50%, ${accent} 100%)`;
-    // User-selectable icon-square size (Profile → Appearance).
+    // User-selectable icon-square + photo sizes (Profile → Card layout).
     const TILE = { sm: { px: 44, r: 12, icon: 20 }, md: { px: 56, r: 16, icon: 26 }, lg: { px: 72, r: 20, icon: 34 } } as const;
     const tile = TILE[(data.tileSize as keyof typeof TILE) ?? "md"] ?? TILE.md;
+    const AVATAR = { sm: 48, md: 60, lg: 84 } as const;
+    const avatarPx = AVATAR[(data.avatarSize as keyof typeof AVATAR) ?? "md"] ?? AVATAR.md;
     // Icon-only square action tile (email/phone) — same visual weight as the
     // social BrandTiles beside it.
     const actionTile = (icon: string, href: string, label: string) => {
@@ -415,7 +419,7 @@ export function DigitalCard({
             aria-hidden
           />
           <div className="flex items-center gap-3.5">
-            {avatarNode(60)}
+            {avatarNode(avatarPx)}
             {/* pr keeps the name/role clear of the ring accent pinned top-right */}
             <div className="min-w-0 pr-8">
               <h1 className="font-display text-2xl font-bold leading-tight tracking-tight text-white truncate">

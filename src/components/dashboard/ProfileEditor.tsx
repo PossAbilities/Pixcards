@@ -28,6 +28,7 @@ import {
   setTheme,
   setTemplate,
   setTileSize,
+  setAvatarSize,
   updateImages,
   updateLink,
   updateProfile,
@@ -54,6 +55,7 @@ type ProfileState = {
   brandHeader?: string | null;
   panelColor?: string | null;
   tileSize?: string | null;
+  avatarSize?: string | null;
 };
 
 type LinkDraft = { platform: string; label: string; url: string };
@@ -107,6 +109,7 @@ export function ProfileEditor({
       accent: form.accentColor,
       panelColor: form.panelColor,
       tileSize: form.tileSize,
+      avatarSize: form.avatarSize,
       links,
     }),
     [form, links],
@@ -180,6 +183,20 @@ export function ProfileEditor({
         showToast(res.error ?? "Could not change icon size", "error");
       } else {
         showToast("Icon size updated", "success");
+      }
+    });
+  }
+
+  function chooseAvatarSize(size: string) {
+    const prev = form.avatarSize;
+    set("avatarSize", size);
+    startTransition(async () => {
+      const res = await setAvatarSize(size);
+      if (!res.ok) {
+        set("avatarSize", prev);
+        showToast(res.error ?? "Could not change photo size", "error");
+      } else {
+        showToast("Photo size updated", "success");
       }
     });
   }
@@ -373,6 +390,26 @@ export function ProfileEditor({
                   className={cn(
                     "rounded-md px-3 py-1.5 text-xs font-semibold transition",
                     (form.tileSize ?? "md") === id ? "bg-primary text-white" : "text-muted hover:text-ink",
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Profile photo size on the public page */}
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <span className="text-sm font-semibold text-ink">Profile photo size</span>
+            <div className="inline-flex rounded-lg border border-outline p-0.5">
+              {([["sm", "Small"], ["md", "Medium"], ["lg", "Large"]] as const).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => chooseAvatarSize(id)}
+                  className={cn(
+                    "rounded-md px-3 py-1.5 text-xs font-semibold transition",
+                    (form.avatarSize ?? "md") === id ? "bg-primary text-white" : "text-muted hover:text-ink",
                   )}
                 >
                   {label}

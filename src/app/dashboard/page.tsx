@@ -116,6 +116,7 @@ export default async function ProfilePage({
           brandHeader: profile.brandHeader,
           panelColor: profile.panelColor,
           tileSize: profile.tileSize,
+          avatarSize: profile.avatarSize,
         }}
         links={profile.links.map((l) => ({
           id: l.id,

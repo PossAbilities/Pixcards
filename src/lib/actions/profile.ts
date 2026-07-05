@@ -145,6 +145,20 @@ export async function setTileSize(size: string): Promise<ActionResult> {
   return { ok: true };
 }
 
+/** Size of the profile photo on the public page. */
+export async function setAvatarSize(size: string): Promise<ActionResult> {
+  const { profile } = await myProfile();
+  if (!["sm", "md", "lg"].includes(size)) {
+    return { ok: false, error: "Unknown photo size." };
+  }
+  await prisma.profile.update({
+    where: { id: profile.id },
+    data: { avatarSize: size },
+  });
+  revalidatePath(`/u/${profile.username}`);
+  return { ok: true };
+}
+
 export async function setTemplate(templateId: string): Promise<ActionResult> {
   const { user, profile } = await myProfile();
   if (await prisma.orgMember.findUnique({ where: { userId: user.id } })) {

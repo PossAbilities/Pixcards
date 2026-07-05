@@ -112,6 +112,7 @@ export default async function PublicCardPage({
     accent,
     panelColor: profile.panelColor || undefined,
     tileSize: profile.tileSize,
+    avatarSize: profile.avatarSize,
     links: profile.links.map((l) => ({
       id: l.id,
       platform: l.platform,
