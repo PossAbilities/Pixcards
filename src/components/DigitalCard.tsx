@@ -401,6 +401,10 @@ export function DigitalCard({
       );
     };
     const hasTiles = Boolean(data.email || data.phone || data.links.length > 0);
+    // Visitors see this page — third-person copy ("Share Ryan's card"),
+    // never "my card".
+    const firstName = (data.name || "").trim().split(/\s+/)[0];
+    const shareLabel = firstName ? `Share ${firstName}’s card` : "Share this card";
     return (
       <div className={wrapperCls} style={{ ...wrapperStyle, background: panel }}>
         {/* Hero — navy card-front: small avatar badge, bold name, role, ring */}
@@ -466,7 +470,7 @@ export function DigitalCard({
               style={{ background: "#ffffff", color: panelInk }}
             >
               <Icon name={copied ? "check" : "ios_share"} className="text-[18px]" />
-              {copied ? "Copied!" : "Share my card"}
+              {copied ? "Copied!" : shareLabel}
             </button>
           </div>
 
