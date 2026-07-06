@@ -489,14 +489,14 @@ export function DigitalCard({
                   {[data.jobTitle, data.company].filter(Boolean).join(" · ")}
                 </p>
               )}
+              {data.location && (
+                <span className="mt-1.5 flex items-center gap-1 text-xs text-white/65">
+                  <Icon name="location_on" className="text-[14px]" />
+                  <span className="truncate">{data.location}</span>
+                </span>
+              )}
             </div>
           </div>
-          {data.location && (
-            <span className="mt-3 inline-flex items-center gap-1 text-xs text-white/65">
-              <Icon name="location_on" className="text-[14px]" />
-              {data.location}
-            </span>
-          )}
           {/* Signature gradient strip — same recipe as the printed card edge. */}
           <div className="absolute inset-x-0 bottom-0 h-2" style={{ background: strip }} aria-hidden />
         </div>
