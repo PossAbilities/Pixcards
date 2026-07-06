@@ -6,14 +6,34 @@ import { BrandTile } from "./BrandIcon";
 import { theme as getTheme } from "@/lib/constants";
 import { buildVCard, initials, cn, orderByTokens } from "@/lib/utils";
 
+function rgbOf(hex?: string | null): [number, number, number] | null {
+  if (!hex || !/^#[0-9a-fA-F]{6}$/.test(hex)) return null;
+  return [
+    parseInt(hex.slice(1, 3), 16),
+    parseInt(hex.slice(3, 5), 16),
+    parseInt(hex.slice(5, 7), 16),
+  ];
+}
+
+/** Perceived luminance 0–1 of a hex colour. */
+function luminance(hex?: string | null): number {
+  const rgb = rgbOf(hex);
+  if (!rgb) return 1;
+  return (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
+}
+
 /** Black or white, whichever reads better on a given hex colour. */
 function readableInk(hex?: string | null): string {
-  if (!hex || !/^#[0-9a-fA-F]{6}$/.test(hex)) return "#12142f";
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return lum > 0.62 ? "#12142f" : "#ffffff";
+  if (!rgbOf(hex)) return "#12142f";
+  return luminance(hex) > 0.62 ? "#12142f" : "#ffffff";
+}
+
+/** Mix a hex colour toward white by `t` (0 = colour, 1 = white). */
+function mixWhite(hex: string, t: number): string {
+  const rgb = rgbOf(hex);
+  if (!rgb) return "#ffffff";
+  const m = rgb.map((c) => Math.round(c + (255 - c) * t));
+  return `#${m.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
 }
 
 export type CardLink = {
@@ -381,6 +401,14 @@ export function DigitalCard({
   /* --- BRAND — a literal echo of the printed card: navy hero, lime panel,
          gradient strip, blob cut-out, pill CTA ------------------------- */
   if (template === "brand") {
+    // The panel colour doubles as the body fill. A light brand colour (lime)
+    // reads well filling the page; a heavy mid-tone (teal) becomes oppressive,
+    // so fill with a soft tint of it instead and keep the full colour for the
+    // accents (role, strip, gradient). Keeps Perspective's full lime intact.
+    const panelIsLight = luminance(panel) > 0.72;
+    const bodyBg = panelIsLight ? panel : mixWhite(panel, 0.9);
+    const bodyInk = readableInk(bodyBg);
+    const inkOnWhite = readableInk("#ffffff");
     const strip = `linear-gradient(90deg, ${panel} 0%, #5aa0e0 50%, ${accent} 100%)`;
     // User-selectable icon-square + photo sizes (Profile → Card layout).
     const TILE = { sm: { px: 44, r: 12, icon: 20 }, md: { px: 56, r: 16, icon: 26 }, lg: { px: 72, r: 20, icon: 34 } } as const;
@@ -412,7 +440,7 @@ export function DigitalCard({
     const firstName = (data.name || "").trim().split(/\s+/)[0];
     const shareLabel = firstName ? `Share ${firstName}’s card` : "Share this card";
     return (
-      <div className={wrapperCls} style={{ ...wrapperStyle, background: panel }}>
+      <div className={wrapperCls} style={{ ...wrapperStyle, background: bodyBg }}>
         {/* Hero — navy card-front: small avatar badge, bold name, role, ring */}
         <div className="relative shrink-0 overflow-hidden px-6 pb-9 pt-8" style={{ background: headerBg }}>
           <span
@@ -444,9 +472,9 @@ export function DigitalCard({
           <div className="absolute inset-x-0 bottom-0 h-2" style={{ background: strip }} aria-hidden />
         </div>
 
-        {/* Panel — lime card-back echo runs to the bottom of the page:
-            blob cut-out, tagline, CTA pills, icon-square actions */}
-        <div className="relative -mt-px flex flex-1 flex-col overflow-hidden px-6 pb-7 pt-7" style={{ background: panel }}>
+        {/* Body — runs to the bottom of the page: blob cut-out, tagline,
+            CTA pills, icon-square actions */}
+        <div className="relative -mt-px flex flex-1 flex-col overflow-hidden px-6 pb-7 pt-7" style={{ background: bodyBg }}>
           <span
             className="pointer-events-none absolute -right-6 -top-12 h-28 w-28 rounded-full"
             style={{ background: headerBg }}
@@ -454,7 +482,7 @@ export function DigitalCard({
           />
           {data.bio && (
             /* pr keeps the tagline's opening lines clear of the blob cut-out */
-            <p className="relative pr-14 font-display text-[19px] font-bold leading-snug" style={{ color: panelInk }}>
+            <p className="relative pr-14 font-display text-[19px] font-bold leading-snug" style={{ color: bodyInk }}>
               {data.bio}
             </p>
           )}
@@ -472,8 +500,8 @@ export function DigitalCard({
             <button
               type="button"
               onClick={interactive ? share : undefined}
-              className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-full py-3 text-sm font-semibold transition active:scale-95"
-              style={{ background: "#ffffff", color: panelInk }}
+              className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-full border py-3 text-sm font-semibold transition active:scale-95"
+              style={{ background: "#ffffff", color: inkOnWhite, borderColor: `${inkOnWhite}1f` }}
             >
               <Icon name={copied ? "check" : "ios_share"} className="text-[18px]" />
               {copied ? "Copied!" : shareLabel}
