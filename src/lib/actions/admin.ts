@@ -140,9 +140,12 @@ export async function setUserCardPreset(
       data.accentColor = t.accentColor;
       data.panelColor = t.panelColor;
     }
-    // Seed an editable starting design for any known preset (only if the
-    // user hasn't already customised one).
-    if (t && preset && !profile.cardDesign) {
+    // Seed the preset's editable starting design when the user has none yet,
+    // or when switching them to a *different* preset — but never overwrite a
+    // design they've customised themselves (cardPreset === "custom").
+    const switching = preset && profile.cardPreset !== preset;
+    const customised = profile.cardPreset === "custom";
+    if (t && preset && !customised && (!profile.cardDesign || switching)) {
       data.cardDesign = JSON.stringify(await presetSpec(preset));
     }
     await prisma.profile.update({ where: { userId }, data });
