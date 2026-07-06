@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { Card, inputClass } from "@/components/ui";
 import { UserRow, type AdminUser } from "@/components/admin/UserRow";
+import { DomainPresetTool } from "@/components/admin/DomainPresetTool";
 
 export function UsersTable({
   users,
@@ -62,6 +63,8 @@ export function UsersTable({
           />
         </div>
       </header>
+
+      <DomainPresetTool />
 
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">

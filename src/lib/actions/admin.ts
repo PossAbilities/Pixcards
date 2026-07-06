@@ -118,6 +118,33 @@ export async function clearUserCardsAndOrders(userId: string): Promise<AdminResu
 }
 
 /**
+ * Compute the profile update for attaching (or clearing) a card preset:
+ * theme fields to match, plus a reseeded starting design when the user has
+ * none or is being switched to a *different* preset — never overwriting a
+ * design they've customised themselves (cardPreset === "custom").
+ */
+async function presetUpdate(
+  profile: { cardPreset: string | null; cardDesign: string | null },
+  preset: string | null,
+): Promise<Record<string, unknown>> {
+  const t = preset ? PRESET_PROFILE_THEME[preset] : null;
+  const data: Record<string, unknown> = { cardPreset: preset || null };
+  if (t) {
+    data.theme = t.theme;
+    data.template = t.template;
+    data.brandHeader = t.brandHeader;
+    data.accentColor = t.accentColor;
+    data.panelColor = t.panelColor;
+  }
+  const switching = preset && profile.cardPreset !== preset;
+  const customised = profile.cardPreset === "custom";
+  if (t && preset && !customised && (!profile.cardDesign || switching)) {
+    data.cardDesign = JSON.stringify(await presetSpec(preset));
+  }
+  return data;
+}
+
+/**
  * Attach (or clear) a starting card template on a user: sets their profile
  * theme to match, and — if they haven't customised a design yet — seeds an
  * editable copy of the template's design so they have something to tweak in
@@ -131,23 +158,7 @@ export async function setUserCardPreset(
     await requireAdminUser();
     const profile = await prisma.profile.findUnique({ where: { userId } });
     if (!profile) return { ok: false, error: "That user has no profile yet." };
-    const t = preset ? PRESET_PROFILE_THEME[preset] : null;
-    const data: Record<string, unknown> = { cardPreset: preset || null };
-    if (t) {
-      data.theme = t.theme;
-      data.template = t.template;
-      data.brandHeader = t.brandHeader;
-      data.accentColor = t.accentColor;
-      data.panelColor = t.panelColor;
-    }
-    // Seed the preset's editable starting design when the user has none yet,
-    // or when switching them to a *different* preset — but never overwrite a
-    // design they've customised themselves (cardPreset === "custom").
-    const switching = preset && profile.cardPreset !== preset;
-    const customised = profile.cardPreset === "custom";
-    if (t && preset && !customised && (!profile.cardDesign || switching)) {
-      data.cardDesign = JSON.stringify(await presetSpec(preset));
-    }
+    const data = await presetUpdate(profile, preset);
     await prisma.profile.update({ where: { userId }, data });
     await recordEvent({
       type: "SECURITY",
@@ -160,6 +171,56 @@ export async function setUserCardPreset(
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Could not update card template." };
+  }
+}
+
+/**
+ * Attach a card preset to every account whose email is on a given domain
+ * (e.g. "possabilities.org.uk"). Skips accounts that have customised their
+ * own design. Returns how many profiles were updated.
+ */
+export async function attachPresetToDomain(
+  preset: string,
+  domain: string,
+): Promise<AdminResult & { updated?: number; skipped?: number }> {
+  try {
+    await requireAdminUser();
+    if (!PRESET_PROFILE_THEME[preset]) {
+      return { ok: false, error: "Unknown preset." };
+    }
+    const clean = domain.trim().toLowerCase().replace(/^@+/, "");
+    if (!clean || !clean.includes(".")) {
+      return { ok: false, error: "Enter a valid email domain, e.g. possabilities.org.uk" };
+    }
+    const users = await prisma.user.findMany({
+      where: { email: { endsWith: `@${clean}` } },
+      include: { profile: { select: { id: true, cardPreset: true, cardDesign: true } } },
+    });
+    let updated = 0;
+    let skipped = 0;
+    for (const u of users) {
+      if (!u.profile) {
+        skipped++;
+        continue;
+      }
+      if (u.profile.cardPreset === "custom") {
+        skipped++;
+        continue;
+      }
+      const data = await presetUpdate(u.profile, preset);
+      await prisma.profile.update({ where: { id: u.profile.id }, data });
+      updated++;
+    }
+    await recordEvent({
+      type: "SECURITY",
+      title: `Preset "${preset}" applied to @${clean} (${updated} account${updated === 1 ? "" : "s"})`,
+      meta: { preset, domain: clean, updated, skipped },
+    });
+    revalidatePath("/admin/users");
+    revalidatePath("/dashboard");
+    return { ok: true, updated, skipped };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Could not apply the preset." };
   }
 }
 
