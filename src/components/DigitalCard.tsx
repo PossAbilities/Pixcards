@@ -435,6 +435,35 @@ export function DigitalCard({
       );
     };
     const hasTiles = Boolean(data.email || data.phone || data.links.length > 0);
+    // Rounded-square hero photo in a slim brand-gradient ring — matches the
+    // rounded-square contact tiles and ties the brand colours together
+    // (teal→magenta for PossAbilities, lime→orange for Perspective).
+    const brandAvatar = (size: number) => {
+      const radius = Math.round(size * 0.3);
+      return (
+        <div
+          className="shrink-0"
+          style={{
+            padding: 3,
+            borderRadius: radius + 3,
+            background: `linear-gradient(135deg, ${panel}, ${accent})`,
+            boxShadow: "0 10px 24px -8px rgba(0,0,0,0.5)",
+          }}
+        >
+          <div
+            className="grid place-items-center overflow-hidden font-display font-bold"
+            style={{ width: size, height: size, borderRadius: radius, background: accent, color: "#fff", fontSize: size * 0.34 }}
+          >
+            {data.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={data.avatarUrl} alt={data.name} className="h-full w-full object-cover" />
+            ) : (
+              <span>{initials(data.name || "P")}</span>
+            )}
+          </div>
+        </div>
+      );
+    };
     // Visitors see this page — third-person copy ("Share Ryan's card"),
     // never "my card".
     const firstName = (data.name || "").trim().split(/\s+/)[0];
@@ -449,7 +478,7 @@ export function DigitalCard({
             aria-hidden
           />
           <div className="flex items-center gap-3.5">
-            {avatarNode(avatarPx)}
+            {brandAvatar(avatarPx)}
             {/* pr keeps the name/role clear of the ring accent pinned top-right */}
             <div className="min-w-0 pr-8">
               <h1 className="font-display text-2xl font-bold leading-tight tracking-tight text-white truncate">
