@@ -1,7 +1,6 @@
 import "server-only";
 import sharp from "sharp";
 import { PRINT_SCALE } from "@/lib/card-artwork";
-import { textWidth } from "@/lib/text-render";
 import type { CardTemplateSpec, TemplateElement } from "@/lib/card-template";
 
 // Base CR80 canvas; decorative chrome is pre-baked at PRINT_SCALE so it stays
@@ -148,13 +147,24 @@ async function paIcon(kind: "phone" | "mail" | "globe" | "pin"): Promise<string>
   return `data:image/png;base64,${png.toString("base64")}`;
 }
 
+/** A bold "P" brandmark (purple stem + bowl, magenta lower accent), drawn in
+ *  a local 0–240 space so it can be scaled/placed anywhere. */
+function paPeeMark(scale: number, tx: number, ty: number, holeFill: string): string {
+  // stem + bowl (donut via even-odd), magenta quarter accent behind the base.
+  return `<g transform="translate(${u(tx)} ${u(ty)}) scale(${u(scale)})">
+    <path d="M52 340 a70 70 0 0 0 0 -140 h-52 v140 z" fill="${PA_MAGENTA}"/>
+    <rect x="0" y="0" width="60" height="340" rx="6" fill="${PA_PURPLE}"/>
+    <path d="M60 20 a95 95 0 0 1 0 190 h-60 v-40 h60 a55 55 0 0 0 0 -110 h-60 v-40 z" fill="${PA_PURPLE}"/>
+    <circle cx="60" cy="115" r="46" fill="${holeFill}"/>
+  </g>`;
+}
+
 /** Front chrome (white): brand mark watermark, divider, teal NFC disc, QR plate. */
 async function paFrontChromeDataUrl(): Promise<string> {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
 <rect width="${W}" height="${H}" fill="#ffffff"/>
-<!-- decorative brandmark, bottom-left, cropped by the edge -->
-<circle cx="${u(285)}" cy="${u(705)}" r="${u(120)}" fill="${PA_PURPLE}"/>
-<circle cx="${u(388)}" cy="${u(700)}" r="${u(66)}" fill="${PA_MAGENTA}"/>
+<!-- large "P" brandmark, bottom edge, cropped (clear of the contact text) -->
+${paPeeMark(0.6, 250, 540, "#ffffff")}
 <!-- teal accent divider below the role -->
 <rect x="${u(128)}" y="${u(322)}" width="${u(64)}" height="${u(5)}" rx="${u(2.5)}" fill="${PA_TEAL}"/>
 <!-- faint vertical divider between details and the tap/QR area -->
@@ -199,6 +209,7 @@ let _paCache: Promise<{
   phone: string;
   mail: string;
   globe: string;
+  pin: string;
 }> | null = null;
 function paChrome() {
   if (!_paCache) {
@@ -208,13 +219,15 @@ function paChrome() {
       paIcon("phone"),
       paIcon("mail"),
       paIcon("globe"),
-    ]).then(([front, back, phone, mail, globe]) => ({ front, back, phone, mail, globe }));
+      paIcon("pin"),
+    ]).then(([front, back, phone, mail, globe, pin]) => ({ front, back, phone, mail, globe, pin }));
   }
   return _paCache;
 }
 
-/** Two-tone "PossAbilities" wordmark as a pair of text elements. `centerX`
- *  (normalised) centres the pair; otherwise `leftX` (normalised) left-aligns. */
+/** Two-tone "PossAbilities" wordmark as a SINGLE element — rendered via Pango
+ *  markup so the two colours abut perfectly with no measurement/gap. `centerX`
+ *  centres it; otherwise `leftX` left-aligns. */
 function paWordmark(opts: {
   y: number;
   size: number;
@@ -222,20 +235,23 @@ function paWordmark(opts: {
   abilColor: string;
   leftX?: number;
   centerX?: number;
-}): TemplateElement[] {
-  const poss = "Poss";
-  const abil = "Abilities";
-  // Measured regular; nudged up for the bold weight the card renders at so the
-  // two words abut like one wordmark rather than overlapping.
-  const possW = (textWidth(poss, opts.size, "sans") * 1.06) / BASE_W;
-  const abilW = (textWidth(abil, opts.size, "sans") * 1.06) / BASE_W;
-  const startX =
-    opts.centerX != null ? opts.centerX - (possW + abilW) / 2 : (opts.leftX ?? 0.126);
-  const yN = opts.y / BASE_H;
-  return [
-    { id: eid(), kind: "text", x: startX, y: yN, w: possW + 0.02, h: 0.08, text: poss, color: opts.possColor, fontSize: opts.size, fontWeight: 800, align: "left" },
-    { id: eid(), kind: "text", x: startX + possW, y: yN, w: abilW + 0.04, h: 0.08, text: abil, color: opts.abilColor, fontSize: opts.size, fontWeight: 800, align: "left" },
-  ];
+}): TemplateElement {
+  const richText = `<span foreground="${opts.possColor}">Poss</span><span foreground="${opts.abilColor}">Abilities</span>`;
+  const centered = opts.centerX != null;
+  return {
+    id: eid(),
+    kind: "text",
+    x: centered ? (opts.centerX as number) - 0.4 : (opts.leftX ?? 0.126),
+    y: opts.y / BASE_H,
+    w: 0.8,
+    h: 0.09,
+    text: "PossAbilities",
+    richText,
+    color: opts.possColor,
+    fontSize: opts.size,
+    fontWeight: 800,
+    align: centered ? "center" : "left",
+  };
 }
 
 /**
@@ -246,35 +262,40 @@ function paWordmark(opts: {
  */
 export async function defaultPossabilitiesSpec(): Promise<CardTemplateSpec> {
   const c = await paChrome();
+  const empowerRich = `EMPOWER  <span foreground="${PA_MAGENTA}">·</span>  INCLUDE  <span foreground="${PA_MAGENTA}">·</span>  ACHIEVE`;
   return {
     front: {
       bg: `url("${c.front}")`,
       elements: [
-        ...paWordmark({ y: 60, size: 44, possColor: PA_PURPLE, abilColor: PA_MAGENTA, leftX: 0.126 }),
-        { id: eid(), kind: "text", x: 0.127, y: 0.205, w: 0.5, h: 0.05, text: "ENABLING INCLUSIVE POSSIBILITIES", color: PA_PURPLE, fontSize: 15, fontWeight: 600, align: "left" },
-        { id: eid(), kind: "text", x: 0.126, y: 0.35, w: 0.5, h: 0.1, text: "{{name}}", color: PA_INK, fontSize: 42, fontWeight: 800, align: "left" },
-        { id: eid(), kind: "text", x: 0.127, y: 0.44, w: 0.5, h: 0.06, text: "{{title}}", color: PA_MAGENTA, fontSize: 20, fontWeight: 700, align: "left" },
-        // contact rows
-        { id: eid(), kind: "image", x: 0.126, y: 0.53, w: 0.03, h: 0.047, src: c.phone },
-        { id: eid(), kind: "text", x: 0.178, y: 0.532, w: 0.4, h: 0.05, text: "{{phone}}", color: PA_INK, fontSize: 22, fontWeight: 500, align: "left" },
-        { id: eid(), kind: "image", x: 0.126, y: 0.62, w: 0.03, h: 0.047, src: c.mail },
-        { id: eid(), kind: "text", x: 0.178, y: 0.622, w: 0.45, h: 0.05, text: "{{email}}", color: PA_INK, fontSize: 22, fontWeight: 500, align: "left" },
-        { id: eid(), kind: "image", x: 0.126, y: 0.71, w: 0.03, h: 0.047, src: c.globe },
-        { id: eid(), kind: "text", x: 0.178, y: 0.712, w: 0.45, h: 0.05, text: "possabilities.com.au", color: PA_INK, fontSize: 22, fontWeight: 500, align: "left" },
+        paWordmark({ y: 58, size: 44, possColor: PA_PURPLE, abilColor: PA_MAGENTA, leftX: 0.126 }),
+        { id: eid(), kind: "text", x: 0.127, y: 0.2, w: 0.5, h: 0.05, text: "ENABLING INCLUSIVE POSSIBILITIES", color: PA_PURPLE, fontSize: 15, fontWeight: 600, align: "left" },
+        { id: eid(), kind: "text", x: 0.126, y: 0.34, w: 0.5, h: 0.1, text: "{{name}}", color: PA_INK, fontSize: 42, fontWeight: 800, align: "left" },
+        { id: eid(), kind: "text", x: 0.127, y: 0.435, w: 0.5, h: 0.06, text: "{{title}}", color: PA_MAGENTA, fontSize: 20, fontWeight: 700, align: "left" },
+        // contact rows (phone / email / website / location)
+        { id: eid(), kind: "image", x: 0.126, y: 0.52, w: 0.03, h: 0.047, src: c.phone },
+        { id: eid(), kind: "text", x: 0.178, y: 0.522, w: 0.4, h: 0.05, text: "{{phone}}", color: PA_INK, fontSize: 21, fontWeight: 500, align: "left" },
+        { id: eid(), kind: "image", x: 0.126, y: 0.6, w: 0.03, h: 0.047, src: c.mail },
+        { id: eid(), kind: "text", x: 0.178, y: 0.602, w: 0.45, h: 0.05, text: "{{email}}", color: PA_INK, fontSize: 21, fontWeight: 500, align: "left" },
+        { id: eid(), kind: "image", x: 0.126, y: 0.68, w: 0.03, h: 0.047, src: c.globe },
+        { id: eid(), kind: "text", x: 0.178, y: 0.682, w: 0.45, h: 0.05, text: "possabilities.com.au", color: PA_INK, fontSize: 21, fontWeight: 500, align: "left" },
+        { id: eid(), kind: "image", x: 0.126, y: 0.76, w: 0.03, h: 0.047, src: c.pin },
+        { id: eid(), kind: "text", x: 0.178, y: 0.762, w: 0.45, h: 0.05, text: "{{location}}", color: PA_INK, fontSize: 21, fontWeight: 500, align: "left" },
         // tap disc labels
         { id: eid(), kind: "text", x: 0.757, y: 0.31, w: 0.2, h: 0.06, text: "TAP", color: "#ffffff", fontSize: 26, fontWeight: 800, align: "center" },
         { id: eid(), kind: "text", x: 0.757, y: 0.375, w: 0.2, h: 0.04, text: "WITH NFC", color: "#ffffff", fontSize: 13, fontWeight: 700, align: "center" },
-        // scan + QR
+        // scan + QR + platform mark
         { id: eid(), kind: "text", x: 0.7, y: 0.5, w: 0.235, h: 0.04, text: "SCAN TO CONNECT", color: PA_PURPLE, fontSize: 15, fontWeight: 700, align: "center" },
         { id: eid(), kind: "qr", x: 0.732, y: 0.585, w: 0.166, h: 0.263 },
+        { id: eid(), kind: "text", x: 0.7, y: 0.885, w: 0.235, h: 0.04, text: "Pixcards", color: PA_PURPLE, fontSize: 20, fontWeight: 800, align: "center" },
+        { id: eid(), kind: "text", x: 0.7, y: 0.93, w: 0.235, h: 0.03, text: "DIGITAL BUSINESS CARD", color: "#9aa0ab", fontSize: 11, fontWeight: 600, align: "center" },
       ],
     },
     back: {
       bg: `url("${c.back}")`,
       elements: [
-        ...paWordmark({ y: 200, size: 62, possColor: "#ffffff", abilColor: PA_MAGENTA, centerX: 0.5 }),
+        paWordmark({ y: 200, size: 62, possColor: "#ffffff", abilColor: PA_MAGENTA, centerX: 0.5 }),
         { id: eid(), kind: "text", x: 0.15, y: 0.45, w: 0.7, h: 0.05, text: "ENABLING INCLUSIVE POSSIBILITIES", color: "#ffffff", fontSize: 18, fontWeight: 600, align: "center" },
-        { id: eid(), kind: "text", x: 0.1, y: 0.6, w: 0.8, h: 0.06, text: "EMPOWER   ·   INCLUDE   ·   ACHIEVE", color: "#ffffff", fontSize: 22, fontWeight: 700, align: "center" },
+        { id: eid(), kind: "text", x: 0.1, y: 0.6, w: 0.8, h: 0.06, text: "EMPOWER  ·  INCLUDE  ·  ACHIEVE", richText: empowerRich, color: "#ffffff", fontSize: 22, fontWeight: 700, align: "center" },
         { id: eid(), kind: "text", x: 0.42, y: 0.845, w: 0.45, h: 0.05, text: "possabilities.com.au", color: "#ffffff", fontSize: 24, fontWeight: 600, align: "left" },
       ],
     },

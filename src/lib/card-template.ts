@@ -23,6 +23,9 @@ export type TemplateElement = {
   fontSize?: number; // px at the 638px reference height
   fontWeight?: number;
   align?: "left" | "center" | "right";
+  // Raw Pango markup rendered instead of `text` server-side (e.g. a two-tone
+  // wordmark). `text` is still the plain fallback used by the editor preview.
+  richText?: string;
   // image / nfc
   src?: string; // data URL for uploaded images
   nfcColor?: string; // colour for the NFC mark
@@ -45,6 +48,7 @@ export type MergeData = {
   url: string;
   email?: string;
   phone?: string;
+  location?: string;
 };
 
 /** True when the org has actually designed a template (vs the empty default). */
@@ -81,7 +85,8 @@ export function applyMerge(text: string, m: MergeData): string {
     .replace(/\{\{\s*company\s*\}\}/gi, m.company)
     .replace(/\{\{\s*(url|link)\s*\}\}/gi, m.url)
     .replace(/\{\{\s*email\s*\}\}/gi, m.email ?? "")
-    .replace(/\{\{\s*phone\s*\}\}/gi, m.phone ?? "");
+    .replace(/\{\{\s*phone\s*\}\}/gi, m.phone ?? "")
+    .replace(/\{\{\s*location\s*\}\}/gi, m.location ?? "");
 }
 
 export const MERGE_FIELDS: { token: string; label: string }[] = [
@@ -91,6 +96,7 @@ export const MERGE_FIELDS: { token: string; label: string }[] = [
   { token: "{{url}}", label: "Profile URL" },
   { token: "{{email}}", label: "Email" },
   { token: "{{phone}}", label: "Phone" },
+  { token: "{{location}}", label: "Location" },
 ];
 
 export const SAMPLE_MERGE: MergeData = {

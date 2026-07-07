@@ -82,6 +82,7 @@ export async function GET(
         url: profileUrl,
         email: profile.email || profile.user.email,
         phone: profile.phone || "",
+        location: profile.location || "",
       };
       // Use whichever card side's colour best matches the brand background,
       // so the banner blends into the pass (navy front for Perspective, the

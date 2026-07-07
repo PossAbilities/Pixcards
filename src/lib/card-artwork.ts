@@ -236,13 +236,15 @@ export async function renderTemplateSidePng(
 
     if (el.kind === "text") {
       const content = applyMerge(el.text ?? "", merge);
-      if (!content) continue;
+      const markup = el.richText ? applyMerge(el.richText, merge) : undefined;
+      if (!content && !markup) continue;
       const size = Math.round((el.fontSize ?? 34) * scale);
       const color = el.color ?? "#ffffff";
       const tx = el.align === "center" ? left + w / 2 : el.align === "right" ? left + w : left;
       const ty = top + size; // baseline
       const layer = await textOverlay({
         text: content,
+        markup,
         x: tx,
         y: ty,
         fontSize: size,

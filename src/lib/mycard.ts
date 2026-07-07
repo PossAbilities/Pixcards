@@ -30,6 +30,7 @@ export async function loadMyCard(userId: string): Promise<MyCard | null> {
     url: profileUrl,
     email: profile.email || profile.user.email,
     phone: profile.phone || "",
+    location: profile.location || "",
   };
 
   const stored = parseTemplate(profile.cardDesign);
