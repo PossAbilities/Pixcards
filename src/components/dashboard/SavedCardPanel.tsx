@@ -4,7 +4,7 @@ import { useActionState, useEffect, useState, useTransition } from "react";
 import QRCode from "qrcode";
 import { Icon } from "@/components/Icon";
 import { Card, SectionHeading, buttonClass, inputClass, Label } from "@/components/ui";
-import { orderMyCard, applyMyCardBrandTheme } from "@/lib/actions/mycard";
+import { orderMyCard, applyMyCardBrandTheme, previewMyCardDiscount } from "@/lib/actions/mycard";
 import { money } from "@/lib/constants";
 import type { CardTemplateSpec, MergeData } from "@/lib/card-template";
 import { PersonalCardDesigner } from "./PersonalCardDesigner";
@@ -38,6 +38,32 @@ export function SavedCardPanel({
   const [themeMsg, setThemeMsg] = useState<string | null>(null);
   const [themeErr, setThemeErr] = useState<string | null>(null);
   const [themePending, startTheme] = useTransition();
+
+  // Discount code — validated live via "Apply" so the total updates before pay.
+  const [code, setCode] = useState("");
+  const [applied, setApplied] = useState<{ code: string; amountOffCents: number; finalCents: number } | null>(null);
+  const [codeErr, setCodeErr] = useState<string | null>(null);
+  const [codePending, startCode] = useTransition();
+
+  function applyCode() {
+    setCodeErr(null);
+    if (!code.trim()) return;
+    startCode(async () => {
+      const res = await previewMyCardDiscount(code.trim(), 1);
+      if (res.ok) {
+        setApplied({ code: res.code, amountOffCents: res.amountOffCents, finalCents: res.finalCents });
+      } else {
+        setApplied(null);
+        setCodeErr(res.error);
+      }
+    });
+  }
+  function clearCode() {
+    setApplied(null);
+    setCode("");
+    setCodeErr(null);
+  }
+  const totalCents = applied ? applied.finalCents : unitPriceCents;
 
   useEffect(() => {
     QRCode.toDataURL(merge.url, { margin: 1, width: 256 })
@@ -138,12 +164,47 @@ export function SavedCardPanel({
               <input id="sp-post" name="shipPostal" required className={inputClass} />
             </div>
             <input type="hidden" name="shipCountry" value="United Kingdom" />
+            {/* Carries the applied code into the order action. */}
+            <input type="hidden" name="discountCode" value={applied ? applied.code : ""} />
+
+            {/* Discount code */}
+            <div className="sm:col-span-2">
+              <Label htmlFor="sp-code">Discount code</Label>
+              {applied ? (
+                <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5">
+                  <Icon name="check_circle" className="text-[18px] text-emerald-600" />
+                  <span className="flex-1 text-sm font-semibold text-emerald-800">
+                    {applied.code} applied — {money(applied.amountOffCents)} off
+                  </span>
+                  <button type="button" onClick={clearCode} className="text-xs font-semibold text-emerald-700 hover:underline">
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    id="sp-code"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.toUpperCase())}
+                    placeholder="Enter code"
+                    className={`${inputClass} flex-1`}
+                  />
+                  <button type="button" onClick={applyCode} disabled={codePending || !code.trim()} className={buttonClass("outline", "md")}>
+                    {codePending ? "Checking…" : "Apply"}
+                  </button>
+                </div>
+              )}
+              {codeErr && <p className="mt-1.5 text-sm font-medium text-red-600">{codeErr}</p>}
+            </div>
 
             <div className="sm:col-span-2 flex flex-wrap items-center gap-3">
               <button type="submit" disabled={pending} className={buttonClass("primary", "md")}>
                 <Icon name="shopping_cart_checkout" className="text-[18px]" />
-                {pending ? "Starting checkout…" : `Order this design · ${money(unitPriceCents)}`}
+                {pending ? "Starting checkout…" : `Order this design · ${money(totalCents)}`}
               </button>
+              {applied && (
+                <span className="text-xs text-muted line-through">{money(unitPriceCents)}</span>
+              )}
               <span className="text-xs text-muted">White CR80 card · secure checkout</span>
               {state?.error && <span className="text-sm font-medium text-red-600">{state.error}</span>}
             </div>

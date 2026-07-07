@@ -12,6 +12,7 @@ import { loadMyCard } from "@/lib/mycard";
 import { renderTemplateSidePng } from "@/lib/card-artwork";
 import { PRESET_PROFILE_THEME } from "@/lib/card-preset-meta";
 import { presetSpec } from "@/lib/preset-cards";
+import { validateDiscount, recordRedemption } from "@/lib/discounts";
 
 export type ActionResult = { ok: boolean; error?: string };
 
@@ -101,7 +102,25 @@ const orderSchema = z.object({
   shipCity: z.string().min(1, "Enter a city").max(80),
   shipPostal: z.string().min(1, "Enter a postcode").max(20),
   shipCountry: z.string().min(1).max(60).default("United Kingdom"),
+  discountCode: z.string().max(40).optional().default(""),
 });
+
+/** Check a discount code against a card order (for the live "Apply" preview). */
+export async function previewMyCardDiscount(
+  code: string,
+  quantity: number,
+): Promise<
+  | { ok: true; code: string; amountOffCents: number; finalCents: number }
+  | { ok: false; error: string }
+> {
+  const user = await getSessionUser();
+  if (!user) return { ok: false, error: "Not signed in." };
+  const qty = Math.min(50, Math.max(1, Math.floor(quantity) || 1));
+  const priceCents = material("white-gloss").priceCents * qty;
+  const res = await validateDiscount(code, "CARD", priceCents, user.id);
+  if (!res.valid) return { ok: false, error: res.reason };
+  return { ok: true, code: res.code, amountOffCents: res.amountOffCents, finalCents: res.finalCents };
+}
 
 /** Order the user's own card design: bakes both sides server-side, then runs the normal card checkout. */
 export async function orderMyCard(formData: FormData): Promise<{ error: string } | void> {
@@ -132,7 +151,18 @@ export async function orderMyCard(formData: FormData): Promise<{ error: string }
   });
 
   const mat = material("white-gloss");
-  const priceCents = mat.priceCents * d.quantity;
+  const fullPrice = mat.priceCents * d.quantity;
+
+  // Optional discount code (validated; one use per user is enforced in
+  // validateDiscount + the DB unique constraint).
+  let priceCents = fullPrice;
+  let redemption: { codeId: string; amountOffCents: number } | null = null;
+  if (d.discountCode.trim()) {
+    const res = await validateDiscount(d.discountCode, "CARD", fullPrice, user.id);
+    if (!res.valid) return { error: res.reason };
+    priceCents = res.finalCents;
+    redemption = { codeId: res.codeId, amountOffCents: res.amountOffCents };
+  }
 
   const order = await prisma.order.create({
     data: {
@@ -173,7 +203,16 @@ export async function orderMyCard(formData: FormData): Promise<{ error: string }
           },
         },
       ],
-      metadata: { kind: "order", orderId: order.id },
+      metadata: {
+        kind: "order",
+        orderId: order.id,
+        ...(redemption
+          ? {
+              discountCodeId: redemption.codeId,
+              discountAmount: String(redemption.amountOffCents),
+            }
+          : {}),
+      },
       success_url: `${appUrl()}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl()}/dashboard/order?cancelled=1`,
     });
@@ -181,6 +220,11 @@ export async function orderMyCard(formData: FormData): Promise<{ error: string }
     redirect(session.url as string);
   }
 
+  // Demo mode or a 100%-off code — no payment step. Record the redemption
+  // here (the Stripe webhook path records it for paid orders).
+  if (redemption) {
+    await recordRedemption(redemption.codeId, user.id, "order", redemption.amountOffCents);
+  }
   await prisma.order.update({ where: { id: order.id }, data: { status: "PAID" } });
   redirect(`/dashboard/orders`);
 }
