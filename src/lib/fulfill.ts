@@ -21,16 +21,18 @@ export async function fulfillCheckout(meta: Meta): Promise<void> {
   if (kind === "order" && meta.orderId) {
     const order = await prisma.order.findUnique({
       where: { id: meta.orderId },
-      select: { userId: true, status: true },
+      select: { userId: true },
     });
     if (!order) return;
-    const firstTransition = order.status !== "PAID";
-    await prisma.order.update({
-      where: { id: meta.orderId },
+    // Atomic first-transition: only the write that actually flips PENDING→PAID
+    // returns count 1, so the redemption is recorded exactly once even if the
+    // webhook and the success redirect both fire.
+    const res = await prisma.order.updateMany({
+      where: { id: meta.orderId, status: { not: "PAID" } },
       data: { status: "PAID" },
     });
-    if (codeId) await recordRedemption(codeId, order.userId, "order", amountOff);
-    if (firstTransition) {
+    if (res.count === 1) {
+      if (codeId) await recordRedemption(codeId, order.userId, "order", amountOff);
       await recordEvent({
         type: "ORDER_PAID",
         title: "Card order paid",
@@ -42,18 +44,12 @@ export async function fulfillCheckout(meta: Meta): Promise<void> {
   }
 
   if (kind === "pro" && meta.userId) {
-    const user = await prisma.user.findUnique({
-      where: { id: meta.userId },
-      select: { plan: true },
-    });
-    if (!user) return;
-    const firstTransition = user.plan !== "PRO";
-    await prisma.user.update({
-      where: { id: meta.userId },
+    const res = await prisma.user.updateMany({
+      where: { id: meta.userId, plan: { not: "PRO" } },
       data: { plan: "PRO", proSince: new Date(), proUntil: null },
     });
-    if (codeId) await recordRedemption(codeId, meta.userId, "pro", amountOff);
-    if (firstTransition) {
+    if (res.count === 1) {
+      if (codeId) await recordRedemption(codeId, meta.userId, "pro", amountOff);
       await recordEvent({
         type: "PRO_UPGRADE",
         title: "User upgraded to Pro",

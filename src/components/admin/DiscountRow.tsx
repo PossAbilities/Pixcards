@@ -3,7 +3,11 @@
 import { useState, useTransition } from "react";
 import { Icon } from "@/components/Icon";
 import { buttonClass, Badge } from "@/components/ui";
-import { setDiscountActive, deleteDiscount } from "@/lib/actions/discounts";
+import {
+  setDiscountActive,
+  deleteDiscount,
+  setDiscountPerUserLimit,
+} from "@/lib/actions/discounts";
 import { money } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 
@@ -15,6 +19,7 @@ export type AdminDiscount = {
   value: number;
   scope: "ALL" | "PRO" | "CARD";
   maxRedemptions: number | null;
+  perUserLimit: number;
   timesRedeemed: number;
   expiresAt: string | null;
   active: boolean;
@@ -37,6 +42,17 @@ function valueLabel(d: AdminDiscount): string {
 export function DiscountRow({ discount }: { discount: AdminDiscount }) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [perUser, setPerUser] = useState(String(discount.perUserLimit));
+
+  function savePerUser() {
+    const n = Math.max(1, Math.floor(Number(perUser)) || 1);
+    if (n === discount.perUserLimit) return;
+    setError(null);
+    startTransition(async () => {
+      const res = await setDiscountPerUserLimit(discount.id, n);
+      if (!res.ok) setError(res.error ?? "Failed to update limit.");
+    });
+  }
 
   const scope = SCOPE[discount.scope];
   const expired =
@@ -83,6 +99,19 @@ export function DiscountRow({ discount }: { discount: AdminDiscount }) {
       </td>
       <td className="px-4 py-3 whitespace-nowrap tabular-nums text-muted">
         {discount.timesRedeemed}/{discount.maxRedemptions ?? "∞"}
+      </td>
+      <td className="px-4 py-3 whitespace-nowrap">
+        <input
+          type="number"
+          min={1}
+          step={1}
+          value={perUser}
+          onChange={(e) => setPerUser(e.target.value)}
+          onBlur={savePerUser}
+          disabled={isPending}
+          aria-label={`Uses per customer for ${discount.code}`}
+          className="w-16 rounded-lg border border-outline bg-surface px-2 py-1 text-sm tabular-nums text-ink outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
+        />
       </td>
       <td className="px-4 py-3 whitespace-nowrap text-muted">
         {discount.expiresAt ? (

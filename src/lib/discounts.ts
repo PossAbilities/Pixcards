@@ -44,11 +44,17 @@ export async function validateDiscount(
           : "That code only applies to card orders.",
     };
   }
-  const already = await prisma.discountRedemption.findUnique({
-    where: { codeId_userId: { codeId: dc.id, userId } },
+  const usedByUser = await prisma.discountRedemption.count({
+    where: { codeId: dc.id, userId },
   });
-  if (already) {
-    return { valid: false, reason: "You've already used this code." };
+  if (usedByUser >= Math.max(1, dc.perUserLimit)) {
+    return {
+      valid: false,
+      reason:
+        dc.perUserLimit <= 1
+          ? "You've already used this code."
+          : `You've used this code the maximum ${dc.perUserLimit} times.`,
+    };
   }
 
   const amountOff =

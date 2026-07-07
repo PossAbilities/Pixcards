@@ -48,6 +48,7 @@ const createSchema = z.object({
   value: z.coerce.number().int().positive("Enter a value above 0"),
   scope: z.enum(["ALL", "PRO", "CARD"]),
   maxRedemptions: z.coerce.number().int().positive().optional(),
+  perUserLimit: z.coerce.number().int().min(1).max(1000).optional().default(1),
   expiresAt: z.string().optional(),
 });
 
@@ -63,6 +64,7 @@ export async function createDiscount(
     value: formData.get("value"),
     scope: formData.get("scope"),
     maxRedemptions: formData.get("maxRedemptions") || undefined,
+    perUserLimit: formData.get("perUserLimit") || undefined,
     expiresAt: formData.get("expiresAt") || undefined,
   };
   const parsed = createSchema.safeParse(raw);
@@ -89,10 +91,23 @@ export async function createDiscount(
       value: d.value,
       scope: d.scope as DiscountScope,
       maxRedemptions: d.maxRedemptions ?? null,
+      perUserLimit: d.perUserLimit,
       expiresAt: d.expiresAt ? new Date(d.expiresAt) : null,
     },
   });
 
+  revalidatePath("/admin/discounts");
+  return { ok: true };
+}
+
+/** Change how many times each customer may use a code (existing code). */
+export async function setDiscountPerUserLimit(
+  id: string,
+  limit: number,
+): Promise<DiscountActionResult> {
+  await requireAdminUser();
+  const n = Math.max(1, Math.min(1000, Math.floor(limit) || 1));
+  await prisma.discountCode.update({ where: { id }, data: { perUserLimit: n } });
   revalidatePath("/admin/discounts");
   return { ok: true };
 }

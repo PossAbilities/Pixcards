@@ -408,7 +408,8 @@ model DiscountCode {
   value       Int // percent (1-100) or pence depending on type
   scope       DiscountScope @default(ALL)
 
-  maxRedemptions Int? // null = unlimited
+  maxRedemptions Int? // null = unlimited (total, across everyone)
+  perUserLimit   Int  @default(1) // how many times ONE user may use this code
   timesRedeemed  Int  @default(0)
   expiresAt      DateTime?
   active         Boolean   @default(true)
@@ -430,5 +431,9 @@ model DiscountRedemption {
   amountOffCents Int
   createdAt      DateTime @default(now())
 
-  @@unique([codeId, userId]) // one redemption per user per code
+  // A user may now redeem a code up to DiscountCode.perUserLimit times, so the
+  // per-user uniqueness is gone; redemptions are counted instead. Idempotency
+  // for the double-fired Stripe fulfilment is handled at the transition (only
+  // the first PAID/PRO flip records a redemption).
+  @@index([codeId, userId])
 }

@@ -22,6 +22,7 @@ export default async function AdminDiscountsPage() {
     value: d.value,
     scope: d.scope,
     maxRedemptions: d.maxRedemptions,
+    perUserLimit: d.perUserLimit,
     timesRedeemed: d.timesRedeemed,
     expiresAt: d.expiresAt ? d.expiresAt.toISOString() : null,
     active: d.active,
@@ -53,6 +54,7 @@ export default async function AdminDiscountsPage() {
                   <th className="px-4 py-3">Value</th>
                   <th className="px-4 py-3">Applies to</th>
                   <th className="px-4 py-3">Redeemed</th>
+                  <th className="px-4 py-3">Per customer</th>
                   <th className="px-4 py-3">Expires</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3 text-right">Actions</th>
@@ -62,7 +64,7 @@ export default async function AdminDiscountsPage() {
                 {rows.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={7}
+                      colSpan={8}
                       className="px-4 py-12 text-center text-muted"
                     >
                       No discount codes yet. Create one to get started.

@@ -28,6 +28,7 @@ export function DiscountForm() {
   const [value, setValue] = useState("");
   const [scope, setScope] = useState<DiscountScope>("ALL");
   const [maxRedemptions, setMaxRedemptions] = useState("");
+  const [perUserLimit, setPerUserLimit] = useState("1");
   const [expiresAt, setExpiresAt] = useState("");
 
   function reset() {
@@ -37,6 +38,7 @@ export function DiscountForm() {
     setValue("");
     setScope("ALL");
     setMaxRedemptions("");
+    setPerUserLimit("1");
     setExpiresAt("");
   }
 
@@ -72,6 +74,7 @@ export function DiscountForm() {
     );
     fd.set("scope", scope);
     if (maxRedemptions.trim()) fd.set("maxRedemptions", maxRedemptions.trim());
+    if (perUserLimit.trim()) fd.set("perUserLimit", perUserLimit.trim());
     if (expiresAt) fd.set("expiresAt", expiresAt);
 
     startTransition(async () => {
@@ -166,7 +169,7 @@ export function DiscountForm() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <Label htmlFor="discount-max">Max redemptions (optional)</Label>
+            <Label htmlFor="discount-max">Max redemptions total (optional)</Label>
             <input
               id="discount-max"
               type="number"
@@ -177,6 +180,20 @@ export function DiscountForm() {
               placeholder="Unlimited"
               className={inputClass}
             />
+          </div>
+          <div>
+            <Label htmlFor="discount-per-user">Uses per customer</Label>
+            <input
+              id="discount-per-user"
+              type="number"
+              min={1}
+              step={1}
+              value={perUserLimit}
+              onChange={(e) => setPerUserLimit(e.target.value)}
+              placeholder="1"
+              className={inputClass}
+            />
+            <p className="mt-1 text-xs text-muted">How many times each customer can use this code.</p>
           </div>
           <div>
             <Label htmlFor="discount-expires">Expires (optional)</Label>
