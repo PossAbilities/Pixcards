@@ -11,7 +11,7 @@ import {
   hexDistance,
 } from "@/lib/card-artwork";
 import { hasTemplate, parseTemplate, type MergeData } from "@/lib/card-template";
-import { presetSpec } from "@/lib/preset-cards";
+import { presetSpec, CARD_PRESETS } from "@/lib/preset-cards";
 
 export const runtime = "nodejs";
 
@@ -67,12 +67,17 @@ export async function GET(
   // fall back to the plain pass if rendering fails.
   let strip: WalletStrip | null = null;
   let backgroundHex: string | null = null;
+  const onPreset =
+    profile.cardPreset != null &&
+    (CARD_PRESETS as readonly string[]).includes(profile.cardPreset);
   const saved = parseTemplate(profile.cardDesign);
-  const spec = hasTemplate(saved)
-    ? saved
-    : profile.cardPreset
-      ? await presetSpec(profile.cardPreset)
-      : null;
+  const spec = onPreset
+    ? await presetSpec(profile.cardPreset)
+    : hasTemplate(saved)
+      ? saved
+      : profile.cardPreset
+        ? await presetSpec(profile.cardPreset)
+        : null;
   if (spec) {
     try {
       const merge: MergeData = {
