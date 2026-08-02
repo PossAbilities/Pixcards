@@ -11,7 +11,7 @@ import {
   hexDistance,
 } from "@/lib/card-artwork";
 import { hasTemplate, parseTemplate, type MergeData } from "@/lib/card-template";
-import { presetSpec, CARD_PRESETS } from "@/lib/preset-cards";
+import { presetSpec, CARD_PRESETS, renderWalletBanner } from "@/lib/preset-cards";
 
 export const runtime = "nodejs";
 
@@ -70,45 +70,52 @@ export async function GET(
   const onPreset =
     profile.cardPreset != null &&
     (CARD_PRESETS as readonly string[]).includes(profile.cardPreset);
-  const saved = parseTemplate(profile.cardDesign);
-  const spec = onPreset
-    ? await presetSpec(profile.cardPreset)
-    : hasTemplate(saved)
-      ? saved
-      : profile.cardPreset
-        ? await presetSpec(profile.cardPreset)
-        : null;
-  if (spec) {
-    try {
-      const merge: MergeData = {
-        name: profile.user.name || "Your Name",
-        jobTitle: profile.jobTitle || "",
-        company: profile.company || "",
-        url: profileUrl,
-        email: profile.email || profile.user.email,
-        phone: profile.phone || "",
-        location: profile.location || "",
-      };
-      // Use whichever card side's colour best matches the brand background,
-      // so the banner blends into the pass (navy front for Perspective, the
-      // purple wordmark back for PossAbilities) rather than sitting in
-      // clashing letterbox bars.
-      const [front, back] = await Promise.all([
-        renderTemplateSidePng(spec.front, merge, 2),
-        renderTemplateSidePng(spec.back, merge, 2),
-      ]);
-      const target = firstHex(profile.brandHeader) || profile.accentColor || "#12142f";
-      const [frontHex, backHex] = await Promise.all([
-        dominantHex(front),
-        dominantHex(back),
-      ]);
-      const useFront = hexDistance(frontHex, target) <= hexDistance(backHex, target);
-      const chosen = useFront ? front : back;
-      backgroundHex = useFront ? frontHex : backHex;
-      strip = await renderWalletStripSet(chosen, backgroundHex);
-    } catch (e) {
-      console.error("wallet strip render failed", e);
+  try {
+    // Built-in presets get a purpose-built brand banner drawn for the strip's
+    // wide/short shape (wordmark + accent), not a squished whole-card image.
+    if (onPreset) {
+      const banner = await renderWalletBanner(profile.cardPreset);
+      if (banner) {
+        strip = banner.strip;
+        backgroundHex = banner.bgHex;
+      }
     }
+    // Custom/saved designs (no preset banner): fill the strip with the card
+    // side whose colour best matches the brand background.
+    if (!strip) {
+      const saved = parseTemplate(profile.cardDesign);
+      const spec = hasTemplate(saved)
+        ? saved
+        : profile.cardPreset
+          ? await presetSpec(profile.cardPreset)
+          : null;
+      if (spec) {
+        const merge: MergeData = {
+          name: profile.user.name || "Your Name",
+          jobTitle: profile.jobTitle || "",
+          company: profile.company || "",
+          url: profileUrl,
+          email: profile.email || profile.user.email,
+          phone: profile.phone || "",
+          location: profile.location || "",
+        };
+        const [front, back] = await Promise.all([
+          renderTemplateSidePng(spec.front, merge, 2),
+          renderTemplateSidePng(spec.back, merge, 2),
+        ]);
+        const target = firstHex(profile.brandHeader) || profile.accentColor || "#12142f";
+        const [frontHex, backHex] = await Promise.all([
+          dominantHex(front),
+          dominantHex(back),
+        ]);
+        const useFront = hexDistance(frontHex, target) <= hexDistance(backHex, target);
+        const chosen = useFront ? front : back;
+        backgroundHex = useFront ? frontHex : backHex;
+        strip = await renderWalletStripSet(chosen, backgroundHex);
+      }
+    }
+  } catch (e) {
+    console.error("wallet strip render failed", e);
   }
 
   try {

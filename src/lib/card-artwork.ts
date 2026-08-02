@@ -153,9 +153,13 @@ export async function renderWalletStripSet(
   bgHex: string,
 ): Promise<{ x1: Buffer; x2: Buffer; x3: Buffer }> {
   const background = /^#[0-9a-fA-F]{6}$/.test(bgHex) ? bgHex : "#12142f";
+  // Fill the wide Wallet strip (cover) instead of letterboxing the whole card
+  // into it (which left brand-coloured bars down both sides). Centre-crop keeps
+  // the card's central band — used only for custom designs; the two presets get
+  // a purpose-built banner instead.
   const make = async (w: number, h: number) =>
     sharp(cardSide)
-      .resize(w, h, { fit: "contain", background })
+      .resize(w, h, { fit: "cover", position: "centre", background })
       .png()
       .toBuffer();
   const [x1, x2, x3] = await Promise.all([

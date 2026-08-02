@@ -1,6 +1,7 @@
 import "server-only";
 import sharp from "sharp";
 import { PRINT_SCALE } from "@/lib/card-artwork";
+import { textOverlay } from "@/lib/text-render";
 import type { CardTemplateSpec, TemplateElement } from "@/lib/card-template";
 
 // Base CR80 canvas; decorative chrome is pre-baked at PRINT_SCALE so it stays
@@ -311,3 +312,104 @@ export async function presetSpec(preset?: string | null): Promise<CardTemplateSp
 /** Registry of built-in card starting templates (extensible). */
 export const CARD_PRESETS = ["perspective", "possabilities"] as const;
 export type CardPreset = (typeof CARD_PRESETS)[number];
+
+/* --------------------------- Apple Wallet banner -------------------------- */
+// A purpose-built brand banner for the Wallet pass strip. Unlike cropping the
+// whole business card into the short/wide strip (which letterboxes with side
+// bars), this draws each brand's identity laid out for the banner shape:
+// gradient background + wordmark + accent, mirroring the printed card.
+
+// Strip @3x is 1125×369 (matches renderWalletStripSet's largest size).
+const BANNER_W = 1125;
+const BANNER_H = 369;
+
+type Layer = { input: Buffer; top: number; left: number };
+
+/** Downscale one @3x banner into the {x1,x2,x3} strip set Wallet expects. */
+async function bannerStripSet(
+  x3: Buffer,
+): Promise<{ x1: Buffer; x2: Buffer; x3: Buffer }> {
+  const [x2, x1] = await Promise.all([
+    sharp(x3).resize(750, 246).png().toBuffer(),
+    sharp(x3).resize(375, 123).png().toBuffer(),
+  ]);
+  return { x1, x2, x3 };
+}
+
+/**
+ * Render the Wallet strip banner for a built-in preset, plus the solid pass
+ * background colour that blends with it. Returns null for unknown presets
+ * (the route then falls back to the cover-cropped card side).
+ */
+export async function renderWalletBanner(
+  preset: string | null | undefined,
+): Promise<{ strip: { x1: Buffer; x2: Buffer; x3: Buffer }; bgHex: string } | null> {
+  const cx = BANNER_W / 2;
+
+  if (preset === "possabilities") {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${BANNER_W}" height="${BANNER_H}">
+<defs><linearGradient id="pg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${PA_PURPLE}"/><stop offset="0.55" stop-color="#341a52"/><stop offset="1" stop-color="${PA_DEEP}"/></linearGradient></defs>
+<rect width="${BANNER_W}" height="${BANNER_H}" fill="url(#pg)"/>
+<circle cx="150" cy="70" r="150" fill="#ffffff" opacity="0.04"/>
+<circle cx="1010" cy="320" r="170" fill="#ffffff" opacity="0.04"/>
+<rect x="${cx - 65}" y="236" width="130" height="6" rx="3" fill="${PA_TEAL}"/>
+</svg>`;
+    const wordmark = await textOverlay({
+      text: "PossAbilities",
+      markup: `<span foreground="#ffffff">Poss</span><span foreground="${PA_MAGENTA}">Abilities</span>`,
+      color: "#ffffff",
+      fontSize: 92,
+      bold: true,
+      align: "center",
+      x: cx,
+      y: 172,
+    });
+    const tagline = await textOverlay({
+      text: "ENABLING INCLUSIVE POSSIBILITIES",
+      color: "#d9cceb",
+      fontSize: 27,
+      align: "center",
+      x: cx,
+      y: 300,
+    });
+    const layers = [wordmark, tagline].filter(Boolean) as Layer[];
+    const x3 = await sharp(Buffer.from(svg)).composite(layers).png().toBuffer();
+    return { strip: await bannerStripSet(x3), bgHex: PA_DEEP };
+  }
+
+  if (preset === "perspective") {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${BANNER_W}" height="${BANNER_H}">
+<defs>
+ <linearGradient id="ng" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1a2046"/><stop offset="0.6" stop-color="#0f1330"/><stop offset="1" stop-color="#0a0d22"/></linearGradient>
+ <radialGradient id="glow" cx="0.8" cy="0.2" r="0.5"><stop offset="0" stop-color="#3a4684" stop-opacity="0.5"/><stop offset="1" stop-color="#3a4684" stop-opacity="0"/></radialGradient>
+ <linearGradient id="strip" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${LIME}"/><stop offset="0.5" stop-color="#5aa0e0"/><stop offset="1" stop-color="${ORANGE}"/></linearGradient>
+</defs>
+<rect width="${BANNER_W}" height="${BANNER_H}" fill="url(#ng)"/>
+<rect width="${BANNER_W}" height="${BANNER_H}" fill="url(#glow)"/>
+<rect x="${cx - 100}" y="248" width="200" height="8" rx="4" fill="url(#strip)"/>
+</svg>`;
+    const line1 = await textOverlay({
+      text: "PERSPECTIVE",
+      color: "#ffffff",
+      fontSize: 66,
+      bold: true,
+      align: "center",
+      x: cx,
+      y: 104,
+    });
+    const line2 = await textOverlay({
+      text: "STUDIO",
+      color: "#ffffff",
+      fontSize: 66,
+      bold: true,
+      align: "center",
+      x: cx,
+      y: 190,
+    });
+    const layers = [line1, line2].filter(Boolean) as Layer[];
+    const x3 = await sharp(Buffer.from(svg)).composite(layers).png().toBuffer();
+    return { strip: await bannerStripSet(x3), bgHex: NAVY };
+  }
+
+  return null;
+}
