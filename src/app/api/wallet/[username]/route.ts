@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser, isPro } from "@/lib/auth";
 import { appUrl } from "@/lib/constants";
 import { isWalletConfigured, buildWalletPass, type WalletStrip } from "@/lib/wallet/pass";
 import {
@@ -45,7 +45,7 @@ export async function GET(
   const { username } = await params;
   const profile = await prisma.profile.findUnique({
     where: { username },
-    include: { user: { select: { id: true, name: true, email: true } } },
+    include: { user: { select: { id: true, name: true, email: true, plan: true } } },
   });
   if (!profile) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -118,6 +118,15 @@ export async function GET(
     console.error("wallet strip render failed", e);
   }
 
+  // Paid (Pro) users with their own brand get a white-label pass — the
+  // "Pixcards" wordmark is dropped. "Has a brand" = on a brand preset (the
+  // banner carries it) or has configured brand styling (brandHeader). There's
+  // no personal logo-image field on Profile yet, so we only drop the wordmark;
+  // swapping in a user's own logo image is a follow-up.
+  const paid = isPro(profile.user);
+  const brandLogo: Buffer | null = null;
+  const whiteLabel = paid && (onPreset || Boolean(profile.brandHeader));
+
   try {
     const buffer = await buildWalletPass({
       serial: profile.id,
@@ -131,6 +140,8 @@ export async function GET(
       thumbnail: await loadThumbnail(profile.avatarUrl),
       strip,
       backgroundHex,
+      brandLogo,
+      whiteLabel,
     });
 
     return new NextResponse(new Uint8Array(buffer), {

@@ -86,6 +86,10 @@ export type WalletPassInput = {
   strip?: WalletStrip | null;
   /** Brand background colour (hex) — the card's, when a strip is supplied. */
   backgroundHex?: string | null;
+  /** The user's own logo (paid white-label) — replaces the Pixcards logo. */
+  brandLogo?: Buffer | null;
+  /** Paid AND has a logo → drop the "Pixcards" wordmark for a white-label pass. */
+  whiteLabel?: boolean;
 };
 
 /** Build a signed .pkpass buffer for a profile. Throws if not configured. */
@@ -98,14 +102,10 @@ export async function buildWalletPass(input: WalletPassInput): Promise<Buffer> {
   const icon = Buffer.from(ICON_PNG_BASE64, "base64");
   const logo = Buffer.from(LOGO_PNG_BASE64, "base64");
 
-  const secondaryFields = [
-    ...(input.jobTitle
-      ? [{ key: "role", label: "ROLE", value: input.jobTitle }]
-      : []),
-    ...(input.company
-      ? [{ key: "company", label: "COMPANY", value: input.company }]
-      : []),
-  ];
+  // Front is deliberately minimal — brand banner + name only. Role, company
+  // and the scannable QR were removed for a slicker card; contact details live
+  // on the back of the pass.
+  const nameFields = [{ key: "name", label: "", value: input.name }];
 
   const backFields = [
     { key: "profile", label: "Profile", value: input.profileUrl },
@@ -128,21 +128,21 @@ export async function buildWalletPass(input: WalletPassInput): Promise<Buffer> {
     ? hexToRgb(input.backgroundHex)
     : hexToRgb(t.accent);
 
-  // With a strip, the card front already carries the name/role visually, so
-  // the fields sit below it. Without one, keep the original text-forward pass.
+  // The name sits below the brand banner (storeCard) or as the headline of the
+  // plain pass (generic). No secondary fields — kept clean.
   const style = useStrip
     ? {
         storeCard: {
           headerFields: [],
-          primaryFields: [],
-          secondaryFields,
+          primaryFields: nameFields,
+          secondaryFields: [],
           backFields,
         },
       }
     : {
         generic: {
-          primaryFields: [{ key: "name", label: "", value: input.name }],
-          secondaryFields,
+          primaryFields: nameFields,
+          secondaryFields: [],
           backFields,
         },
       };
@@ -151,22 +151,17 @@ export async function buildWalletPass(input: WalletPassInput): Promise<Buffer> {
     formatVersion: 1,
     passTypeIdentifier: env("APPLE_PASS_TYPE_ID"),
     teamIdentifier: env("APPLE_TEAM_ID"),
-    organizationName: "Pixcards",
-    description: `${input.name} — Pixcards digital card`,
+    // Paid + logo → white-label: drop the "Pixcards" org/logo text.
+    organizationName: input.whiteLabel && input.company ? input.company : "Pixcards",
+    description: `${input.name} — digital business card`,
     serialNumber: input.serial,
-    logoText: "Pixcards",
+    ...(input.whiteLabel ? {} : { logoText: "Pixcards" }),
     foregroundColor: "rgb(255, 255, 255)",
     // Apple Wallet only accepts #hex or rgb() — rgba() fails validation.
     labelColor: "rgb(225, 225, 235)",
     backgroundColor: bg,
-    barcodes: [
-      {
-        format: "PKBarcodeFormatQR",
-        message: input.profileUrl,
-        messageEncoding: "iso-8859-1",
-        altText: input.profileUrl.replace(/^https?:\/\//, ""),
-      },
-    ],
+    // No barcode — the QR was removed for a cleaner face; the profile link
+    // lives on the back and sharing is via tap/NFC or the shared link.
     ...style,
   };
 
@@ -174,9 +169,18 @@ export async function buildWalletPass(input: WalletPassInput): Promise<Buffer> {
     "pass.json": Buffer.from(JSON.stringify(passJson)),
     "icon.png": icon,
     "icon@2x.png": icon,
-    "logo.png": logo,
-    "logo@2x.png": logo,
   };
+  // Logo: the user's own logo when supplied (white-label); otherwise the
+  // Pixcards wordmark — unless white-label with no logo, in which case no logo.
+  const ownLogo =
+    input.brandLogo && input.brandLogo.length > 0 ? input.brandLogo : null;
+  if (ownLogo) {
+    files["logo.png"] = ownLogo;
+    files["logo@2x.png"] = ownLogo;
+  } else if (!input.whiteLabel) {
+    files["logo.png"] = logo;
+    files["logo@2x.png"] = logo;
+  }
   if (input.strip) {
     files["strip.png"] = input.strip.x1;
     files["strip@2x.png"] = input.strip.x2;
