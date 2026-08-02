@@ -131,10 +131,14 @@ export async function setTheme(themeId: string): Promise<ActionResult> {
   return { ok: true };
 }
 
-/** Size of the contact/social icon squares on the public profile. */
+/** Size of the contact/social icon squares on the public profile.
+ *  Accepts an exact pixel value (40–88, from the size slider) or a legacy
+ *  preset (sm/md/lg) so older saved profiles keep working. */
 export async function setTileSize(size: string): Promise<ActionResult> {
   const { profile } = await myProfile();
-  if (!["sm", "md", "lg"].includes(size)) {
+  const isPreset = ["sm", "md", "lg"].includes(size);
+  const isPx = /^\d+$/.test(size) && Number(size) >= 40 && Number(size) <= 88;
+  if (!isPreset && !isPx) {
     return { ok: false, error: "Unknown icon size." };
   }
   await prisma.profile.update({
@@ -145,10 +149,10 @@ export async function setTileSize(size: string): Promise<ActionResult> {
   return { ok: true };
 }
 
-/** Layout of the contact/social icons: auto | 2 | 3 | 4 | list. */
+/** Layout of the contact/social icons: auto | 2 | 3 | 4 | 5 | list. */
 export async function setTileLayout(layout: string): Promise<ActionResult> {
   const { profile } = await myProfile();
-  if (!["auto", "2", "3", "4", "list"].includes(layout)) {
+  if (!["auto", "2", "3", "4", "5", "list"].includes(layout)) {
     return { ok: false, error: "Unknown layout." };
   }
   await prisma.profile.update({

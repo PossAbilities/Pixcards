@@ -204,6 +204,15 @@ export function ProfileEditor({
     });
   }
 
+  // Current icon size as a slider value: an exact pixel number, or a legacy
+  // preset (sm/md/lg) mapped to its pixel equivalent.
+  function currentTileSizePx() {
+    const raw = form.tileSize ?? "md";
+    const preset: Record<string, number> = { sm: 44, md: 56, lg: 72 };
+    if (/^\d+$/.test(raw)) return Math.min(88, Math.max(40, parseInt(raw, 10)));
+    return preset[raw] ?? 56;
+  }
+
   function chooseAvatarSize(size: string) {
     const prev = form.avatarSize;
     set("avatarSize", size);
@@ -431,31 +440,30 @@ export function ProfileEditor({
             })}
           </div>
 
-          {/* Contact/social icon size (used by layouts with icon squares) */}
+          {/* Contact/social icon size — slider (drives the Auto + Full-width
+              layouts; the fixed grids size icons to fill their columns) */}
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <span className="text-sm font-semibold text-ink">Contact icon size</span>
-            <div className="inline-flex rounded-lg border border-outline p-0.5">
-              {([["sm", "Small"], ["md", "Medium"], ["lg", "Large"]] as const).map(([id, label]) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => chooseTileSize(id)}
-                  className={cn(
-                    "rounded-md px-3 py-1.5 text-xs font-semibold transition",
-                    (form.tileSize ?? "md") === id ? "bg-primary text-white" : "text-muted hover:text-ink",
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            <input
+              type="range"
+              min={40}
+              max={88}
+              step={2}
+              value={currentTileSizePx()}
+              onChange={(e) => set("tileSize", e.target.value)}
+              onPointerUp={(e) => chooseTileSize((e.target as HTMLInputElement).value)}
+              onKeyUp={(e) => chooseTileSize((e.target as HTMLInputElement).value)}
+              className="h-2 w-44 cursor-pointer accent-primary"
+              aria-label="Contact icon size"
+            />
+            <span className="w-12 text-xs font-semibold tabular-nums text-muted">{currentTileSizePx()}px</span>
           </div>
 
           {/* Contact icon layout — columns across, or a full-width list */}
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <span className="text-sm font-semibold text-ink">Contact layout</span>
             <div className="inline-flex flex-wrap rounded-lg border border-outline p-0.5">
-              {([["auto", "Auto"], ["2", "2"], ["3", "3"], ["4", "4"], ["list", "Full width"]] as const).map(([id, label]) => (
+              {([["auto", "Auto"], ["2", "2"], ["3", "3"], ["4", "4"], ["5", "5"], ["list", "Full width"]] as const).map(([id, label]) => (
                 <button
                   key={id}
                   type="button"

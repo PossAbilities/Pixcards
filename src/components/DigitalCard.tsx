@@ -413,8 +413,14 @@ export function DigitalCard({
     const inkOnWhite = readableInk("#ffffff");
     const strip = `linear-gradient(90deg, ${panel} 0%, #5aa0e0 50%, ${accent} 100%)`;
     // User-selectable icon-square + photo sizes (Profile → Card layout).
-    const TILE = { sm: { px: 44, r: 12, icon: 20 }, md: { px: 56, r: 16, icon: 26 }, lg: { px: 72, r: 20, icon: 34 } } as const;
-    const tile = TILE[(data.tileSize as keyof typeof TILE) ?? "md"] ?? TILE.md;
+    // Icon size is an exact pixel value (from the size slider); older profiles
+    // may still hold a preset (sm/md/lg). Radius + glyph scale proportionally.
+    const TILE_PRESET_PX = { sm: 44, md: 56, lg: 72 } as const;
+    const rawTileSize = data.tileSize ?? "md";
+    const tilePx = /^\d+$/.test(rawTileSize)
+      ? Math.min(96, Math.max(36, parseInt(rawTileSize, 10)))
+      : TILE_PRESET_PX[rawTileSize as keyof typeof TILE_PRESET_PX] ?? TILE_PRESET_PX.md;
+    const tile = { px: tilePx, r: Math.round(tilePx * 0.28), icon: Math.round(tilePx * 0.47) };
     const AVATAR = { sm: 48, md: 60, lg: 84 } as const;
     const avatarPx = AVATAR[(data.avatarSize as keyof typeof AVATAR) ?? "md"] ?? AVATAR.md;
     const hasTiles = Boolean(data.email || data.phone || data.links.length > 0);
@@ -484,7 +490,7 @@ export function DigitalCard({
         : interactive
           ? <a key={item.key} href={item.href} className={cls} style={style} aria-label={item.label}>{children}</a>
           : <div key={item.key} className={cls} style={style}>{children}</div>;
-    const gridGlyph: Record<string, number> = { "2": 40, "3": 32, "4": 26 };
+    const gridGlyph: Record<string, number> = { "2": 40, "3": 32, "4": 26, "5": 20 };
     // Rounded-square hero photo in a slim brand-gradient ring — matches the
     // rounded-square contact tiles and ties the brand colours together
     // (teal→magenta for PossAbilities, lime→orange for Perspective).
