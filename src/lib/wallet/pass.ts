@@ -130,12 +130,16 @@ export async function buildWalletPass(input: WalletPassInput): Promise<Buffer> {
 
   // The name sits below the brand banner (storeCard) or as the headline of the
   // plain pass (generic). No secondary fields — kept clean.
+  // storeCard draws primaryFields OVER the strip image, so the name must NOT be
+  // a primary field (it would overlay the brand banner). Put it below the strip
+  // as a secondary field. The plain generic pass has no strip, so name stays
+  // the headline there.
   const style = useStrip
     ? {
         storeCard: {
           headerFields: [],
-          primaryFields: nameFields,
-          secondaryFields: [],
+          primaryFields: [],
+          secondaryFields: nameFields,
           backFields,
         },
       }
