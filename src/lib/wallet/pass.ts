@@ -164,8 +164,16 @@ export async function buildWalletPass(input: WalletPassInput): Promise<Buffer> {
     // Apple Wallet only accepts #hex or rgb() — rgba() fails validation.
     labelColor: "rgb(225, 225, 235)",
     backgroundColor: bg,
-    // No barcode — the QR was removed for a cleaner face; the profile link
-    // lives on the back and sharing is via tap/NFC or the shared link.
+    // Scannable QR to the profile. Apple renders this in its own white panel
+    // (its colour can't be changed). No altText → no URL caption under it, for
+    // a slightly cleaner look.
+    barcodes: [
+      {
+        format: "PKBarcodeFormatQR",
+        message: input.profileUrl,
+        messageEncoding: "iso-8859-1",
+      },
+    ],
     ...style,
   };
 
