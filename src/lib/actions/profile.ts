@@ -145,6 +145,20 @@ export async function setTileSize(size: string): Promise<ActionResult> {
   return { ok: true };
 }
 
+/** Layout of the contact/social icons: auto | 2 | 3 | 4 | list. */
+export async function setTileLayout(layout: string): Promise<ActionResult> {
+  const { profile } = await myProfile();
+  if (!["auto", "2", "3", "4", "list"].includes(layout)) {
+    return { ok: false, error: "Unknown layout." };
+  }
+  await prisma.profile.update({
+    where: { id: profile.id },
+    data: { tileLayout: layout },
+  });
+  revalidatePath(`/u/${profile.username}`);
+  return { ok: true };
+}
+
 /** Size of the profile photo on the public page. */
 export async function setAvatarSize(size: string): Promise<ActionResult> {
   const { profile } = await myProfile();

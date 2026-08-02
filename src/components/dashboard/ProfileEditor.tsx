@@ -40,6 +40,7 @@ import {
   setTemplate,
   setTileSize,
   setAvatarSize,
+  setTileLayout,
   reorderTiles,
   updateImages,
   updateLink,
@@ -68,6 +69,7 @@ type ProfileState = {
   panelColor?: string | null;
   tileSize?: string | null;
   avatarSize?: string | null;
+  tileLayout?: string | null;
   tileOrder?: string[] | null;
 };
 
@@ -123,6 +125,7 @@ export function ProfileEditor({
       panelColor: form.panelColor,
       tileSize: form.tileSize,
       avatarSize: form.avatarSize,
+      tileLayout: form.tileLayout,
       tileOrder: form.tileOrder,
       links,
     }),
@@ -211,6 +214,20 @@ export function ProfileEditor({
         showToast(res.error ?? "Could not change photo size", "error");
       } else {
         showToast("Photo size updated", "success");
+      }
+    });
+  }
+
+  function chooseTileLayout(layout: string) {
+    const prev = form.tileLayout;
+    set("tileLayout", layout);
+    startTransition(async () => {
+      const res = await setTileLayout(layout);
+      if (!res.ok) {
+        set("tileLayout", prev);
+        showToast(res.error ?? "Could not change layout", "error");
+      } else {
+        showToast("Layout updated", "success");
       }
     });
   }
@@ -426,6 +443,26 @@ export function ProfileEditor({
                   className={cn(
                     "rounded-md px-3 py-1.5 text-xs font-semibold transition",
                     (form.tileSize ?? "md") === id ? "bg-primary text-white" : "text-muted hover:text-ink",
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Contact icon layout — columns across, or a full-width list */}
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <span className="text-sm font-semibold text-ink">Contact layout</span>
+            <div className="inline-flex flex-wrap rounded-lg border border-outline p-0.5">
+              {([["auto", "Auto"], ["2", "2"], ["3", "3"], ["4", "4"], ["list", "Full width"]] as const).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => chooseTileLayout(id)}
+                  className={cn(
+                    "rounded-md px-3 py-1.5 text-xs font-semibold transition",
+                    (form.tileLayout ?? "auto") === id ? "bg-primary text-white" : "text-muted hover:text-ink",
                   )}
                 >
                   {label}

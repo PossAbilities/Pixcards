@@ -2,7 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { appUrl } from "@/lib/constants";
 import { parseTemplate, hasTemplate, type CardTemplateSpec, type MergeData } from "@/lib/card-template";
-import { presetSpec } from "@/lib/preset-cards";
+import { presetSpec, CARD_PRESETS } from "@/lib/preset-cards";
 
 export type MyCard = {
   spec: CardTemplateSpec;
@@ -33,7 +33,19 @@ export async function loadMyCard(userId: string): Promise<MyCard | null> {
     location: profile.location || "",
   };
 
+  // A card still on a built-in preset (not "custom") always renders from the
+  // CURRENT preset template, so brand/layout fixes flow through without a
+  // manual "reset" — the saved snapshot is only authoritative once the user
+  // has actually customised it in the designer (which sets cardPreset
+  // "custom").
+  const onPreset =
+    profile.cardPreset != null &&
+    (CARD_PRESETS as readonly string[]).includes(profile.cardPreset);
   const stored = parseTemplate(profile.cardDesign);
-  const spec = hasTemplate(stored) ? stored! : await presetSpec(profile.cardPreset);
+  const spec = onPreset
+    ? await presetSpec(profile.cardPreset)
+    : hasTemplate(stored)
+      ? stored!
+      : await presetSpec(profile.cardPreset);
   return { spec, merge, profileUrl };
 }

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Icon } from "./Icon";
-import { BrandTile } from "./BrandIcon";
+import { BrandTile, BrandGlyph, brandColor } from "./BrandIcon";
 import { theme as getTheme } from "@/lib/constants";
 import { buildVCard, initials, cn, orderByTokens } from "@/lib/utils";
 
@@ -66,6 +66,8 @@ export type CardData = {
   tileSize?: string | null;
   /** Size of the profile photo: sm | md | lg */
   avatarSize?: string | null;
+  /** Layout of the icon squares: auto | 2 | 3 | 4 | list */
+  tileLayout?: string | null;
   /** Drag & drop order of the icon squares ("email", "phone", link ids). */
   tileOrder?: string[] | null;
   links: CardLink[];
@@ -415,26 +417,74 @@ export function DigitalCard({
     const tile = TILE[(data.tileSize as keyof typeof TILE) ?? "md"] ?? TILE.md;
     const AVATAR = { sm: 48, md: 60, lg: 84 } as const;
     const avatarPx = AVATAR[(data.avatarSize as keyof typeof AVATAR) ?? "md"] ?? AVATAR.md;
-    // Icon-only square action tile (email/phone) — same visual weight as the
-    // social BrandTiles beside it.
-    const actionTile = (icon: string, href: string, label: string) => {
-      const inner = (
-        <span
-          className="grid place-items-center"
-          style={{ width: tile.px, height: tile.px, borderRadius: tile.r, background: accent, color: "#fff", boxShadow: "0 6px 16px -8px rgba(0,0,0,0.35)" }}
-        >
-          <Icon name={icon} style={{ fontSize: tile.icon }} />
-        </span>
-      );
-      return interactive ? (
-        <a key={icon} href={href} aria-label={label} className="transition hover:-translate-y-0.5 active:scale-95">
-          {inner}
-        </a>
-      ) : (
-        <div key={icon}>{inner}</div>
-      );
-    };
     const hasTiles = Boolean(data.email || data.phone || data.links.length > 0);
+    // Icon layout: auto (wrap), a fixed 2/3/4-across grid, or full-width list.
+    const layout = data.tileLayout ?? "auto";
+    const shadow = "0 6px 16px -8px rgba(0,0,0,0.35)";
+
+    // One descriptor per contact/social icon, so the same set renders as a
+    // fixed-size square (auto), a column-filling square (grid) or a row (list).
+    type TileItem = {
+      key: string;
+      label: string;
+      sub?: string;
+      href: string;
+      link?: CardLink;
+      color: string;
+      /** Coloured square at a given pixel size (used by auto + list). */
+      squarePx: (px: number, radius: number, iconPx: number) => React.ReactNode;
+      /** Coloured square that fills its container (used by the grid). */
+      squareFill: (iconPx: number) => React.ReactNode;
+    };
+    const emailPhone = (icon: string): Pick<TileItem, "color" | "squarePx" | "squareFill"> => ({
+      color: accent,
+      squarePx: (px, radius, iconPx) => (
+        <span className="grid place-items-center" style={{ width: px, height: px, borderRadius: radius, background: accent, color: "#fff", boxShadow: shadow }}>
+          <Icon name={icon} style={{ fontSize: iconPx }} />
+        </span>
+      ),
+      squareFill: (iconPx) => (
+        <span className="grid aspect-square w-full place-items-center rounded-2xl" style={{ background: accent, color: "#fff", boxShadow: shadow }}>
+          <Icon name={icon} style={{ fontSize: iconPx }} />
+        </span>
+      ),
+    });
+    const items: TileItem[] = orderByTokens(
+      [
+        ...(data.email
+          ? [{ key: "email", label: "Email", sub: data.email, href: `mailto:${data.email}`, ...emailPhone("mail") }]
+          : []),
+        ...(data.phone
+          ? [{ key: "phone", label: "Call", sub: data.phone, href: `tel:${data.phone}`, ...emailPhone("call") }]
+          : []),
+        ...data.links.map((link) => ({
+          key: link.id,
+          label: link.label,
+          sub: link.url.replace(/^https?:\/\/(www\.)?/, ""),
+          href: link.url,
+          link,
+          color: brandColor(link.platform),
+          squarePx: (px: number, radius: number) => (
+            <BrandTile platform={link.platform} size={px} radius={radius} solid />
+          ),
+          squareFill: (iconPx: number) => (
+            <span className="grid aspect-square w-full place-items-center rounded-2xl" style={{ background: brandColor(link.platform), color: "#fff", boxShadow: shadow }}>
+              <BrandGlyph platform={link.platform} size={iconPx} className="text-white" />
+            </span>
+          ),
+        })),
+      ],
+      (t) => t.key,
+      data.tileOrder,
+    );
+    // Link items record a click; email/phone use a plain anchor.
+    const wrapItem = (item: TileItem, cls: string, style: React.CSSProperties, children: React.ReactNode) =>
+      item.link
+        ? wrapLink(item.link, cls, style, children)
+        : interactive
+          ? <a key={item.key} href={item.href} className={cls} style={style} aria-label={item.label}>{children}</a>
+          : <div key={item.key} className={cls} style={style}>{children}</div>;
+    const gridGlyph: Record<string, number> = { "2": 40, "3": 32, "4": 26 };
     // Rounded-square hero photo in a slim brand-gradient ring — matches the
     // rounded-square contact tiles and ties the brand colours together
     // (teal→magenta for PossAbilities, lime→orange for Perspective).
@@ -537,32 +587,44 @@ export function DigitalCard({
             </button>
           </div>
 
-          {/* Icon squares — each square IS the action (mailto / tel / open
-              link), shown in the user's drag & drop order. */}
-          {hasTiles && (
-            <div className="relative mt-6 flex flex-wrap gap-3">
-              {orderByTokens(
-                [
-                  ...(data.email
-                    ? [{ key: "email", node: actionTile("mail", `mailto:${data.email}`, "Email") }]
-                    : []),
-                  ...(data.phone
-                    ? [{ key: "phone", node: actionTile("call", `tel:${data.phone}`, "Call") }]
-                    : []),
-                  ...data.links.map((link) => ({
-                    key: link.id,
-                    node: wrapLink(
-                      link,
-                      "transition hover:-translate-y-0.5 active:scale-95",
-                      {},
-                      /* solid: brand-coloured tiles stand out on the lime panel */
-                      <BrandTile platform={link.platform} size={tile.px} radius={tile.r} solid />,
-                    ),
-                  })),
-                ],
-                (t) => t.key,
-                data.tileOrder,
-              ).map((t) => t.node)}
+          {/* Contact/social icons — each IS the action (mailto / tel / open
+              link), in the user's drag order, laid out per their choice. */}
+          {hasTiles && layout === "list" && (
+            <div className="relative mt-6 flex flex-col gap-2.5">
+              {items.map((item) =>
+                wrapItem(
+                  item,
+                  "flex items-center gap-3 rounded-2xl px-3 py-2.5 transition active:scale-[0.99]",
+                  { background: "#ffffff", boxShadow: "0 6px 16px -10px rgba(0,0,0,0.3)" },
+                  <>
+                    <span className="shrink-0">{item.squarePx(44, 14, 22)}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold" style={{ color: inkOnWhite }}>{item.label}</span>
+                      {item.sub && <span className="block truncate text-xs" style={{ color: `${inkOnWhite}99` }}>{item.sub}</span>}
+                    </span>
+                    <Icon name="chevron_right" className="text-[20px]" style={{ color: `${inkOnWhite}66` }} />
+                  </>,
+                ),
+              )}
+            </div>
+          )}
+          {hasTiles && layout !== "list" && (
+            <div
+              className="relative mt-6"
+              style={
+                layout === "auto"
+                  ? { display: "flex", flexWrap: "wrap", gap: 12 }
+                  : { display: "grid", gridTemplateColumns: `repeat(${layout}, minmax(0, 1fr))`, gap: 12 }
+              }
+            >
+              {items.map((item) =>
+                wrapItem(
+                  item,
+                  "block transition hover:-translate-y-0.5 active:scale-95",
+                  {},
+                  layout === "auto" ? item.squarePx(tile.px, tile.r, tile.icon) : item.squareFill(gridGlyph[layout] ?? 30),
+                ),
+              )}
             </div>
           )}
 

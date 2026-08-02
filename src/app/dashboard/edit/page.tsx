@@ -84,6 +84,7 @@ export default async function EditProfilePage() {
           brandHeader: profile.brandHeader,
           panelColor: profile.panelColor,
           tileSize: profile.tileSize,
+          tileLayout: profile.tileLayout,
           avatarSize: profile.avatarSize,
           tileOrder: parseTileOrder(profile.tileOrder),
         }}

@@ -227,6 +227,8 @@ model Profile {
   tileSize    String  @default("md")
   // Size of the profile photo on the public page: sm | md | lg
   avatarSize  String  @default("md")
+  // Layout of the contact/social icons: auto | 2 | 3 | 4 | list
+  tileLayout  String  @default("auto")
   // Display order of the contact/social squares (JSON array of "email",
   // "phone" and link ids) — set by drag & drop in the profile editor.
   tileOrder   String?
