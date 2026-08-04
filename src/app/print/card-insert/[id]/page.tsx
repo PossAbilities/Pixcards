@@ -508,7 +508,10 @@ export default async function CardInsertPage({
   return (
     <div style={{ fontFamily: "var(--font-inter)" }}>
       <style dangerouslySetInnerHTML={{ __html: printCss }} />
-      <PrintToolbar backHref={`/admin/orders/${order.id}`} />
+      <PrintToolbar
+        backHref={`/admin/orders/${order.id}`}
+        pdfHref={sheets.length > 0 ? `/api/print/insert/${order.id}` : undefined}
+      />
 
       {sheets.length === 0 ? (
         <div className="mx-auto max-w-md px-4 py-16 text-center">

@@ -45,8 +45,48 @@ function fontFile(key: FontKey): { file: string; family: string } {
   return { file, family: f.family };
 }
 
-function escapePango(s: string): string {
+export function escapePango(s: string): string {
   return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/**
+ * Render a text block to a transparent PNG via sharp's Pango engine and return
+ * it with its pixel size, for compositing at a known top-left. `width` (px)
+ * enables wrapping; `markup` (already-escaped Pango) overrides `text`.
+ */
+export async function renderTextPng(opts: {
+  text?: string;
+  markup?: string;
+  fontSize: number; // px
+  color: string;
+  font?: FontKey;
+  bold?: boolean;
+  width?: number; // px — wrap width
+  align?: "left" | "center" | "right";
+  letterSpacing?: number; // px
+}): Promise<{ buf: Buffer; width: number; height: number }> {
+  const { file, family } = fontFile(opts.font ?? "sans");
+  const weight = opts.bold ? ' weight="bold"' : "";
+  // Pango letter_spacing is in 1024ths of a point; ~1px ≈ 0.75pt at 96dpi.
+  const ls = opts.letterSpacing
+    ? ` letter_spacing="${Math.round(opts.letterSpacing * 0.75 * 1024)}"`
+    : "";
+  const inner = opts.markup ?? escapePango(opts.text ?? "");
+  const markup = `<span foreground="${opts.color}"${weight}${ls}>${inner}</span>`;
+  const img = sharp({
+    text: {
+      text: markup,
+      font: `${family} ${Math.round(opts.fontSize)}`,
+      fontfile: file,
+      rgba: true,
+      dpi: 72,
+      align: opts.align ?? "left",
+      ...(opts.width ? { width: Math.round(opts.width) } : {}),
+    },
+  }).png();
+  const buf = await img.toBuffer();
+  const m = await sharp(buf).metadata();
+  return { buf, width: m.width ?? 0, height: m.height ?? 0 };
 }
 
 const cache: Partial<Record<FontKey, opentype.Font>> = {};
