@@ -1176,6 +1176,8 @@ function PreviewActions({
   accent: string;
 }) {
   const [copied, setCopied] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
+  const qrSrc = `/api/qr?data=${encodeURIComponent(shareUrl)}&color=${encodeURIComponent(accent)}`;
 
   async function copy() {
     try {
@@ -1187,10 +1189,23 @@ function PreviewActions({
     }
   }
 
+  // Native share sheet (AirDrop / Messages / WhatsApp…) — the quickest way to
+  // hand your card to someone phone-to-phone. Falls back to copying the link.
+  async function shareNative() {
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      try {
+        await navigator.share({ title: "My Pixcards card", url: shareUrl });
+      } catch {
+        /* user cancelled the share sheet */
+      }
+      return;
+    }
+    void copy();
+  }
+
   async function downloadQr() {
-    const url = `/api/qr?data=${encodeURIComponent(shareUrl)}&color=${encodeURIComponent(accent)}`;
     try {
-      const res = await fetch(url);
+      const res = await fetch(qrSrc);
       const svg = await res.text();
       const blob = new Blob([svg], { type: "image/svg+xml" });
       const href = URL.createObjectURL(blob);
@@ -1208,20 +1223,77 @@ function PreviewActions({
     <div className="w-full flex flex-col gap-2">
       <button
         type="button"
-        onClick={downloadQr}
+        onClick={shareNative}
         className={buttonClass("dark", "md", "w-full")}
       >
-        <Icon name="qr_code_2" className="text-[18px]" />
-        Download QR Code
+        <Icon name="ios_share" className="text-[18px]" />
+        Share card
       </button>
-      <button
-        type="button"
-        onClick={copy}
-        className={buttonClass("outline", "md", "w-full")}
-      >
-        <Icon name={copied ? "check" : "content_copy"} className="text-[18px]" />
-        {copied ? "Copied!" : "Copy Profile Link"}
-      </button>
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => setQrOpen(true)}
+          className={buttonClass("outline", "md", "w-full")}
+        >
+          <Icon name="qr_code_2" className="text-[18px]" />
+          Show QR
+        </button>
+        <button
+          type="button"
+          onClick={copy}
+          className={buttonClass("outline", "md", "w-full")}
+        >
+          <Icon name={copied ? "check" : "content_copy"} className="text-[18px]" />
+          {copied ? "Copied!" : "Copy link"}
+        </button>
+      </div>
+
+      {qrOpen && (
+        <div
+          className="fixed inset-0 z-[100] grid place-items-center bg-black/70 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Your QR code"
+          onClick={() => setQrOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-xs rounded-3xl bg-white p-7 text-center shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setQrOpen(false)}
+              aria-label="Close"
+              className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+            >
+              <Icon name="close" className="text-[22px]" />
+            </button>
+            <p className="mt-1 text-sm font-semibold text-slate-900">
+              Scan to open your card
+            </p>
+            <div className="mx-auto mt-4 w-fit rounded-2xl bg-white p-3 ring-1 ring-slate-200">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={qrSrc}
+                alt="QR code to your card"
+                width={240}
+                height={240}
+                className="h-[240px] w-[240px]"
+              />
+            </div>
+            <p className="mt-3 break-all text-xs font-medium text-slate-400">
+              {shareUrl}
+            </p>
+            <button
+              type="button"
+              onClick={downloadQr}
+              className="mt-4 text-xs font-semibold text-slate-500 underline"
+            >
+              Download QR
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
