@@ -301,14 +301,242 @@ export async function defaultPossabilitiesSpec(): Promise<CardTemplateSpec> {
   };
 }
 
+/* ========================================================================== *
+ *  PossAbilities official brand set — three selectable designs.
+ *  Authoritative palette from the brand's own card artwork:
+ *    purple #48065a · magenta #ec008c · teal #66cccc · light tint #f4eef6.
+ *  A · Colour Bar   — white, brand colour-bar motif. Clean, formal.
+ *  B · Purple Wave  — purple with a sweeping teal wave + pink rim.
+ *  C · Big Pink     — white with an oversized magenta tap symbol.
+ *  Each is a full front+back template with editable text + {{merge}} fields.
+ * ========================================================================== */
+
+const B_PURPLE = "#48065a";
+const B_MAGENTA = "#ec008c";
+const B_TEAL = "#66cccc";
+
+async function toPng(svg: string): Promise<string> {
+  const png = await sharp(Buffer.from(svg)).png().toBuffer();
+  return `data:image/png;base64,${png.toString("base64")}`;
+}
+
+/** The three-arc NFC "tap" glyph as SVG markup, placed at (xBase,yBase) with a
+ *  given on-card pixel size. Opens to the right by default; set `flip` to mirror
+ *  it (opening left). strokeW is in the 24-unit glyph space. */
+function arcsMarkup(
+  xBase: number,
+  yBase: number,
+  sizeBase: number,
+  color: string,
+  strokeW = 2.4,
+  flip = false,
+): string {
+  const s = sizeBase / 24;
+  const tx = flip ? u(xBase + sizeBase) : u(xBase);
+  const sx = flip ? -u(s) : u(s);
+  return `<g transform="translate(${tx} ${u(yBase)}) scale(${sx} ${u(s)})"><path d="M6 8.5a6.5 6.5 0 0 1 0 7M10 6a10 10 0 0 1 0 12M14 3.5a13.5 13.5 0 0 1 0 17" fill="none" stroke="${color}" stroke-width="${strokeW}" stroke-linecap="round"/></g>`;
+}
+
+/** A two-tone "PossAbilities" wordmark element (editable), any alignment. */
+function wordmarkEl(opts: {
+  x: number;
+  y: number;
+  w: number;
+  size: number;
+  possColor: string;
+  abilColor: string;
+  align: "left" | "center" | "right";
+}): TemplateElement {
+  return {
+    id: eid(),
+    kind: "text",
+    x: opts.x,
+    y: opts.y,
+    w: opts.w,
+    h: 0.08,
+    text: "PossAbilities",
+    richText: `<span foreground="${opts.possColor}">Poss</span><span foreground="${opts.abilColor}">Abilities</span>`,
+    color: opts.possColor,
+    fontSize: opts.size,
+    fontWeight: 800,
+    align: opts.align,
+  };
+}
+
+/* --------------------------------- A · Colour Bar ------------------------- */
+
+async function cardAFrontChrome(): Promise<string> {
+  const bh = 30;
+  const y0 = BASE_H - bh * 3;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
+<rect width="${W}" height="${H}" fill="#ffffff"/>
+<rect x="0" y="${u(y0)}" width="${W}" height="${u(bh)}" fill="${B_TEAL}"/>
+<rect x="0" y="${u(y0 + bh)}" width="${W}" height="${u(bh)}" fill="${B_PURPLE}"/>
+<rect x="0" y="${u(y0 + bh * 2)}" width="${W}" height="${u(bh)}" fill="${B_MAGENTA}"/>
+${arcsMarkup(892, 66, 60, B_TEAL)}
+</svg>`;
+  return toPng(svg);
+}
+
+async function cardABackChrome(): Promise<string> {
+  const bh = 30;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
+<rect width="${W}" height="${H}" fill="${B_PURPLE}"/>
+<rect x="0" y="0" width="${W}" height="${u(bh)}" fill="${B_TEAL}"/>
+<rect x="0" y="${u(bh)}" width="${W}" height="${u(bh)}" fill="${B_MAGENTA}"/>
+<rect x="${u(726)}" y="${u(150)}" width="${u(216)}" height="${u(216)}" rx="${u(16)}" fill="#ffffff"/>
+${arcsMarkup(70, 496, 54, B_TEAL)}
+</svg>`;
+  return toPng(svg);
+}
+
+export async function cardAColourBarSpec(): Promise<CardTemplateSpec> {
+  const [front, back] = await Promise.all([cardAFrontChrome(), cardABackChrome()]);
+  return {
+    front: {
+      bg: `url("${front}")`,
+      elements: [
+        wordmarkEl({ x: 0.063, y: 0.13, w: 0.7, size: 46, possColor: B_MAGENTA, abilColor: B_PURPLE, align: "left" }),
+        { id: eid(), kind: "text", x: 0.064, y: 0.3, w: 0.6, h: 0.05, text: "Live The Life You Choose", color: B_PURPLE, fontSize: 20, fontWeight: 700, align: "left" },
+      ],
+    },
+    back: {
+      bg: `url("${back}")`,
+      elements: [
+        { id: eid(), kind: "text", x: 0.063, y: 0.3, w: 0.62, h: 0.12, text: "{{name}}", color: "#ffffff", fontSize: 48, fontWeight: 800, align: "left" },
+        { id: eid(), kind: "text", x: 0.064, y: 0.44, w: 0.62, h: 0.07, text: "{{title}}", color: B_TEAL, fontSize: 24, fontWeight: 700, align: "left" },
+        { id: eid(), kind: "text", x: 0.16, y: 0.79, w: 0.5, h: 0.06, text: "Tap to connect", color: "#ffffff", fontSize: 24, fontWeight: 800, align: "left" },
+        { id: eid(), kind: "text", x: 0.16, y: 0.86, w: 0.5, h: 0.05, text: "possabilities.org.uk", color: "#d9c3e6", fontSize: 17, fontWeight: 500, align: "left" },
+        wordmarkEl({ x: 0.52, y: 0.88, w: 0.42, size: 26, possColor: B_TEAL, abilColor: "#ffffff", align: "right" }),
+        { id: eid(), kind: "qr", x: 0.734, y: 0.264, w: 0.178, h: 0.283 },
+      ],
+    },
+  };
+}
+
+/* --------------------------------- B · Purple Wave ------------------------ */
+
+async function cardBFrontChrome(): Promise<string> {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
+<rect width="${W}" height="${H}" fill="${B_PURPLE}"/>
+<svg x="0" y="0" width="${W}" height="${H}" viewBox="0 0 428 270" preserveAspectRatio="none">
+ <path d="M0 161 C120 111 230 225 428 143 L428 270 L0 270 Z" fill="${B_MAGENTA}"/>
+ <path d="M0 168 C120 118 230 232 428 150 L428 270 L0 270 Z" fill="${B_TEAL}"/>
+</svg>
+${arcsMarkup(892, 66, 60, "#ffffff")}
+</svg>`;
+  return toPng(svg);
+}
+
+async function cardBBackChrome(): Promise<string> {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
+<rect width="${W}" height="${H}" fill="#ffffff"/>
+<svg x="0" y="0" width="${W}" height="${H}" viewBox="0 0 428 270" preserveAspectRatio="none">
+ <path d="M0 0 L428 0 L428 96 C300 150 150 42 0 100 Z" fill="${B_TEAL}"/>
+ <path d="M0 0 L428 0 L428 78 C300 132 150 24 0 82 Z" fill="${B_PURPLE}"/>
+</svg>
+</svg>`;
+  return toPng(svg);
+}
+
+export async function cardBPurpleWaveSpec(): Promise<CardTemplateSpec> {
+  const [front, back] = await Promise.all([cardBFrontChrome(), cardBBackChrome()]);
+  return {
+    front: {
+      bg: `url("${front}")`,
+      elements: [
+        wordmarkEl({ x: 0.063, y: 0.13, w: 0.7, size: 46, possColor: B_TEAL, abilColor: "#ffffff", align: "left" }),
+        { id: eid(), kind: "text", x: 0.064, y: 0.3, w: 0.6, h: 0.05, text: "Live The Life You Choose", color: "#ffffff", fontSize: 20, fontWeight: 700, align: "left" },
+      ],
+    },
+    back: {
+      bg: `url("${back}")`,
+      elements: [
+        wordmarkEl({ x: 0.5, y: 0.08, w: 0.44, size: 28, possColor: B_TEAL, abilColor: "#ffffff", align: "right" }),
+        { id: eid(), kind: "text", x: 0.063, y: 0.52, w: 0.62, h: 0.12, text: "{{name}}", color: B_PURPLE, fontSize: 46, fontWeight: 800, align: "left" },
+        { id: eid(), kind: "text", x: 0.064, y: 0.65, w: 0.62, h: 0.07, text: "{{title}}", color: B_MAGENTA, fontSize: 22, fontWeight: 700, align: "left" },
+        { id: eid(), kind: "text", x: 0.145, y: 0.84, w: 0.5, h: 0.06, text: "Tap to connect", color: B_PURPLE, fontSize: 22, fontWeight: 800, align: "left" },
+        { id: eid(), kind: "qr", x: 0.74, y: 0.58, w: 0.178, h: 0.283 },
+      ],
+    },
+  };
+}
+
+/* --------------------------------- C · Big Pink --------------------------- */
+
+/** A single bold left-facing arc stroke, centred near the right edge. */
+function bigArc(cx: number, cy: number, r: number): string {
+  const a1 = (118 * Math.PI) / 180;
+  const a2 = (242 * Math.PI) / 180;
+  const x1 = (cx + r * Math.cos(a1)).toFixed(1);
+  const y1 = (cy + r * Math.sin(a1)).toFixed(1);
+  const x2 = (cx + r * Math.cos(a2)).toFixed(1);
+  const y2 = (cy + r * Math.sin(a2)).toFixed(1);
+  return `<path d="M${u(Number(x1))} ${u(Number(y1))} A ${u(r)} ${u(r)} 0 0 1 ${u(Number(x2))} ${u(Number(y2))}" fill="none" stroke="${B_MAGENTA}" stroke-width="${u(26)}" stroke-linecap="round"/>`;
+}
+
+async function cardCFrontChrome(): Promise<string> {
+  const cx = BASE_W - 10;
+  const cy = BASE_H * 0.5;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
+<rect width="${W}" height="${H}" fill="#ffffff"/>
+${bigArc(cx, cy, 150)}
+${bigArc(cx, cy, 290)}
+${bigArc(cx, cy, 430)}
+</svg>`;
+  return toPng(svg);
+}
+
+async function cardCBackChrome(): Promise<string> {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
+<rect width="${W}" height="${H}" fill="${B_TEAL}"/>
+<rect x="${u(726)}" y="${u(96)}" width="${u(216)}" height="${u(216)}" rx="${u(16)}" fill="#ffffff"/>
+<rect x="${u(64)}" y="${u(520)}" width="${u(420)}" height="${u(72)}" rx="${u(36)}" fill="${B_PURPLE}"/>
+${arcsMarkup(92, 536, 42, "#ffffff")}
+</svg>`;
+  return toPng(svg);
+}
+
+export async function cardCBigPinkSpec(): Promise<CardTemplateSpec> {
+  const [front, back] = await Promise.all([cardCFrontChrome(), cardCBackChrome()]);
+  return {
+    front: {
+      bg: `url("${front}")`,
+      elements: [
+        wordmarkEl({ x: 0.063, y: 0.12, w: 0.6, size: 46, possColor: B_MAGENTA, abilColor: B_PURPLE, align: "left" }),
+        { id: eid(), kind: "text", x: 0.064, y: 0.5, w: 0.5, h: 0.14, text: "Live The Life You Choose", color: B_PURPLE, fontSize: 30, fontWeight: 800, align: "left" },
+      ],
+    },
+    back: {
+      bg: `url("${back}")`,
+      elements: [
+        { id: eid(), kind: "text", x: 0.063, y: 0.22, w: 0.6, h: 0.14, text: "{{name}}", color: B_PURPLE, fontSize: 52, fontWeight: 800, align: "left" },
+        { id: eid(), kind: "text", x: 0.064, y: 0.5, w: 0.6, h: 0.07, text: "{{title}}", color: B_PURPLE, fontSize: 24, fontWeight: 700, align: "left" },
+        { id: eid(), kind: "text", x: 0.2, y: 0.8, w: 0.3, h: 0.06, text: "Tap to connect", color: "#ffffff", fontSize: 22, fontWeight: 800, align: "left" },
+        wordmarkEl({ x: 0.52, y: 0.82, w: 0.42, size: 28, possColor: B_PURPLE, abilColor: B_PURPLE, align: "right" }),
+        { id: eid(), kind: "qr", x: 0.734, y: 0.17, w: 0.178, h: 0.283 },
+      ],
+    },
+  };
+}
+
 /** Build a preset's starting card spec by id (defaults to Perspective). */
 export async function presetSpec(preset?: string | null): Promise<CardTemplateSpec> {
   if (preset === "possabilities") return defaultPossabilitiesSpec();
+  if (preset === "pa-colourbar") return cardAColourBarSpec();
+  if (preset === "pa-wave") return cardBPurpleWaveSpec();
+  if (preset === "pa-bigpink") return cardCBigPinkSpec();
   return defaultPerspectiveSpec();
 }
 
 /** Registry of built-in card starting templates (extensible). */
-export const CARD_PRESETS = ["perspective", "possabilities"] as const;
+export const CARD_PRESETS = [
+  "perspective",
+  "possabilities",
+  "pa-colourbar",
+  "pa-wave",
+  "pa-bigpink",
+] as const;
 export type CardPreset = (typeof CARD_PRESETS)[number];
 
 /* --------------------------- Apple Wallet banner -------------------------- */
