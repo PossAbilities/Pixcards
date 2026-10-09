@@ -12,6 +12,8 @@ import {
 import { slugify } from "@/lib/utils";
 import { sendWelcomeEmail } from "@/lib/email/dispatch";
 import { recordEvent } from "@/lib/events";
+import { domainDesignsForEmail, PRESET_PROFILE_THEME } from "@/lib/card-preset-meta";
+import { presetSpec } from "@/lib/preset-cards";
 
 const registerSchema = z.object({
   name: z.string().min(2, "Please enter your name").max(60),
@@ -96,6 +98,29 @@ export async function registerAction(
       },
     });
     userId = user.id;
+
+    // If the registrant's email domain offers branded designs and they picked
+    // one, seed it: brand theme + an editable copy of that card design.
+    const chosenDesign = (formData.get("design") as string | null)?.trim() || null;
+    const domainDesigns = domainDesignsForEmail(email);
+    if (chosenDesign && domainDesigns?.options.includes(chosenDesign)) {
+      const t = PRESET_PROFILE_THEME[chosenDesign];
+      const data: Record<string, unknown> = { cardPreset: chosenDesign };
+      if (t) {
+        data.theme = t.theme;
+        data.template = t.template;
+        data.brandHeader = t.brandHeader;
+        data.accentColor = t.accentColor;
+        data.panelColor = t.panelColor;
+      }
+      try {
+        data.cardDesign = JSON.stringify(await presetSpec(chosenDesign));
+        await prisma.profile.update({ where: { userId }, data });
+      } catch (e) {
+        // Non-fatal: the account is created; they can pick a design later.
+        console.error("registerAction: could not seed chosen design", e);
+      }
+    }
   } catch (e) {
     console.error("registerAction: database error", e);
     return {

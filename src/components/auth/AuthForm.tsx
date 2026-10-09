@@ -1,11 +1,19 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { loginAction, registerAction, type AuthState } from "@/app/(auth)/actions";
 import { buttonClass, inputClass, Label } from "@/components/ui";
 import { Icon } from "@/components/Icon";
+import { domainDesignsForEmail } from "@/lib/card-preset-meta";
+
+/** Short name + descriptor for each selectable design in the picker. */
+const DESIGN_META: Record<string, { name: string; blurb: string }> = {
+  "pa-colourbar": { name: "Colour Bar", blurb: "Clean & formal" },
+  "pa-wave": { name: "Purple Wave", blurb: "Warm & friendly" },
+  "pa-bigpink": { name: "Big Pink", blurb: "Bold & playful" },
+};
 
 function SubmitButton({ mode }: { mode: "login" | "register" }) {
   const { pending } = useFormStatus();
@@ -45,6 +53,21 @@ export function AuthForm({
   const altHref = (target: string) =>
     next ? `${target}?next=${encodeURIComponent(next)}` : target;
 
+  // When a registrant's email is on a domain with its own branded designs
+  // (e.g. @possabilities.org.uk), let them pick one as their starting card.
+  const [email, setEmail] = useState("");
+  const [design, setDesign] = useState("");
+  const domainDesigns = mode === "register" ? domainDesignsForEmail(email) : null;
+  const designOptions = domainDesigns?.options ?? [];
+  useEffect(() => {
+    if (designOptions.length === 0) {
+      if (design) setDesign("");
+    } else if (!designOptions.includes(design)) {
+      setDesign(domainDesigns?.default ?? designOptions[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [designOptions.join(",")]);
+
   return (
     <form action={formAction} className="space-y-4">
       {next && <input type="hidden" name="next" value={next} />}
@@ -80,6 +103,7 @@ export function AuthForm({
           required
           placeholder="you@company.com"
           className={inputClass}
+          onChange={(e) => setEmail(e.target.value)}
         />
       </div>
 
@@ -105,6 +129,52 @@ export function AuthForm({
           className={inputClass}
         />
       </div>
+
+      {designOptions.length > 0 && (
+        <div className="rounded-2xl border border-outline bg-surface-low/50 p-3">
+          <input type="hidden" name="design" value={design} />
+          <div className="mb-2 flex items-center gap-1.5">
+            <Icon name="palette" className="text-[18px] text-primary" />
+            <span className="text-sm font-semibold text-ink">
+              Choose your card design
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {designOptions.map((id) => {
+              const meta = DESIGN_META[id] ?? { name: id, blurb: "" };
+              const selected = design === id;
+              return (
+                <button
+                  type="button"
+                  key={id}
+                  onClick={() => setDesign(id)}
+                  aria-pressed={selected}
+                  className={
+                    "group overflow-hidden rounded-xl border-2 bg-surface text-left transition-colors " +
+                    (selected
+                      ? "border-primary ring-2 ring-primary/30"
+                      : "border-outline hover:border-primary/50")
+                  }
+                >
+                  <img
+                    src={`/api/preset-preview/${id}`}
+                    alt={`${meta.name} card`}
+                    loading="lazy"
+                    className="aspect-[1013/638] w-full object-cover"
+                  />
+                  <div className="px-2 py-1.5">
+                    <p className="truncate text-xs font-bold text-ink">{meta.name}</p>
+                    <p className="truncate text-[11px] text-muted">{meta.blurb}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-[11px] text-muted">
+            You can fine-tune or change it anytime after signing up.
+          </p>
+        </div>
+      )}
 
       <SubmitButton mode={mode} />
 
