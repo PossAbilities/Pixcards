@@ -2,7 +2,7 @@ import "server-only";
 import sharp from "sharp";
 import { PRINT_SCALE } from "@/lib/card-artwork";
 import { textOverlay } from "@/lib/text-render";
-import type { CardTemplateSpec, TemplateElement } from "@/lib/card-template";
+import type { CardTemplateSpec, SideSpec, TemplateElement } from "@/lib/card-template";
 
 // Base CR80 canvas; decorative chrome is pre-baked at PRINT_SCALE so it stays
 // crisp once it becomes the SideSpec background image.
@@ -363,6 +363,17 @@ function wordmarkEl(opts: {
   };
 }
 
+/** Render every text element of a spec in the Nunito Sans brand font. */
+function withBrandFont(spec: CardTemplateSpec): CardTemplateSpec {
+  const fix = (s: SideSpec): SideSpec => ({
+    ...s,
+    elements: s.elements.map((e) =>
+      e.kind === "text" && !e.font ? { ...e, font: "nunito" } : e,
+    ),
+  });
+  return { front: fix(spec.front), back: fix(spec.back) };
+}
+
 /* --------------------------------- A · Colour Bar ------------------------- */
 
 async function cardAFrontChrome(): Promise<string> {
@@ -523,9 +534,9 @@ export async function cardCBigPinkSpec(): Promise<CardTemplateSpec> {
 /** Build a preset's starting card spec by id (defaults to Perspective). */
 export async function presetSpec(preset?: string | null): Promise<CardTemplateSpec> {
   if (preset === "possabilities") return defaultPossabilitiesSpec();
-  if (preset === "pa-colourbar") return cardAColourBarSpec();
-  if (preset === "pa-wave") return cardBPurpleWaveSpec();
-  if (preset === "pa-bigpink") return cardCBigPinkSpec();
+  if (preset === "pa-colourbar") return withBrandFont(await cardAColourBarSpec());
+  if (preset === "pa-wave") return withBrandFont(await cardBPurpleWaveSpec());
+  if (preset === "pa-bigpink") return withBrandFont(await cardCBigPinkSpec());
   return defaultPerspectiveSpec();
 }
 

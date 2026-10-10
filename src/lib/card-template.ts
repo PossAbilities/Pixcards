@@ -22,6 +22,9 @@ export type TemplateElement = {
   color?: string;
   fontSize?: number; // px at the 638px reference height
   fontWeight?: number;
+  /** Font family key for server rendering (e.g. "nunito" for the PossAbilities
+   *  brand). Defaults to "sans". */
+  font?: string;
   align?: "left" | "center" | "right";
   // Raw Pango markup rendered instead of `text` server-side (e.g. a two-tone
   // wordmark). `text` is still the plain fallback used by the editor preview.

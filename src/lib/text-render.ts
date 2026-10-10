@@ -5,6 +5,11 @@ import * as opentype from "opentype.js";
 import { LIBERATION_SANS_B64 } from "@/lib/fonts/liberation-sans";
 import { MONTSERRAT_BOLD_B64 } from "@/lib/fonts/montserrat-bold";
 import { DM_SANS_B64 } from "@/lib/fonts/dm-sans";
+import {
+  NUNITO_SANS_400_B64,
+  NUNITO_SANS_700_B64,
+  NUNITO_SANS_900_B64,
+} from "@/lib/fonts/nunito-sans";
 
 /**
  * Server-side text rendering. Netlify's serverless runtime has no system fonts,
@@ -14,17 +19,31 @@ import { DM_SANS_B64 } from "@/lib/fonts/dm-sans";
  * fallback in case the runtime lacks Pango text support.
  */
 
-export type FontKey = "sans" | "montserrat" | "dmsans";
+export type FontKey =
+  | "sans"
+  | "montserrat"
+  | "dmsans"
+  | "nunito"
+  | "nunitob"
+  | "nunitobk";
 
 const FONTS: Record<FontKey, { b64: string; family: string; file: string }> = {
   sans: { b64: LIBERATION_SANS_B64, family: "Liberation Sans", file: "pix-sans.ttf" },
   montserrat: { b64: MONTSERRAT_BOLD_B64, family: "Montserrat", file: "pix-montserrat.ttf" },
   dmsans: { b64: DM_SANS_B64, family: "DM Sans", file: "pix-dmsans.ttf" },
+  // Nunito Sans (PossAbilities brand). Distinct family per weight so the
+  // fontfile renderer selects each face exactly (no faux-bold ambiguity).
+  nunito: { b64: NUNITO_SANS_400_B64, family: "Nunito Sans", file: "pix-nunito.ttf" },
+  nunitob: { b64: NUNITO_SANS_700_B64, family: "Nunito Sans Bold", file: "pix-nunito-b.ttf" },
+  nunitobk: { b64: NUNITO_SANS_900_B64, family: "Nunito Sans Black", file: "pix-nunito-bk.ttf" },
 };
 const B64: Record<FontKey, string> = {
   sans: FONTS.sans.b64,
   montserrat: FONTS.montserrat.b64,
   dmsans: FONTS.dmsans.b64,
+  nunito: FONTS.nunito.b64,
+  nunitob: FONTS.nunitob.b64,
+  nunitobk: FONTS.nunitobk.b64,
 };
 
 const written = new Set<FontKey>();

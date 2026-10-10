@@ -2,7 +2,7 @@ import "server-only";
 import sharp from "sharp";
 import QRCode from "qrcode";
 import { nfcMarkSvg } from "@/lib/nfc-logo";
-import { textPath, textOverlay } from "@/lib/text-render";
+import { textPath, textOverlay, type FontKey } from "@/lib/text-render";
 import {
   applyMerge,
   type CardTemplateSpec,
@@ -246,6 +246,18 @@ export async function renderTemplateSidePng(
       const color = el.color ?? "#ffffff";
       const tx = el.align === "center" ? left + w / 2 : el.align === "right" ? left + w : left;
       const ty = top + size; // baseline
+      const weight = el.fontWeight ?? 600;
+      // Resolve the font face. "nunito" selects a real Nunito Sans weight
+      // (regular/bold/black) by fontWeight — the face carries the weight, so
+      // faux-bold is disabled to avoid double-weighting.
+      let font: FontKey = "sans";
+      let bold = weight >= 700;
+      if (el.font === "nunito") {
+        font = weight >= 850 ? "nunitobk" : weight >= 650 ? "nunitob" : "nunito";
+        bold = false;
+      } else if (el.font) {
+        font = el.font as FontKey;
+      }
       const layer = await textOverlay({
         text: content,
         markup,
@@ -254,8 +266,8 @@ export async function renderTemplateSidePng(
         fontSize: size,
         color,
         align: el.align ?? "left",
-        bold: (el.fontWeight ?? 600) >= 700,
-        font: "sans",
+        bold,
+        font,
       });
       if (layer) layers.push(layer);
     } else if (el.kind === "image") {
