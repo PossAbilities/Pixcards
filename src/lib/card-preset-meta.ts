@@ -31,21 +31,21 @@ export const PRESET_PROFILE_THEME: Record<string, PresetProfileTheme> = {
   // teal #66cccc). Each digital profile is colour-coordinated with its card.
   "pa-colourbar": {
     theme: "indigo",
-    template: "brand",
+    template: "pa-colourbar",
     brandHeader: "linear-gradient(135deg,#48065a 0%,#2b1547 100%)",
     accentColor: "#ec008c",
     panelColor: "#66cccc",
   },
   "pa-wave": {
     theme: "indigo",
-    template: "brand",
+    template: "pa-wave",
     brandHeader: "linear-gradient(160deg,#48065a 0%,#48065a 55%,#66cccc 100%)",
     accentColor: "#ec008c",
     panelColor: "#66cccc",
   },
   "pa-bigpink": {
     theme: "indigo",
-    template: "brand",
+    template: "pa-bigpink",
     brandHeader: "linear-gradient(135deg,#66cccc 0%,#45b5b5 100%)",
     accentColor: "#ec008c",
     panelColor: "#66cccc",

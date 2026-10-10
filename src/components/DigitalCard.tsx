@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Icon } from "./Icon";
 import { BrandTile, BrandGlyph, brandColor } from "./BrandIcon";
+import { PossabilitiesProfile } from "./public/PossabilitiesProfile";
 import { theme as getTheme } from "@/lib/constants";
 import { buildVCard, initials, cn, orderByTokens } from "@/lib/utils";
 
@@ -399,6 +400,20 @@ export function DigitalCard({
     background: t.surface,
     color: t.ink,
   };
+
+  /* --- POSSABILITIES — the three brand designs, faithful to the printed
+         cards + landing-page mockups. ---------------------------------- */
+  if (template === "pa-colourbar" || template === "pa-wave" || template === "pa-bigpink") {
+    return (
+      <PossabilitiesProfile
+        variant={template}
+        data={data}
+        interactive={interactive}
+        onSaveContact={saveContact}
+        onLinkClick={(id) => track("LINK_CLICK", id)}
+      />
+    );
+  }
 
   /* --- BRAND — a literal echo of the printed card: navy hero, lime panel,
          gradient strip, blob cut-out, pill CTA ------------------------- */
