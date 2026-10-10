@@ -13,7 +13,11 @@ const PURPLE = "#48065a";
 const PINK = "#ec008c";
 const TEAL = "#66cccc";
 const TINT = "#f4eef6";
-const FONT = "'Nunito Sans', ui-sans-serif, system-ui, sans-serif";
+// Avenir is the brand face; Avenir Next ships on Apple devices so they render
+// it natively. Nunito Sans is the bundled free fallback everywhere else (and
+// the licensed Avenir webfont slots in ahead of it once supplied).
+const FONT =
+  "'Avenir Next','Avenir','Nunito Sans',ui-sans-serif,system-ui,sans-serif";
 
 /** Stroke-icon paths matching the brand mockups. */
 const ICON: Record<string, string> = {
