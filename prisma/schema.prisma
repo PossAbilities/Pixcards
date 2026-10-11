@@ -439,3 +439,19 @@ model DiscountRedemption {
   // the first PAID/PRO flip records a redemption).
   @@index([codeId, userId])
 }
+
+/// Standard profile details applied to everyone on an email domain (e.g.
+/// possabilities.org.uk): company, website and social links pre-filled on each
+/// person's card + saved contact. Pre-filled but editable — links are created
+/// unlocked so members can tweak or remove their own.
+model DomainDefaults {
+  id        String   @id @default(cuid())
+  domain    String   @unique
+  company   String   @default("")
+  website   String   @default("")
+  linkedin  String   @default("")
+  facebook  String   @default("")
+  instagram String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

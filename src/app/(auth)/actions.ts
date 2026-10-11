@@ -14,6 +14,11 @@ import { sendWelcomeEmail } from "@/lib/email/dispatch";
 import { recordEvent } from "@/lib/events";
 import { domainDesignsForEmail, PRESET_PROFILE_THEME } from "@/lib/card-preset-meta";
 import { presetSpec } from "@/lib/preset-cards";
+import {
+  getDomainDefaults,
+  hasDomainDefaults,
+  applyDomainDefaultsToProfile,
+} from "@/lib/domain-defaults";
 
 const registerSchema = z.object({
   name: z.string().min(2, "Please enter your name").max(60),
@@ -120,6 +125,22 @@ export async function registerAction(
         // Non-fatal: the account is created; they can pick a design later.
         console.error("registerAction: could not seed chosen design", e);
       }
+    }
+
+    // Pre-fill the domain's standard details (company + website + socials)
+    // on the new profile. Pre-filled and editable — the person can change them.
+    try {
+      const atDomain = email.slice(email.lastIndexOf("@") + 1).toLowerCase();
+      const defaults = await getDomainDefaults(atDomain);
+      if (hasDomainDefaults(defaults)) {
+        const prof = await prisma.profile.findUnique({
+          where: { userId },
+          select: { id: true },
+        });
+        if (prof) await applyDomainDefaultsToProfile(prof.id, defaults, { overwriteCompany: true });
+      }
+    } catch (e) {
+      console.error("registerAction: could not apply domain defaults", e);
     }
   } catch (e) {
     console.error("registerAction: database error", e);

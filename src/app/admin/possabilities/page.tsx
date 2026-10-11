@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/guards";
 import { DOMAIN_DESIGNS } from "@/lib/card-preset-meta";
+import { getDomainDefaults } from "@/lib/domain-defaults";
 import {
   PossabilitiesManager,
   type DomainAccount,
@@ -36,12 +37,22 @@ export default async function AdminPossabilitiesPage() {
     createdAt: u.createdAt.toISOString(),
   }));
 
+  const stored = await getDomainDefaults(DOMAIN);
+  // Suggest the known brand values when nothing is saved yet, so the editor
+  // starts ready to save rather than blank. (Not active until saved.)
+  const defaults = {
+    ...stored,
+    company: stored.company || "PossAbilities",
+    website: stored.website || "https://possabilities.org.uk",
+  };
+
   return (
     <PossabilitiesManager
       domain={DOMAIN}
       accounts={accounts}
       designDefault={DOMAIN_DESIGNS[DOMAIN]?.default ?? "pa-colourbar"}
       designOptions={DOMAIN_DESIGNS[DOMAIN]?.options ?? []}
+      defaults={defaults}
     />
   );
 }

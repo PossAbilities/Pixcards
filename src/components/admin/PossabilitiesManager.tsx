@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { Badge, Card, buttonClass } from "@/components/ui";
 import { PRESET_OPTIONS } from "@/lib/card-preset-meta";
-import { setUserCardPreset, attachPresetToDomain } from "@/lib/actions/admin";
+import {
+  setUserCardPreset,
+  attachPresetToDomain,
+  setDomainDefaults,
+  applyDomainDefaultsToAll,
+} from "@/lib/actions/admin";
+import type { DomainDefaultsData } from "@/lib/domain-defaults";
 import { colorFromString, formatDate, initials } from "@/lib/utils";
 
 export type DomainAccount = {
@@ -49,11 +55,13 @@ export function PossabilitiesManager({
   accounts,
   designDefault,
   designOptions,
+  defaults,
 }: {
   domain: string;
   accounts: DomainAccount[];
   designDefault: string;
   designOptions: string[];
+  defaults: DomainDefaultsData;
 }) {
   const router = useRouter();
   const [bulkPreset, setBulkPreset] = useState(designDefault);
@@ -61,6 +69,46 @@ export function PossabilitiesManager({
   const [bulkErr, setBulkErr] = useState<string | null>(null);
   const [rowBusy, setRowBusy] = useState<string | null>(null);
   const [pending, start] = useTransition();
+
+  // Standard-details template (company + website + socials).
+  const [std, setStd] = useState<DomainDefaultsData>(defaults);
+  const [stdMsg, setStdMsg] = useState<string | null>(null);
+  const [stdErr, setStdErr] = useState<string | null>(null);
+  const setField = (k: keyof DomainDefaultsData, v: string) =>
+    setStd((s) => ({ ...s, [k]: v }));
+
+  function saveStd() {
+    setStdMsg(null);
+    setStdErr(null);
+    start(async () => {
+      const res = await setDomainDefaults(domain, std);
+      if (res.ok) setStdMsg("Saved. New sign-ups get these automatically.");
+      else setStdErr(res.error ?? "Could not save.");
+    });
+  }
+
+  function applyStd() {
+    if (!confirm(`Add these standard details to all ${accounts.length} @${domain} accounts?\n\nExisting personal links aren't duplicated, and a person's own company isn't overwritten.`))
+      return;
+    setStdMsg(null);
+    setStdErr(null);
+    start(async () => {
+      const save = await setDomainDefaults(domain, std);
+      if (!save.ok) {
+        setStdErr(save.error ?? "Could not save.");
+        return;
+      }
+      const res = await applyDomainDefaultsToAll(domain);
+      if (res.ok) {
+        setStdMsg(`Applied to ${res.updated} account${res.updated === 1 ? "" : "s"}.`);
+        router.refresh();
+      } else {
+        setStdErr(res.error ?? "Could not apply.");
+      }
+    });
+  }
+
+  const stdInput = "w-full rounded-lg border border-outline bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary focus:ring-2 focus:ring-primary/40";
 
   // Count accounts per design, for the summary row.
   const counts = useMemo(() => {
@@ -164,6 +212,57 @@ export function PossabilitiesManager({
           Sets the brand theme and reseeds the starting card for every account on the
           domain. Accounts that have customised their own design are left untouched.
         </p>
+      </Card>
+
+      {/* Standard details template */}
+      <Card className="mb-5 p-4">
+        <div className="mb-1 flex items-center gap-2">
+          <Icon name="badge" className="text-[20px] text-primary" />
+          <span className="text-sm font-semibold text-ink">Standard card details</span>
+        </div>
+        <p className="mb-3 text-xs text-muted">
+          Pre-filled on every person&apos;s card and saved contact. Each person can still
+          edit or remove their own.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="sm:col-span-2">
+            <span className="mb-1 block text-xs font-semibold text-muted">Company</span>
+            <input className={stdInput} value={std.company} placeholder="PossAbilities" onChange={(e) => setField("company", e.target.value)} />
+          </label>
+          <label className="sm:col-span-2">
+            <span className="mb-1 block text-xs font-semibold text-muted">Website</span>
+            <input className={stdInput} value={std.website} placeholder="https://possabilities.org.uk" onChange={(e) => setField("website", e.target.value)} />
+          </label>
+          <label>
+            <span className="mb-1 block text-xs font-semibold text-muted">LinkedIn URL</span>
+            <input className={stdInput} value={std.linkedin} placeholder="https://linkedin.com/company/…" onChange={(e) => setField("linkedin", e.target.value)} />
+          </label>
+          <label>
+            <span className="mb-1 block text-xs font-semibold text-muted">Facebook URL</span>
+            <input className={stdInput} value={std.facebook} placeholder="https://facebook.com/…" onChange={(e) => setField("facebook", e.target.value)} />
+          </label>
+          <label>
+            <span className="mb-1 block text-xs font-semibold text-muted">Instagram URL</span>
+            <input className={stdInput} value={std.instagram} placeholder="https://instagram.com/…" onChange={(e) => setField("instagram", e.target.value)} />
+          </label>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <button type="button" onClick={saveStd} disabled={pending} className={buttonClass("primary", "md")}>
+            <Icon name="save" className="text-[18px]" />
+            Save template
+          </button>
+          <button type="button" onClick={applyStd} disabled={pending} className={buttonClass("outline", "md")}>
+            <Icon name="groups" className="text-[18px]" />
+            Save &amp; apply to all {accounts.length}
+          </button>
+        </div>
+        {stdMsg && (
+          <p className="mt-3 flex items-center gap-1.5 text-sm font-semibold text-emerald-600">
+            <Icon name="check_circle" className="text-[16px]" />
+            {stdMsg}
+          </p>
+        )}
+        {stdErr && <p className="mt-3 text-sm font-medium text-red-600">{stdErr}</p>}
       </Card>
 
       {/* Per-account table */}

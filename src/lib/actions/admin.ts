@@ -9,6 +9,11 @@ import { sendOrderShipped } from "@/lib/email/dispatch";
 import { recordEvent } from "@/lib/events";
 import { PRESET_PROFILE_THEME } from "@/lib/card-preset-meta";
 import { presetSpec } from "@/lib/preset-cards";
+import {
+  applyDomainDefaultsToProfile,
+  getDomainDefaults,
+  type DomainDefaultsData,
+} from "@/lib/domain-defaults";
 import type { OrderStatus, Plan, Role } from "@prisma/client";
 
 async function requireAdminUser() {
@@ -221,6 +226,71 @@ export async function attachPresetToDomain(
     return { ok: true, updated, skipped };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Could not apply the preset." };
+  }
+}
+
+/** Save a domain's standard-details template (company + website + socials). */
+export async function setDomainDefaults(
+  domain: string,
+  data: DomainDefaultsData,
+): Promise<AdminResult> {
+  try {
+    await requireAdminUser();
+    const clean = domain.trim().toLowerCase().replace(/^@+/, "");
+    if (!clean || !clean.includes(".")) {
+      return { ok: false, error: "Enter a valid email domain, e.g. possabilities.org.uk" };
+    }
+    const payload = {
+      company: data.company.trim(),
+      website: data.website.trim(),
+      linkedin: data.linkedin.trim(),
+      facebook: data.facebook.trim(),
+      instagram: data.instagram.trim(),
+    };
+    await prisma.domainDefaults.upsert({
+      where: { domain: clean },
+      create: { domain: clean, ...payload },
+      update: payload,
+    });
+    revalidatePath("/admin/possabilities");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Could not save." };
+  }
+}
+
+/**
+ * Apply a domain's standard details to every account on it: pre-fill the
+ * company and add any missing standard links. Never overwrites a person's
+ * own company or duplicates links they already have.
+ */
+export async function applyDomainDefaultsToAll(
+  domain: string,
+): Promise<AdminResult & { updated?: number }> {
+  try {
+    await requireAdminUser();
+    const clean = domain.trim().toLowerCase().replace(/^@+/, "");
+    const defaults = await getDomainDefaults(clean);
+    const users = await prisma.user.findMany({
+      where: { email: { endsWith: `@${clean}` } },
+      select: { profile: { select: { id: true } } },
+    });
+    let updated = 0;
+    for (const u of users) {
+      if (!u.profile) continue;
+      await applyDomainDefaultsToProfile(u.profile.id, defaults);
+      updated++;
+    }
+    await recordEvent({
+      type: "SECURITY",
+      title: `Standard details applied to @${clean} (${updated} account${updated === 1 ? "" : "s"})`,
+      meta: { domain: clean, updated },
+    });
+    revalidatePath("/admin/possabilities");
+    revalidatePath("/dashboard");
+    return { ok: true, updated };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Could not apply." };
   }
 }
 
