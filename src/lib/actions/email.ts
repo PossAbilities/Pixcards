@@ -2,7 +2,7 @@
 
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { appUrl } from "@/lib/constants";
+import { unsubscribeUrl as unsubscribeLink } from "@/lib/unsubscribe";
 import { sendEmail } from "@/lib/email/send";
 import { marketingEmail } from "@/lib/email/templates";
 
@@ -53,11 +53,15 @@ export async function sendBroadcast(input: {
 
   const recipients = input.testOnly
     ? [{ id: admin.id, name: admin.name, email: admin.email }]
-    : await prisma.user.findMany({ select: { id: true, name: true, email: true } });
+    : // Marketing goes only to people who explicitly opted in (PECR).
+      await prisma.user.findMany({
+        where: { marketingOptIn: true },
+        select: { id: true, name: true, email: true },
+      });
 
-  const unsubscribeUrl = `${appUrl()}/dashboard/settings`;
   let sent = 0;
   for (const r of recipients) {
+    const unsubscribeUrl = await unsubscribeLink(r.id);
     const built = marketingEmail({
       name: r.name,
       heading,

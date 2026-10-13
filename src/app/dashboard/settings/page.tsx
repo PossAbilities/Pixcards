@@ -8,6 +8,7 @@ import { Icon } from "@/components/Icon";
 import { PublishToggle } from "@/components/dashboard/PublishToggle";
 import { DeleteAccount } from "@/components/dashboard/DeleteAccount";
 import { updateProfile } from "@/lib/actions/profile";
+import { setMarketingPreference } from "@/lib/actions/marketing";
 import { logoutAction } from "@/app/(auth)/actions";
 import { formatDate } from "@/lib/utils";
 
@@ -25,6 +26,7 @@ export default async function SettingsPage() {
       name: true,
       plan: true,
       proSince: true,
+      marketingOptIn: true,
       profile: {
         select: {
           username: true,
@@ -177,6 +179,32 @@ export default async function SettingsPage() {
         {/* Privacy & your data */}
         <Card className="p-6">
           <SectionHeading icon="shield" title="Privacy & your data" />
+          <form
+            action={setMarketingPreference}
+            className="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-outline pb-5"
+          >
+            <label className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                name="marketingOptIn"
+                value="yes"
+                defaultChecked={data.marketingOptIn}
+                className="mt-0.5 h-5 w-5 shrink-0 accent-primary"
+              />
+              <span>
+                <span className="block text-sm font-semibold text-ink">
+                  Product news and offers by email
+                </span>
+                <span className="mt-1 block text-xs text-muted">
+                  Account and order emails are always sent. Untick to
+                  unsubscribe from marketing.
+                </span>
+              </span>
+            </label>
+            <button type="submit" className={buttonClass("outline", "md")}>
+              Save email preference
+            </button>
+          </form>
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-semibold text-ink">Export my data</p>

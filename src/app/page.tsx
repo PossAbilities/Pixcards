@@ -11,15 +11,15 @@ export default function LandingPage() {
   return (
     <>
       <SiteNav />
-      <main className="flex-1">
+      <main id="main" className="flex-1">
         {/* Hero */}
         <section className="relative hero-gradient overflow-hidden">
           <div className="absolute -top-10 -right-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl" />
           <div className="max-w-[1200px] mx-auto px-4 md:px-12 pt-16 pb-24 grid md:grid-cols-2 gap-12 items-center relative">
             <div className="text-center md:text-left">
               <Badge color="primary" className="mb-5">
-                <Icon name="auto_awesome" className="text-[14px]" />
-                Revolutionising Networking
+                <Icon name="contactless" className="text-[14px]" />
+                NFC + QR business cards
               </Badge>
               <h1 className="font-display text-4xl md:text-6xl font-extrabold tracking-tight leading-[1.05] text-ink">
                 The Last Business Card You&apos;ll Ever Need.
@@ -32,25 +32,18 @@ export default function LandingPage() {
               <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
                 <Link href="/register" className={buttonClass("primary", "lg")}>
                   <Icon name="contactless" className="text-[20px] fill" />
-                  Order Your Pixcard
+                  Create your free card
                 </Link>
                 <Link href="/pricing" className={buttonClass("outline", "lg")}>
                   View Pricing
                 </Link>
               </div>
-              <div className="mt-8 flex items-center gap-6 justify-center md:justify-start text-sm text-muted">
-                <span className="flex items-center gap-1.5">
-                  <Icon name="group" className="text-primary text-[18px]" />
-                  50,000+ professionals
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Icon name="star" className="text-amber-500 text-[18px] fill" />
-                  4.9/5 rating
-                </span>
-              </div>
+              <p className="mt-6 text-sm text-muted">
+                Free to start. No app needed to view your card.
+              </p>
             </div>
             <div className="relative">
-              <div className="relative z-10 max-w-sm mx-auto transform rotate-6 hover:rotate-3 transition-transform duration-500">
+              <div aria-hidden="true" className="relative z-10 max-w-sm mx-auto transform rotate-6 motion-safe:hover:rotate-3 motion-safe:transition-transform duration-500">
                 <CardMockup name="Alex Sterling" title="Senior Product Designer" materialId="white-gloss" />
               </div>
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-primary/10 rounded-full blur-3xl -z-0" />
@@ -62,7 +55,7 @@ export default function LandingPage() {
         <section id="features" className="py-20 px-4 md:px-12 bg-surface">
           <div className="max-w-[1200px] mx-auto">
             <Reveal className="text-center mb-14">
-              <h2 className="font-display text-3xl font-bold">Unmatched Connectivity Features</h2>
+              <h2 className="font-display text-3xl font-bold">Everything you need to share your details</h2>
               <p className="mt-2 text-muted">Built for modern professionals who value speed and efficiency.</p>
             </Reveal>
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -71,7 +64,7 @@ export default function LandingPage() {
                 <h3 className="font-display text-xl font-semibold mt-4">Smart Sharing</h3>
                 <p className="mt-2 text-muted text-sm">
                   Share your contact info, social links, and portfolio with a single tap or scan.
-                  No apps required for the recipient — it just works.
+                  The person you share with doesn&apos;t need an app — your card opens in their phone&apos;s browser.
                 </p>
                 <div className="mt-5 rounded-xl bg-gradient-to-br from-primary/90 to-primary-deep p-6 text-white flex items-center gap-4">
                   <Icon name="smartphone" className="text-4xl" />
@@ -96,27 +89,14 @@ export default function LandingPage() {
                 </p>
               </Reveal>
 
-              {/* Eco strip */}
+              {/* Update-anytime strip */}
               <Reveal className="md:col-span-2 lg:col-span-4 rounded-2xl bg-inverse text-white p-8 flex flex-col md:flex-row items-center gap-6">
                 <div className="flex-1">
-                  <h3 className="font-display text-2xl font-bold text-primary-soft">Eco-friendly &amp; Sustainable</h3>
+                  <h3 className="font-display text-2xl font-bold text-primary-soft">One card, always up to date</h3>
                   <p className="mt-2 text-white/80 max-w-xl">
-                    One Pixcard replaces thousands of paper business cards. Reduce your carbon footprint
-                    while maintaining a premium professional image.
+                    Your physical card links to your online profile, so when your details change you
+                    update them once — no need to reprint a stack of paper cards.
                   </p>
-                  <div className="mt-4 flex items-center gap-2 text-tertiary-bright">
-                    <Icon name="park" className="fill" />
-                    <span className="font-semibold text-sm">1,000+ trees saved by our community this year</span>
-                  </div>
-                </div>
-                <div className="w-full md:w-72 glass rounded-xl p-4 bg-white/5 border-white/10">
-                  <div className="flex justify-between text-xs mb-2">
-                    <span>Paper waste saved</span>
-                    <span className="text-tertiary-bright font-semibold">92%</span>
-                  </div>
-                  <div className="h-2 rounded-full bg-white/10 overflow-hidden">
-                    <div className="h-full w-[92%] bg-tertiary-bright" />
-                  </div>
                 </div>
               </Reveal>
             </div>
@@ -133,7 +113,7 @@ export default function LandingPage() {
             <div className="grid md:grid-cols-4 gap-6">
               {[
                 { icon: "person_add", title: "Create your profile", body: "Sign up free and build your digital card with links, socials and contact details." },
-                { icon: "design_services", title: "Design your card", body: "Pick a premium material and finish, then customise it to match your brand." },
+                { icon: "design_services", title: "Design your card", body: "Design the front and back of your physical card to match your brand." },
                 { icon: "local_shipping", title: "We print & ship", body: "Your NFC card is produced and delivered, pre-linked to your account." },
                 { icon: "contactless", title: "Tap & share", body: "Tap your card or show your QR code to share everything instantly." },
               ].map((s, i) => (
@@ -159,7 +139,7 @@ export default function LandingPage() {
             </Reveal>
             <div className="grid md:grid-cols-2 gap-6 items-stretch">
               <Reveal className="bg-surface rounded-2xl border border-black/5 shadow-sm p-8 flex flex-col">
-                <span className="text-xs font-semibold uppercase tracking-wider text-secondary">Free Starter</span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted">Free Starter</span>
                 <h3 className="font-display text-2xl font-bold mt-1">Basic</h3>
                 <div className="flex items-baseline gap-1 mt-3">
                   <span className="font-display text-4xl font-extrabold">£0</span>
@@ -172,10 +152,10 @@ export default function LandingPage() {
                   <Perk>Custom themes &amp; branding</Perk>
                   <Perk>Advanced analytics</Perk>
                 </ul>
-                <Link href="/register" className={buttonClass("outline", "lg", "mt-6 w-full")}>Get Started Free</Link>
+                <Link href="/register" className={buttonClass("outline", "lg", "mt-6 w-full")}>Create a free account</Link>
               </Reveal>
               <Reveal delay={80} className="relative bg-surface rounded-2xl border-2 border-primary shadow-xl p-8 flex flex-col md:scale-[1.03]">
-                <span className="absolute top-0 right-0 bg-primary text-white text-xs font-bold px-3 py-1 rounded-bl-xl rounded-tr-2xl">MOST POPULAR</span>
+                <span className="absolute top-0 right-0 bg-primary text-white text-xs font-bold px-3 py-1 rounded-bl-xl rounded-tr-2xl">ONE-TIME PAYMENT</span>
                 <span className="text-xs font-semibold uppercase tracking-wider text-primary">Advanced Networking</span>
                 <h3 className="font-display text-2xl font-bold mt-1">Pro</h3>
                 <div className="flex items-baseline gap-1 mt-3">
@@ -189,7 +169,7 @@ export default function LandingPage() {
                   <Perk ok>Advanced analytics dashboard</Perk>
                   <Perk ok>Priority support &amp; custom branding</Perk>
                 </ul>
-                <Link href="/pricing" className={buttonClass("primary", "lg", "mt-6 w-full")}>Upgrade to Pro</Link>
+                <Link href="/pricing" className={buttonClass("primary", "lg", "mt-6 w-full")}>See Pro details</Link>
               </Reveal>
             </div>
           </div>
@@ -200,11 +180,11 @@ export default function LandingPage() {
           <div className="absolute -bottom-24 -left-24 w-96 h-96 border-[40px] border-white/5 rounded-full" />
           <div className="absolute -top-12 -right-12 w-48 h-48 bg-white/10 rounded-full blur-2xl" />
           <div className="max-w-2xl mx-auto relative">
-            <h2 className="font-display text-3xl md:text-4xl font-extrabold">Ready to Upgrade Your Identity?</h2>
-            <p className="mt-3 text-white/85 text-lg">Join 50,000+ professionals making better connections with Pixcards.</p>
+            <h2 className="font-display text-3xl md:text-4xl font-extrabold">Ready to make your Pixcard?</h2>
+            <p className="mt-3 text-white/85 text-lg">Build your digital card for free, then order a physical NFC card when you&apos;re ready.</p>
             <Link href="/register" className="mt-8 inline-flex items-center gap-2 bg-white text-primary font-semibold text-lg px-8 py-3.5 rounded-lg hover:-translate-y-0.5 hover:shadow-2xl transition-all">
               <Icon name="contactless" className="fill" />
-              Order Your Card Today
+              Create your free card
             </Link>
           </div>
         </section>
@@ -229,8 +209,9 @@ function FeatureIcon({ icon, tone }: { icon: string; tone: "primary" | "tertiary
 
 function Perk({ children, ok }: { children: React.ReactNode; ok?: boolean }) {
   return (
-    <li className={`flex items-center gap-2 ${ok ? "" : "text-faint/60"}`}>
+    <li className={`flex items-center gap-2 ${ok ? "" : "text-muted line-through decoration-1"}`}>
       <Icon name={ok ? "check_circle" : "block"} className={`text-[18px] ${ok ? "text-primary" : ""}`} />
+      <span className="sr-only">{ok ? "Included: " : "Not included: "}</span>
       {children}
     </li>
   );

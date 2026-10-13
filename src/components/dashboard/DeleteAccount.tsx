@@ -80,7 +80,7 @@ export function DeleteAccount() {
             />
           </div>
           {state?.error && (
-            <p className="mt-2 text-sm font-medium text-red-600">{state.error}</p>
+            <p role="alert" className="mt-2 text-sm font-medium text-red-700">{state.error}</p>
           )}
           <div className="mt-4 flex flex-wrap gap-2">
             <ConfirmButton />

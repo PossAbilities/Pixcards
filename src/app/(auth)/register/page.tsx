@@ -30,7 +30,7 @@ export default async function RegisterPage({
   const backHref = safeFrom ?? "/";
   const backLabel = safeFrom ? "Back" : "Back to home";
   return (
-    <main className="min-h-screen flex bg-background">
+    <main id="main" className="min-h-screen flex bg-background">
       {/* Brand panel */}
       <section className="relative hidden md:flex md:w-1/2 lg:w-[55%] flex-col justify-between overflow-hidden bg-gradient-to-br from-primary via-primary to-primary-deep p-10 lg:p-14 text-white">
         {/* decorative blurred circles */}
@@ -41,7 +41,7 @@ export default async function RegisterPage({
         <div className="relative z-10">
           <span className="inline-flex items-center gap-2">
             <span className="grid place-items-center w-9 h-9 rounded-xl bg-white/15 backdrop-blur text-white">
-              <span className="material-symbols-outlined text-[22px] fill">
+              <span aria-hidden="true" className="material-symbols-outlined text-[22px] fill">
                 contactless
               </span>
             </span>
@@ -52,15 +52,15 @@ export default async function RegisterPage({
         </div>
 
         <div className="relative z-10 max-w-md">
-          <h1 className="font-display text-4xl lg:text-5xl font-extrabold leading-tight tracking-tight">
-            Join 50,000+ professionals.
-          </h1>
+          <p className="font-display text-4xl lg:text-5xl font-extrabold leading-tight tracking-tight">
+            Your card, always up to date.
+          </p>
           <p className="mt-4 text-white/80 text-lg leading-relaxed">
             One smart card for every introduction. Create your profile today and
             start sharing in minutes.
           </p>
 
-          <div className="mt-10 mx-auto max-w-[320px] rotate-[6deg] drop-shadow-2xl transition-transform hover:rotate-[3deg]">
+          <div className="mt-10 mx-auto max-w-[320px] rotate-[6deg] drop-shadow-2xl transition-transform hover:rotate-[3deg]" aria-hidden="true">
             <CardMockup
               name="Jordan Lee"
               title="Founder & CEO"
@@ -96,9 +96,9 @@ export default async function RegisterPage({
           </div>
 
           <div className="rounded-2xl border border-black/5 bg-surface p-7 shadow-[0_8px_30px_rgba(0,0,0,0.06)] sm:p-8">
-            <h2 className="font-display text-2xl font-bold text-ink">
+            <h1 className="font-display text-2xl font-bold text-ink">
               Create your free account
-            </h2>
+            </h1>
             <p className="mt-1.5 mb-6 text-sm text-muted">
               No card required to start. Build your digital profile in minutes.
             </p>
@@ -106,9 +106,6 @@ export default async function RegisterPage({
             <AuthForm mode="register" next={next} />
           </div>
 
-          <p className="mt-5 text-center text-xs text-faint">
-            By creating an account you agree to our Terms & Privacy Policy.
-          </p>
         </div>
       </section>
     </main>

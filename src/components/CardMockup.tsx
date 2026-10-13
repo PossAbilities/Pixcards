@@ -21,6 +21,7 @@ export function CardMockup({
 
   return (
     <div
+      aria-hidden="true"
       className={cn(
         "relative aspect-[1.585/1] w-full rounded-2xl overflow-hidden shadow-2xl border border-white/10 p-5 flex flex-col justify-between",
         className,
@@ -32,7 +33,7 @@ export function CardMockup({
       {/* top row */}
       <div className="relative flex items-start justify-between">
         <div className="flex items-center gap-1.5">
-          <span className="material-symbols-outlined text-[20px] fill" style={{ color: ink }}>
+          <span aria-hidden="true" className="material-symbols-outlined text-[20px] fill" style={{ color: ink }}>
             contactless
           </span>
           <span className="font-display font-bold tracking-tight text-sm" style={{ color: ink }}>

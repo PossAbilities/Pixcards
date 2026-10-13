@@ -624,11 +624,12 @@ function Field({
   label: string;
   children: React.ReactNode;
 }) {
+  // A wrapping <label> ties the text to the single control inside it.
   return (
-    <div>
-      <Label>{label}</Label>
+    <label className="block">
+      <span className="text-xs font-semibold text-muted mb-1.5 block">{label}</span>
       {children}
-    </div>
+    </label>
   );
 }
 
@@ -1120,6 +1121,7 @@ function LinkForm({
       <div>
         <Label>Label</Label>
         <input
+          aria-label="Link label"
           className={inputClass}
           value={draft.label}
           onChange={(e) => setDraft((d) => ({ ...d, label: e.target.value }))}
@@ -1129,6 +1131,7 @@ function LinkForm({
       <div>
         <Label>URL</Label>
         <input
+          aria-label="Link URL"
           className={inputClass}
           value={draft.url}
           onChange={(e) => setDraft((d) => ({ ...d, url: e.target.value }))}

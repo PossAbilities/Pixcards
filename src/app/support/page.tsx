@@ -17,7 +17,7 @@ const TOPICS: { icon: string; q: string; a: string }[] = [
   {
     icon: "contactless",
     q: "How does NFC tap-to-share work?",
-    a: "Every Pixcard has a tiny NFC chip inside. When someone holds their phone near the card, your digital profile opens instantly in their browser — no app and no setup needed on their end.",
+    a: "Every Pixcard has a tiny NFC chip inside. When someone holds an NFC-enabled phone (most recent iPhones and Android phones) near the card, your digital profile opens in their browser — no app needed. Phones without NFC can scan the QR code instead.",
   },
   {
     icon: "edit",
@@ -27,22 +27,22 @@ const TOPICS: { icon: string; q: string; a: string }[] = [
   {
     icon: "local_shipping",
     q: "How do I order a physical card?",
-    a: "From your dashboard, pick a card material and finish, confirm your shipping details and check out securely with Stripe. Your card arrives pre-linked to your digital profile.",
+    a: "From your dashboard, design your card, enter your delivery details and pay securely with Stripe. Your card arrives pre-linked to your digital profile.",
   },
   {
     icon: "bolt",
     q: "What do I get with Pro?",
-    a: "Pro is a one-time upgrade that unlocks unlimited links, premium card themes, the advanced analytics dashboard, custom branding and priority support — yours forever, with no subscription.",
+    a: "Pro is a one-time upgrade that unlocks unlimited links, premium card themes, the advanced analytics dashboard, custom branding and priority support — a single payment with no subscription.",
   },
   {
     icon: "account_circle",
     q: "I need help with my account",
-    a: "You can update your email and password from your account settings. Forgot your password? Use the reset link on the login page. Still stuck? Email us and we'll sort it out.",
+    a: "To change your password, use the “Forgot password?” link on the login page. To change your login email, email us from your current address. You can download your data or delete your account from your account settings.",
   },
   {
     icon: "qr_code_2",
     q: "Do recipients need an app to view my card?",
-    a: "No. Your card opens as a normal web page when tapped or scanned, so anyone with a modern smartphone can view it and save your contact details instantly.",
+    a: "No. Your card opens as a normal web page when tapped or scanned, so they can view it and save your contact details without downloading anything.",
   },
 ];
 
@@ -50,7 +50,7 @@ export default function SupportPage() {
   return (
     <>
       <SiteNav />
-      <main className="flex-1">
+      <main id="main" className="flex-1">
         {/* Hero */}
         <section className="relative hero-gradient overflow-hidden">
           <div className="absolute -top-10 -right-10 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
@@ -108,8 +108,10 @@ export default function SupportPage() {
                   <p className="mt-3 text-[15px] leading-relaxed text-muted">
                     Our team reads every message. Email us with as much detail as
                     you can — including your account email and what you were
-                    trying to do — and we&rsquo;ll get back to you{" "}
-                    {SUPPORT_RESPONSE_TIME}.
+                    trying to do — and we aim to get back to you{" "}
+                    {SUPPORT_RESPONSE_TIME}. Pro members get priority support:
+                    put &ldquo;Pro&rdquo; in your subject line and we&rsquo;ll
+                    answer your message before others in the queue.
                   </p>
                   <a
                     href={`mailto:${CONTACT_EMAIL}`}
@@ -118,7 +120,7 @@ export default function SupportPage() {
                     <Icon name="mail" className="text-[20px]" />
                     Email support
                   </a>
-                  <p className="mt-3 text-sm text-faint">
+                  <p className="mt-3 text-sm text-muted">
                     or write to us at{" "}
                     <a
                       href={`mailto:${CONTACT_EMAIL}`}
@@ -135,7 +137,7 @@ export default function SupportPage() {
                     Response time
                   </p>
                   <p className="mt-2 text-sm text-muted">
-                    We typically reply {SUPPORT_RESPONSE_TIME}, Monday to Friday.
+                    We aim to reply {SUPPORT_RESPONSE_TIME}, Monday to Friday.
                   </p>
                 </div>
               </div>

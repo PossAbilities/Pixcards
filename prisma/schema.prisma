@@ -187,6 +187,10 @@ model User {
   proUntil             DateTime? // null while PRO = lifetime; past date = expired
   proComplimentary     Boolean   @default(false) // granted free by an admin
 
+  // Marketing email consent (PECR): off unless the user explicitly opts in.
+  marketingOptIn   Boolean   @default(false)
+  marketingOptInAt DateTime?
+
   profile     Profile?
   orders      Order[]
   cards       Card[]

@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="grid min-h-dvh place-items-center bg-background px-4 py-10">
+    <main id="main" className="grid min-h-dvh place-items-center bg-background px-4 py-10">
       <div className="w-full max-w-sm">
         <div className="mb-6 flex justify-center">
           <Logo href="/" />

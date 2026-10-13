@@ -116,6 +116,13 @@ export function proWelcomeEmail(args: {
       <li>Custom branding</li>
     </ul>
     ${receipt}
+    ${
+      args.amountPaidCents && args.amountPaidCents > 0
+        ? emailParagraph(
+            "As you agreed at checkout, Pro started immediately, so the 14-day cancellation right no longer applies. Your rights if Pro doesn't work as described are not affected — see our Refund Policy.",
+          )
+        : ""
+    }
     ${emailButton(args.dashboardUrl, "Explore Pro features")}
   `;
   return build(

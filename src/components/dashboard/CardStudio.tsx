@@ -1,5 +1,7 @@
 "use client";
 
+import { keyboardRndProps, elementLabel } from "@/lib/keyboard-nudge";
+import { OrderConsent } from "@/components/OrderConsent";
 import {
   useCallback,
   useEffect,
@@ -246,7 +248,8 @@ export function CardStudio({
   const [shipAddress, setShipAddress] = useState<string>("");
   const [shipCity, setShipCity] = useState<string>("");
   const [shipPostal, setShipPostal] = useState<string>("");
-  const [shipCountry, setShipCountry] = useState<string>("United Kingdom");
+  const shipCountry = "United Kingdom"; // UK delivery only
+  const [personalisedAck, setPersonalisedAck] = useState(false);
   const [discountCode, setDiscountCode] = useState<string>("");
   const [appliedDiscount, setAppliedDiscount] = useState<{
     code: string;
@@ -772,7 +775,7 @@ export function CardStudio({
     if (!shipAddress.trim()) return "Enter a delivery address.";
     if (!shipCity.trim()) return "Enter a city.";
     if (!shipPostal.trim()) return "Enter a postcode.";
-    if (!shipCountry.trim()) return "Enter a country.";
+    if (!personalisedAck) return "Please tick the box to confirm your design and order details.";
     return null;
   }
 
@@ -872,6 +875,7 @@ export function CardStudio({
       fd.append("shipPostal", shipPostal);
       fd.append("shipCountry", shipCountry);
       fd.append("discountCode", discountCode);
+      fd.append("personalisedAck", personalisedAck ? "yes" : "");
       fd.append(
         "design",
         JSON.stringify({
@@ -897,6 +901,7 @@ export function CardStudio({
     shipPostal,
     shipCountry,
     discountCode,
+    personalisedAck,
     front,
     back,
     plan,
@@ -932,6 +937,7 @@ export function CardStudio({
                   <button
                     key={s}
                     type="button"
+                    aria-pressed={isActive}
                     onClick={() => {
                       setActiveSide(s);
                       setSelectedId(null);
@@ -1032,6 +1038,17 @@ export function CardStudio({
                             setSelectedId(el.id);
                             setShowBgPanel(false);
                           }}
+                          {...keyboardRndProps({
+                            label: elementLabel(el.type, el.text),
+                            box: { x: el.x, y: el.y, w: el.w, h: el.h },
+                            canvas: { w: CARD_W, h: CARD_H },
+                            lockAspect: el.type === "qr",
+                            onSelect: () => {
+                              setSelectedId(el.id);
+                              setShowBgPanel(false);
+                            },
+                            onChange: (b) => updateElement(el.id, b),
+                          })}
                           enableResizing={{
                             top: true,
                             right: true,
@@ -1222,6 +1239,7 @@ export function CardStudio({
                   key={mat.id}
                   type="button"
                   disabled={locked}
+                  aria-pressed={isSelected}
                   onClick={() => !locked && setMaterialId(mat.id)}
                   className={cn(
                     "group relative text-left rounded-xl border-2 p-4 transition-all",
@@ -1306,6 +1324,7 @@ export function CardStudio({
             </button>
             <input
               type="number"
+              aria-label="Quantity"
               min={1}
               max={50}
               value={quantity}
@@ -1382,10 +1401,13 @@ export function CardStudio({
                 id="shipCountry"
                 type="text"
                 value={shipCountry}
-                onChange={(e) => setShipCountry(e.target.value)}
-                className={inputClass}
-                placeholder="Country"
+                readOnly
+                aria-describedby="shipCountry-hint"
+                className={`${inputClass} bg-surface-low`}
               />
+              <p id="shipCountry-hint" className="mt-1.5 text-xs text-muted">
+                We currently deliver to UK addresses only.
+              </p>
             </div>
           </div>
         </Card>
@@ -1421,7 +1443,7 @@ export function CardStudio({
                   <dd className="font-medium text-ink">× {quantity}</dd>
                 </div>
                 {appliedDiscount && discountOff > 0 && (
-                  <div className="flex items-center justify-between text-emerald-600">
+                  <div className="flex items-center justify-between text-emerald-700">
                     <dt>Discount ({appliedDiscount.code})</dt>
                     <dd className="font-semibold">− {money(discountOff)}</dd>
                   </div>
@@ -1467,7 +1489,7 @@ export function CardStudio({
                 <p
                   className={cn(
                     "mt-1.5 flex items-center gap-1 text-xs font-medium",
-                    discountMsg.ok ? "text-emerald-600" : "text-red-600",
+                    discountMsg.ok ? "text-emerald-700" : "text-red-700",
                   )}
                 >
                   <Icon
@@ -1479,8 +1501,13 @@ export function CardStudio({
               )}
             </div>
 
+            <OrderConsent checked={personalisedAck} onChange={setPersonalisedAck} />
+
             {error && (
-              <div className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2.5 text-sm text-red-700">
+              <div
+                role="alert"
+                className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2.5 text-sm text-red-700"
+              >
                 <Icon name="error" className="text-[18px] mt-0.5 shrink-0" />
                 <span>{error}</span>
               </div>
@@ -1505,7 +1532,7 @@ export function CardStudio({
               ) : (
                 <>
                   <Icon name="lock" className="text-[18px]" />
-                  Pay &amp; Place Order — {total}
+                  Continue to payment — {total}
                 </>
               )}
             </button>
@@ -1603,6 +1630,7 @@ function SelectedToolbar({
       {el.type === "text" && (
         <div className="space-y-3">
           <textarea
+            aria-label="Text"
             value={el.text ?? ""}
             onChange={(e) => onPatch({ text: e.target.value })}
             rows={2}

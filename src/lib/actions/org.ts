@@ -689,7 +689,7 @@ export async function orderTeamCards(input: {
       shipAddress: input.shipAddress.trim(),
       shipCity: input.shipCity.trim(),
       shipPostal: input.shipPostal.trim(),
-      shipCountry: input.shipCountry.trim() || "United Kingdom",
+      shipCountry: "United Kingdom", // UK delivery only
     },
   });
 

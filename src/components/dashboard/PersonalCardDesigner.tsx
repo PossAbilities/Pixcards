@@ -1,5 +1,6 @@
 "use client";
 
+import { keyboardRndProps, elementLabel } from "@/lib/keyboard-nudge";
 import { useMemo, useState, useTransition } from "react";
 import { Rnd } from "react-rnd";
 import { Icon } from "@/components/Icon";
@@ -260,6 +261,15 @@ export function PersonalCardDesigner({
                     y: pos.y / ED_H,
                   })
                 }
+                {...keyboardRndProps({
+                  label: elementLabel(el.kind, el.text),
+                  box: { x: el.x * ED_W, y: el.y * ED_H, w: el.w * ED_W, h: el.h * ED_H },
+                  canvas: { w: ED_W, h: ED_H },
+                  lockAspect: el.kind === "qr",
+                  onSelect: () => setSelectedId(el.id),
+                  onChange: (b) =>
+                    updateEl(el.id, { x: b.x / ED_W, y: b.y / ED_H, w: b.w / ED_W, h: b.h / ED_H }),
+                })}
                 className={cn(
                   "flex items-center",
                   selectedId === el.id ? "ring-2 ring-primary" : "hover:ring-1 hover:ring-primary/40",
@@ -280,9 +290,9 @@ export function PersonalCardDesigner({
             <button type="button" onClick={() => addText()} className={buttonClass("outline", "sm")}>
               <Icon name="text_fields" className="text-[18px]" /> Text
             </button>
-            <label className={buttonClass("outline", "sm")}>
+            <label className={buttonClass("outline", "sm", "cursor-pointer focus-within:ring-2 focus-within:ring-primary")}>
               <Icon name="image" className="text-[18px]" /> Logo / Image
-              <input type="file" accept="image/*" onChange={addImage} className="hidden" />
+              <input type="file" accept="image/*" onChange={addImage} className="sr-only" />
             </label>
             <button type="button" onClick={addQr} className={buttonClass("outline", "sm")}>
               <Icon name="qr_code_2" className="text-[18px]" /> QR
@@ -315,14 +325,14 @@ export function PersonalCardDesigner({
             <Label>Background ({activeSide})</Label>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               {BG_PRESETS.map((b) => (
-                <button key={b.label} type="button" title={b.label} onClick={() => mutateSide((s) => ({ ...s, bg: b.value }))}
+                <button key={b.label} type="button" title={b.label} aria-label={`Background: ${b.label}`} onClick={() => mutateSide((s) => ({ ...s, bg: b.value }))}
                   className="h-7 w-7 rounded border border-outline" style={{ background: b.value }} />
               ))}
-              <input type="color" onChange={(e) => mutateSide((s) => ({ ...s, bg: e.target.value }))}
+              <input type="color" aria-label="Custom background colour" onChange={(e) => mutateSide((s) => ({ ...s, bg: e.target.value }))}
                 className="h-7 w-9 cursor-pointer rounded border border-outline bg-transparent p-0" title="Custom colour" />
-              <label className={buttonClass("outline", "sm")}>
+              <label className={buttonClass("outline", "sm", "cursor-pointer focus-within:ring-2 focus-within:ring-primary")}>
                 <Icon name="wallpaper" className="text-[16px]" /> Image
-                <input type="file" accept="image/*" onChange={setBgImage} className="hidden" />
+                <input type="file" accept="image/*" onChange={setBgImage} className="sr-only" />
               </label>
             </div>
           </div>
@@ -380,7 +390,7 @@ export function PersonalCardDesigner({
 
               {selected.kind === "text" && (
                 <div className="space-y-2">
-                  <input value={selected.text ?? ""} onChange={(e) => updateEl(selected.id, { text: e.target.value })}
+                  <input aria-label="Text" value={selected.text ?? ""} onChange={(e) => updateEl(selected.id, { text: e.target.value })}
                     className={inputClass} placeholder="Text (use {{name}}, {{title}}, {{email}}…)" />
                   <div className="flex flex-wrap items-center gap-3">
                     <label className="flex items-center gap-1 text-xs text-muted">
@@ -395,14 +405,14 @@ export function PersonalCardDesigner({
                     </label>
                     <div className="flex gap-1">
                       {(["left", "center", "right"] as const).map((a) => (
-                        <button key={a} type="button" onClick={() => updateEl(selected.id, { align: a })}
+                        <button key={a} type="button" aria-label={`Align ${a}`} aria-pressed={(selected.align ?? "left") === a} onClick={() => updateEl(selected.id, { align: a })}
                           className={cn("rounded p-1", (selected.align ?? "left") === a ? "bg-primary text-white" : "hover:bg-surface-2")}>
                           <Icon name={`format_align_${a}`} className="text-[16px]" />
                         </button>
                       ))}
                     </div>
                     <button type="button" onClick={() => updateEl(selected.id, { fontWeight: (selected.fontWeight ?? 600) >= 700 ? 500 : 700 })}
-                      className={cn("rounded p-1", (selected.fontWeight ?? 600) >= 700 ? "bg-primary text-white" : "hover:bg-surface-2")} title="Bold">
+                      className={cn("rounded p-1", (selected.fontWeight ?? 600) >= 700 ? "bg-primary text-white" : "hover:bg-surface-2")} title="Bold" aria-label="Bold" aria-pressed={(selected.fontWeight ?? 600) >= 700}>
                       <Icon name="format_bold" className="text-[16px]" />
                     </button>
                   </div>

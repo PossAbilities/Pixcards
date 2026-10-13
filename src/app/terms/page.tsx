@@ -1,172 +1,195 @@
 import type { Metadata } from "next";
-import { SiteNav } from "@/components/marketing/SiteNav";
-import { SiteFooter } from "@/components/marketing/SiteFooter";
-import { CONTACT_EMAIL } from "@/lib/site";
+import Link from "next/link";
+import {
+  LegalPage,
+  Section,
+  MailLink,
+  BusinessDetails,
+} from "@/components/marketing/LegalPage";
+import { LEGAL_NAME } from "@/lib/site";
 import { APP_NAME } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: `Terms of Service | ${APP_NAME}`,
   description:
-    "The terms that govern your use of Pixcards, including accounts, subscriptions, payments and physical card orders.",
+    "The terms for using Pixcards, including accounts, Pro, organisation plans and physical card orders.",
 };
 
 export default function TermsPage() {
   return (
-    <>
-      <SiteNav />
-      <main className="flex-1 bg-surface">
-        <article className="mx-auto max-w-3xl px-4 md:px-6 py-16">
-          <p className="text-sm font-semibold uppercase tracking-wider text-primary">
-            Legal
-          </p>
-          <h1 className="mt-2 font-display text-4xl font-extrabold tracking-tight text-ink">
-            Terms of Service
-          </h1>
-          <p className="mt-3 text-sm text-faint">Last updated: June 2026</p>
+    <LegalPage title="Terms of Service" updated="13 October 2026">
+      <p>
+        These terms apply when you use {APP_NAME} (the &ldquo;Service&rdquo;),
+        including the website, digital cards, Pro upgrade, organisation plans
+        and physical NFC cards. Please read them together with our{" "}
+        <Link href="/privacy">Privacy Policy</Link> and{" "}
+        <Link href="/refunds">Refund Policy</Link>.
+      </p>
 
-          <div className="mt-10 space-y-10 text-[15px] leading-relaxed text-muted">
-            <p>
-              These Terms of Service (&ldquo;Terms&rdquo;) govern your access to
-              and use of {APP_NAME} and any related websites, apps and services
-              (the &ldquo;Service&rdquo;). Please read them carefully.
-            </p>
+      <Section id="who" title="1. Who we are">
+        <p>
+          The Service is provided by <strong>{LEGAL_NAME}</strong>
+          (&ldquo;we&rdquo;, &ldquo;us&rdquo;). Contact us at <MailLink />.
+        </p>
+        <BusinessDetails />
+      </Section>
 
-            <Section title="1. Acceptance of Terms">
-              <p>
-                By creating an account or using the Service, you agree to be
-                bound by these Terms. If you do not agree, please do not use the
-                Service. If you are using {APP_NAME} on behalf of an
-                organisation, you confirm that you have authority to bind that
-                organisation to these Terms.
-              </p>
-            </Section>
+      <Section id="accept" title="2. Agreeing to these terms">
+        <p>
+          You agree to these terms when you create an account. If you use the
+          Service for an organisation, you confirm you are allowed to accept
+          these terms on its behalf. You must be at least 16 years old.
+        </p>
+      </Section>
 
-            <Section title="2. Accounts">
-              <p>
-                You must provide accurate information when registering and keep
-                your credentials secure. You are responsible for all activity
-                under your account. You must be at least 16 years old, or the age
-                of digital consent in your country, to use the Service.
-              </p>
-            </Section>
+      <Section id="account" title="3. Your account">
+        <p>
+          Give accurate details, keep your password private and tell us
+          straight away if you think someone else has used your account. You
+          are responsible for what is published on your card.
+        </p>
+      </Section>
 
-            <Section title="3. Acceptable Use">
-              <p>You agree not to use the Service to:</p>
-              <ul className="mt-3 list-disc space-y-2 pl-5">
-                <li>impersonate others or misrepresent your identity or affiliation;</li>
-                <li>publish unlawful, infringing, deceptive or harmful content;</li>
-                <li>distribute malware or attempt to disrupt or breach the Service;</li>
-                <li>scrape, resell or reverse-engineer the Service without permission.</li>
-              </ul>
-              <p className="mt-3">
-                We may remove content or suspend accounts that violate these
-                rules.
-              </p>
-            </Section>
+      <Section id="content" title="4. Your content">
+        <p>
+          You keep ownership of everything you add (text, photos, logos). You
+          give us permission to store, display, print and share it only as
+          needed to run the Service &mdash; for example, showing your public
+          card and printing your physical card. This permission ends when you
+          delete the content or your account, except for cards already printed.
+        </p>
+        <p>
+          You must have the right to use everything you upload, including
+          photos of other people and company logos. Don&rsquo;t publish
+          anything that is unlawful, misleading, defamatory, infringes
+          someone&rsquo;s rights, or impersonates another person or
+          organisation. Don&rsquo;t misuse the Service (for example by
+          spreading malware, scraping it, or trying to break its security). We
+          may remove content or suspend accounts that break these rules. To
+          report content on a card, email <MailLink subject="Report content" />.
+        </p>
+      </Section>
 
-            <Section title="4. Subscriptions &amp; Payments">
-              <p>
-                {APP_NAME} offers a free Basic plan and a paid Pro plan. The Pro
-                upgrade is a <strong className="text-ink">one-time payment</strong>{" "}
-                — not a recurring subscription — and unlocks the Pro features
-                described at the time of purchase for the life of your account.
-              </p>
-              <p className="mt-3">
-                You may also order{" "}
-                <strong className="text-ink">physical NFC cards</strong>, which
-                are charged per item at the prices shown at checkout, plus any
-                applicable shipping and taxes. Payments are processed securely by
-                Stripe. Except where required by law, payments for digital
-                upgrades and fulfilled physical orders are non-refundable; if
-                something goes wrong with an order, contact us and we&rsquo;ll
-                make it right.
-              </p>
-            </Section>
+      <Section id="free-pro" title="5. Free plan and Pro">
+        <p>
+          The Basic plan is free. <strong>Pro is a one-time payment</strong>, not
+          a subscription: it unlocks the Pro features described on the{" "}
+          <Link href="/pricing">pricing page</Link> at the time you buy, for as
+          long as your account exists and we operate the Service. If we ever
+          close the Service we will give you at least 60 days&rsquo; notice.
+          &ldquo;Priority support&rdquo; means we answer Pro members&rsquo;
+          support emails before others in the queue; it is not a guaranteed
+          response time. Prices are shown in pounds sterling and include any VAT that applies.
+        </p>
+        <p>
+          Pro starts immediately after payment. Before you pay, we ask you to
+          agree to this and to confirm you understand that you lose the
+          14-day right to cancel once Pro is active. See the{" "}
+          <Link href="/refunds">Refund Policy</Link>.
+        </p>
+      </Section>
 
-            <Section title="5. Intellectual Property">
-              <p>
-                The Service, including its software, design and branding, is owned
-                by {APP_NAME} and protected by intellectual-property laws. You
-                retain ownership of the content you upload, and you grant us a
-                limited licence to host, display and distribute that content as
-                needed to operate the Service (for example, rendering your public
-                card).
-              </p>
-            </Section>
+      <Section id="orgs" title="6. Organisation plans">
+        <p>
+          Organisation plans are a <strong>monthly subscription</strong> charged
+          per member (&ldquo;seat&rdquo;). The price and number of seats are
+          confirmed before checkout. The subscription renews every month until
+          cancelled. An organisation admin can cancel at any time from the
+          organisation billing page (or by emailing <MailLink subject="Cancel organisation plan" />),
+          and the plan ends at the end of the month already paid for. Organisation
+          administrators can create, edit and manage cards for their members.
+        </p>
+      </Section>
 
-            <Section title="6. Termination">
-              <p>
-                You may stop using the Service and delete your account at any
-                time. We may suspend or terminate your access if you breach these
-                Terms or use the Service in a way that risks harm to others or to{" "}
-                {APP_NAME}. Upon termination, your right to use the Service ends,
-                though certain provisions survive (such as those on intellectual
-                property and liability).
-              </p>
-            </Section>
+      <Section id="cards" title="7. Physical NFC cards">
+        <ul>
+          <li>
+            The price for each card, and the total, is shown before you pay.
+            There is no separate delivery charge unless one is shown at
+            checkout.
+          </li>
+          <li>
+            Cards are printed to your design, so please check names, spelling
+            and artwork carefully before ordering. We print what you submit.
+          </li>
+          <li>We deliver to addresses in the United Kingdom only.</li>
+          <li>
+            Unless we tell you otherwise, we will deliver within 30 days of your
+            order. If we can&rsquo;t, we will tell you and you can cancel for a
+            full refund.
+          </li>
+          <li>
+            Each card links to your {APP_NAME} profile. If you delete your
+            account, the card will no longer show your details.
+          </li>
+          <li>
+            Because cards are personalised, the 14-day cancellation right does
+            not apply &mdash; but your rights for faulty cards do. See the{" "}
+            <Link href="/refunds">Refund Policy</Link>.
+          </li>
+        </ul>
+      </Section>
 
-            <Section title="7. Disclaimers">
-              <p>
-                The Service is provided &ldquo;as is&rdquo; and &ldquo;as
-                available&rdquo; without warranties of any kind, whether express
-                or implied. We do not warrant that the Service will be
-                uninterrupted, error-free or completely secure.
-              </p>
-            </Section>
+      <Section id="rights" title="8. Your legal rights">
+        <p>
+          If you are a consumer, nothing in these terms affects your legal
+          rights under the Consumer Rights Act 2015 and the Consumer Contracts
+          Regulations 2013. For free advice, contact Citizens Advice.
+        </p>
+      </Section>
 
-            <Section title="8. Limitation of Liability">
-              <p>
-                To the fullest extent permitted by law, {APP_NAME} will not be
-                liable for any indirect, incidental or consequential damages, or
-                for any loss of data, profits or goodwill arising from your use of
-                the Service. Our total liability for any claim is limited to the
-                amount you paid us in the twelve months preceding the claim.
-                Nothing in these Terms excludes liability that cannot be excluded
-                under applicable law.
-              </p>
-            </Section>
+      <Section id="availability" title="9. Availability and changes">
+        <p>
+          We work to keep the Service running, but we can&rsquo;t promise it
+          will never be interrupted &mdash; for example during maintenance. We
+          may improve or change features; we won&rsquo;t remove a feature you
+          have paid for without offering a fair alternative or refund.
+        </p>
+      </Section>
 
-            <Section title="9. Changes to These Terms">
-              <p>
-                We may update these Terms from time to time. When we make material
-                changes, we&rsquo;ll update the &ldquo;Last updated&rdquo; date
-                above and, where appropriate, notify you. Continuing to use the
-                Service after changes take effect means you accept the revised
-                Terms.
-              </p>
-            </Section>
+      <Section id="liability" title="10. Our responsibility to you">
+        <p>
+          If we break these terms or fail to use reasonable care and skill, we
+          are responsible for loss you suffer that was a foreseeable result. We
+          are not responsible for loss that was not foreseeable, or for
+          business losses (such as lost profit or opportunities) if you use the
+          Service for business purposes; for business customers our total
+          liability is limited to the amount paid to us in the 12 months before
+          the claim.
+        </p>
+        <p>
+          Nothing in these terms limits our liability for death or personal
+          injury caused by our negligence, for fraud, or for anything else the
+          law does not allow us to limit.
+        </p>
+      </Section>
 
-            <Section title="10. Contact">
-              <p>
-                Questions about these Terms? Reach us at{" "}
-                <a
-                  href={`mailto:${CONTACT_EMAIL}`}
-                  className="font-semibold text-primary hover:text-primary-deep"
-                >
-                  {CONTACT_EMAIL}
-                </a>
-                .
-              </p>
-            </Section>
-          </div>
-        </article>
-      </main>
-      <SiteFooter />
-    </>
-  );
-}
+      <Section id="ending" title="11. Ending your account">
+        <p>
+          You can delete your account at any time from{" "}
+          <Link href="/dashboard/settings">your settings</Link>. We may suspend
+          or close an account that seriously or repeatedly breaks these terms;
+          where reasonable, we will warn you first and explain why.
+        </p>
+      </Section>
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section>
-      <h2 className="mb-3 font-display text-xl font-bold text-ink">{title}</h2>
-      {children}
-    </section>
+      <Section id="changes" title="12. Changes to these terms">
+        <p>
+          We may update these terms, for example to reflect changes in the law
+          or the Service. For significant changes we will email you at least 30
+          days before they take effect. Changes don&rsquo;t apply to purchases
+          you made before they took effect.
+        </p>
+      </Section>
+
+      <Section id="law" title="13. Law and complaints">
+        <p>
+          These terms are governed by the law of England and Wales. If you live
+          in Scotland or Northern Ireland you can also bring claims in your local
+          courts. If you have a complaint, please email <MailLink subject="Complaint" />{" "}
+          first &mdash; we aim to resolve it within 14 days.
+        </p>
+      </Section>
+    </LegalPage>
   );
 }

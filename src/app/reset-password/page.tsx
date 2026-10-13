@@ -20,7 +20,7 @@ export default async function ResetPasswordPage({
   const valid = token ? Boolean(await verifyResetToken(token)) : false;
 
   return (
-    <main className="grid min-h-dvh place-items-center bg-background px-4 py-10">
+    <main id="main" className="grid min-h-dvh place-items-center bg-background px-4 py-10">
       <div className="w-full max-w-md">
         <div className="mb-6 flex items-center justify-between">
           <Logo />

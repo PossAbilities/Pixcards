@@ -72,7 +72,10 @@ export function AuthForm({
     <form action={formAction} className="space-y-4">
       {next && <input type="hidden" name="next" value={next} />}
       {state?.error && (
-        <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+        >
           <Icon name="error" fill className="text-[18px] mt-0.5 shrink-0" />
           <span>{state.error}</span>
         </div>
@@ -125,9 +128,16 @@ export function AuthForm({
           type="password"
           autoComplete={mode === "login" ? "current-password" : "new-password"}
           required
-          placeholder={mode === "login" ? "Enter your password" : "At least 8 characters"}
+          minLength={mode === "register" ? 8 : undefined}
+          aria-describedby={mode === "register" ? "password-hint" : undefined}
+          placeholder={mode === "login" ? "Enter your password" : undefined}
           className={inputClass}
         />
+        {mode === "register" && (
+          <p id="password-hint" className="mt-1.5 text-xs text-muted">
+            At least 8 characters.
+          </p>
+        )}
       </div>
 
       {designOptions.length > 0 && (
@@ -172,6 +182,34 @@ export function AuthForm({
           </div>
           <p className="mt-2 text-[11px] text-muted">
             You can fine-tune or change it anytime after signing up.
+          </p>
+        </div>
+      )}
+
+      {mode === "register" && (
+        <div className="space-y-3 pt-1">
+          <label className="flex items-start gap-3 text-sm text-muted">
+            <input
+              type="checkbox"
+              name="marketingOptIn"
+              value="yes"
+              className="mt-0.5 h-5 w-5 shrink-0 accent-primary"
+            />
+            <span>
+              Email me occasional product news and offers. Optional — you can
+              unsubscribe at any time.
+            </span>
+          </label>
+          <p className="text-xs text-muted">
+            By creating an account you agree to our{" "}
+            <Link href="/terms" className="font-semibold text-primary-deep underline">
+              Terms of Service
+            </Link>
+            . We use your details to run your account as described in our{" "}
+            <Link href="/privacy" className="font-semibold text-primary-deep underline">
+              Privacy Policy
+            </Link>
+            .
           </p>
         </div>
       )}

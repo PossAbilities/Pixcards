@@ -7,6 +7,7 @@ import { Icon } from "@/components/Icon";
 import { buttonClass, ProBadge, Badge } from "@/components/ui";
 import { UpgradePanel } from "@/components/public/UpgradePanel";
 import { getSessionUser } from "@/lib/auth";
+import { CONTACT_EMAIL } from "@/lib/site";
 import { money, PRO_PRICE_CENTS, CARD_MATERIALS, APP_NAME } from "@/lib/constants";
 
 export const metadata: Metadata = {
@@ -30,11 +31,11 @@ const COMPARISON: { feature: string; basic: Cell; pro: Cell }[] = [
 const FAQS: { q: string; a: string }[] = [
   {
     q: "How does NFC work?",
-    a: "Every Pixcard has a tiny NFC chip embedded inside. When someone taps it to the back of their phone, your digital card opens instantly in their browser — no setup required on your end.",
+    a: "Every Pixcard has a tiny NFC chip embedded inside. When someone taps it against an NFC-enabled phone (most recent iPhones and Android phones), your digital card opens in their browser. Phones without NFC can scan the QR code instead.",
   },
   {
     q: "Do recipients need an app?",
-    a: "No. Your card opens as a normal web page when tapped or scanned. Anyone with a modern smartphone can view it and save your contact details — no downloads, no accounts.",
+    a: "No. Your card opens as a normal web page when tapped or scanned. They can view it and save your contact details without downloading anything or creating an account.",
   },
   {
     q: "Can I update my card later?",
@@ -42,11 +43,11 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "Is Pro a subscription?",
-    a: "No — Pro is a single one-time payment. Pay once and keep unlimited links, premium themes, analytics and custom branding forever.",
+    a: "No — Pro is a single one-time payment. Pay once and keep unlimited links, premium themes, analytics and custom branding for as long as you have your account.",
   },
   {
     q: "What's included in Pro?",
-    a: "Pro unlocks unlimited links, every premium theme, the advanced analytics dashboard, custom branding and priority support — plus access to the premium metal card material.",
+    a: "Pro unlocks unlimited links, every premium theme, the advanced analytics dashboard, custom branding and priority support.",
   },
 ];
 
@@ -62,21 +63,21 @@ export default async function PricingPage({
   return (
     <>
       <SiteNav />
-      <main className="flex-1">
+      <main id="main" className="flex-1">
         {/* Hero */}
         <section className="relative hero-gradient overflow-hidden">
           <div className="absolute -top-10 -right-10 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
           <div className="relative mx-auto max-w-[1200px] px-4 md:px-12 pt-16 pb-20 text-center">
             <Badge color="primary" className="mb-5">
               <Icon name="sell" className="text-[14px]" />
-              No subscriptions, ever
+              Pro is a one-time payment
             </Badge>
             <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tight text-ink">
               Simple, transparent pricing
             </h1>
             <p className="mx-auto mt-4 max-w-xl text-lg text-muted">
               Start free and share your digital card today. Upgrade once to
-              unlock the full power of {APP_NAME} — no recurring fees.
+              unlock Pro with a single payment — no recurring fees.
             </p>
           </div>
         </section>
@@ -97,7 +98,7 @@ export default async function PricingPage({
           <div className="mx-auto grid max-w-4xl items-stretch gap-6 md:grid-cols-2">
             {/* Basic */}
             <Reveal className="flex flex-col rounded-2xl border border-black/5 bg-surface p-8 shadow-sm">
-              <span className="text-xs font-semibold uppercase tracking-wider text-secondary">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted">
                 Free Starter
               </span>
               <h2 className="mt-1 font-display text-2xl font-bold">Basic</h2>
@@ -130,7 +131,7 @@ export default async function PricingPage({
               className="relative flex flex-col rounded-2xl border-2 border-primary bg-surface p-8 shadow-xl md:scale-[1.03]"
             >
               <span className="absolute right-0 top-0 rounded-bl-xl rounded-tr-2xl bg-primary px-3 py-1 text-xs font-bold text-white">
-                MOST POPULAR
+                ONE-TIME PAYMENT
               </span>
               <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
                 Advanced networking <ProBadge />
@@ -143,7 +144,7 @@ export default async function PricingPage({
                 <span className="text-sm text-muted">one-time</span>
               </div>
               <p className="mt-3 text-sm text-muted">
-                Pay once, keep everything forever. No subscription.
+                Pay once — no subscription. Pro stays on your account for as long as you have it.
               </p>
               <ul className="mt-6 flex-1 space-y-3 text-sm">
                 <Perk ok>Everything in Basic</Perk>
@@ -188,13 +189,13 @@ export default async function PricingPage({
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-black/5 bg-surface-high/50">
-                    <th className="px-5 py-4 text-left font-semibold text-muted">
+                    <th scope="col" className="px-5 py-4 text-left font-semibold text-muted">
                       Feature
                     </th>
-                    <th className="px-5 py-4 text-center font-display font-semibold">
+                    <th scope="col" className="px-5 py-4 text-center font-display font-semibold">
                       Basic
                     </th>
-                    <th className="px-5 py-4 text-center font-display font-semibold text-primary">
+                    <th scope="col" className="px-5 py-4 text-center font-display font-semibold text-primary">
                       Pro
                     </th>
                   </tr>
@@ -315,7 +316,7 @@ export default async function PricingPage({
                 </p>
               </div>
               <a
-                href="mailto:hello@pixcards.co.uk?subject=Setting%20up%20an%20organisation"
+                href={`mailto:${CONTACT_EMAIL}?subject=Setting%20up%20an%20organisation`}
                 className={buttonClass("primary", "md")}
               >
                 <Icon name="mail" className="text-[18px]" />
@@ -364,22 +365,29 @@ function CompareCell({ value, pro }: { value: Cell; pro?: boolean }) {
     );
   }
   return value ? (
-    <Icon
-      name="check_circle"
-      className={`text-[20px] ${pro ? "text-primary" : "text-emerald-500"}`}
-    />
+    <>
+      <Icon
+        name="check_circle"
+        className={`text-[20px] ${pro ? "text-primary" : "text-emerald-700"}`}
+      />
+      <span className="sr-only">Included</span>
+    </>
   ) : (
-    <Icon name="remove" className="text-[20px] text-faint/60" />
+    <>
+      <Icon name="remove" className="text-[20px] text-muted" />
+      <span className="sr-only">Not included</span>
+    </>
   );
 }
 
 function Perk({ children, ok }: { children: React.ReactNode; ok?: boolean }) {
   return (
-    <li className={`flex items-center gap-2 ${ok ? "" : "text-faint/60"}`}>
+    <li className={`flex items-center gap-2 ${ok ? "" : "text-muted line-through decoration-1"}`}>
       <Icon
         name={ok ? "check_circle" : "block"}
         className={`text-[18px] ${ok ? "text-primary" : ""}`}
       />
+      <span className="sr-only">{ok ? "Included: " : "Not included: "}</span>
       {children}
     </li>
   );

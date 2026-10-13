@@ -17,7 +17,7 @@ export function Logo({
     >
       {mark && (
         <span className="grid place-items-center w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary-deep text-white shadow-sm shadow-primary/30 transition-transform group-hover:scale-105">
-          <span className="material-symbols-outlined text-[22px] fill">
+          <span aria-hidden="true" className="material-symbols-outlined text-[22px] fill">
             contactless
           </span>
         </span>
