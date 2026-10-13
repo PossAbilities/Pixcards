@@ -124,7 +124,7 @@ function Broadcast({ recipientCount }: { recipientCount: number }) {
     setError(null);
     if (
       !testOnly &&
-      !confirm(`Send this email to all ${recipientCount} users? This can't be undone.`)
+      !confirm(`Send this email to the ${recipientCount} users who opted in to marketing? This can't be undone.`)
     ) {
       return;
     }
@@ -154,7 +154,7 @@ function Broadcast({ recipientCount }: { recipientCount: number }) {
       <SectionHeading
         icon="campaign"
         title="Send a broadcast"
-        action={<Badge color="neutral">{recipientCount} users</Badge>}
+        action={<Badge color="neutral">{recipientCount} opted in</Badge>}
       />
       <div className="space-y-4">
         <div>
@@ -232,7 +232,7 @@ function Broadcast({ recipientCount }: { recipientCount: number }) {
             className={buttonClass("primary", "md")}
           >
             <Icon name="campaign" className="text-[18px]" />
-            Send to all users
+            Send to opted-in users
           </button>
         </div>
 

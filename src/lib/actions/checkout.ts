@@ -27,6 +27,11 @@ export async function createCardOrder(formData: FormData): Promise<{ error: stri
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
+  // Personalised goods: the buyer must acknowledge there's no 14-day
+  // cancellation right before ordering (CCR 2013 reg. 28(1)(b)).
+  if (formData.get("personalisedAck") !== "yes") {
+    return { error: "Please tick the box to confirm your design and order details." };
+  }
   const parsed = orderSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid order" };
@@ -129,6 +134,15 @@ export async function upgradeToPro(
   const user = await getSessionUser();
   if (!user) redirect("/login");
   if (user.plan === "PRO") redirect("/dashboard?already=pro");
+
+  // Digital content starts immediately, so the buyer must expressly agree and
+  // acknowledge losing the 14-day cancellation right first (CCR 2013 reg. 37).
+  if (formData?.get("immediateSupplyConsent") !== "yes") {
+    return {
+      error:
+        "Please tick the box to confirm Pro can start straight away before continuing.",
+    };
+  }
 
   let priceCents = PRO_PRICE_CENTS;
   let redemption: { codeId: string; amountOffCents: number } | null = null;

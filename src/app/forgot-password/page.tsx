@@ -20,7 +20,7 @@ const trust = [
 
 export default function ForgotPasswordPage() {
   return (
-    <main className="min-h-screen flex bg-background">
+    <main id="main" className="min-h-screen flex bg-background">
       {/* Brand panel */}
       <section className="relative hidden md:flex md:w-1/2 lg:w-[55%] flex-col justify-between overflow-hidden bg-gradient-to-br from-primary via-primary to-primary-deep p-10 lg:p-14 text-white">
         {/* decorative blurred circles */}
@@ -31,7 +31,7 @@ export default function ForgotPasswordPage() {
         <div className="relative z-10">
           <span className="inline-flex items-center gap-2 group">
             <span className="grid place-items-center w-9 h-9 rounded-xl bg-white/15 backdrop-blur text-white">
-              <span className="material-symbols-outlined text-[22px] fill">
+              <span aria-hidden="true" className="material-symbols-outlined text-[22px] fill">
                 contactless
               </span>
             </span>
@@ -42,9 +42,9 @@ export default function ForgotPasswordPage() {
         </div>
 
         <div className="relative z-10 max-w-md">
-          <h1 className="font-display text-4xl lg:text-5xl font-extrabold leading-tight tracking-tight">
+          <p className="font-display text-4xl lg:text-5xl font-extrabold leading-tight tracking-tight">
             Let&rsquo;s get you back in.
-          </h1>
+          </p>
           <p className="mt-4 text-white/80 text-lg leading-relaxed">
             Forgotten your password? It happens. Enter your email and we&rsquo;ll
             send you instructions to reset it.
@@ -86,9 +86,9 @@ export default function ForgotPasswordPage() {
           </div>
 
           <div className="rounded-2xl border border-black/5 bg-surface p-7 shadow-[0_8px_30px_rgba(0,0,0,0.06)] sm:p-8">
-            <h2 className="font-display text-2xl font-bold text-ink">
+            <h1 className="font-display text-2xl font-bold text-ink">
               Reset your password
-            </h2>
+            </h1>
             <p className="mt-1.5 mb-6 text-sm text-muted">
               Enter the email associated with your account and we&rsquo;ll send a
               reset link.

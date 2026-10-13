@@ -28,10 +28,12 @@
   /* Text */
   --color-ink: #191c1e;
   --color-muted: #464555;
-  --color-faint: #777587;
+  --color-faint: #656374; /* ≥4.5:1 on every light surface (WCAG AA) */
 
   /* Lines */
   --color-outline: #c7c4d8;
+  /* Form-field borders need ≥3:1 against white (WCAG 1.4.11). */
+  --color-field-border: #8a879c;
 
   /* Status */
   --color-success: #16a34a;
@@ -115,4 +117,67 @@ body {
 }
 .animate-fade-up {
   animation: fade-up 0.7s ease both;
+}
+
+/* ------------------------------ Accessibility ------------------------------ */
+
+/* Visible keyboard focus everywhere (mouse clicks don't trigger it). */
+:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* "Skip to main content" — hidden until focused with the keyboard. */
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -100px;
+  z-index: 100;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--color-ink);
+  color: #fff;
+  font-weight: 600;
+}
+.skip-link:focus {
+  top: 1rem;
+}
+main:focus {
+  outline: none;
+}
+
+/* Scroll-reveal content must stay visible without JS, when printed, and for
+   people who ask for reduced motion. */
+@media (scripting: none) {
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    translate: none !important;
+  }
+}
+@media print {
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    translate: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    translate: none !important;
+  }
 }

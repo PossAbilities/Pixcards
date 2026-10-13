@@ -5,7 +5,7 @@ import { buttonClass } from "@/components/ui";
 
 export default function CardNotFound() {
   return (
-    <main className="grid min-h-dvh place-items-center bg-background px-4">
+    <main id="main" className="grid min-h-dvh place-items-center bg-background px-4">
       <div className="flex max-w-md flex-col items-center text-center">
         <Logo />
         <div className="mt-10 grid h-20 w-20 place-items-center rounded-2xl bg-primary-soft text-primary">

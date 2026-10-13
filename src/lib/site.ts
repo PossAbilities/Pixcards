@@ -1,48 +1,62 @@
-// Central site config — single source of truth for contact + external links.
-// Owners can edit the placeholder URLs below; the rest of the app reads from here
-// so there are no dead links anywhere in the UI.
+// Central site config — single source of truth for contact, business and
+// external links. The legal pages, footer and emails all read from here.
 
-export const CONTACT_EMAIL = "hello@pixcards.app";
+export const CONTACT_EMAIL = "hello@pixcards.co.uk";
 
 export const SUPPORT_RESPONSE_TIME = "within 1 business day";
 
+/**
+ * The legal entity behind Pixcards. UK law (E-Commerce Regulations 2002,
+ * Companies Act 2006, Consumer Contracts Regulations 2013) requires the
+ * operator's legal name, a geographic postal address and — where they exist —
+ * the company/charity number and VAT number to be shown on the site.
+ *
+ * TODO(owner): fill in every `null` below before going live. Fields left as
+ * `null` are simply not displayed, so nothing false is ever shown — but the
+ * site is not compliant until `legalName` and `address` are set.
+ */
+export const BUSINESS = {
+  /** Brand customers see. */
+  tradingName: "Pixcards",
+  /** Who runs the service. */
+  operatorName: "PossAbilities",
+  /** Exact registered name, e.g. "PossAbilities CIC". */
+  legalName: null as string | null,
+  /** e.g. "Community interest company registered in England and Wales". */
+  legalForm: null as string | null,
+  /** Companies House number, e.g. "01234567". */
+  companyNumber: null as string | null,
+  /** Charity number, if a registered charity. */
+  charityNumber: null as string | null,
+  /** Registered office / trading address (a real postal address, not a PO box). */
+  address: null as string | null,
+  /** e.g. "GB 123 4567 89" — leave null if not VAT-registered. */
+  vatNumber: null as string | null,
+};
+
+/** The name to use in legal text: the registered name once set, else the operator. */
+export const LEGAL_NAME = BUSINESS.legalName ?? BUSINESS.operatorName;
+
 export type SocialLink = {
-  label: string;
+  label: "LinkedIn" | "Facebook" | "Instagram" | "X";
   href: string;
 };
 
-/** Working external placeholder URLs — replace with real profiles when ready. */
-export const SOCIAL_LINKS: SocialLink[] = [
-  { label: "LinkedIn", href: "https://www.linkedin.com/" },
-  { label: "Facebook", href: "https://www.facebook.com/" },
-  { label: "X", href: "https://x.com/" },
-];
+/**
+ * Real Pixcards social profiles only. Leave empty until they exist — the footer
+ * hides the icons rather than pointing at a generic homepage.
+ */
+export const SOCIAL_LINKS: SocialLink[] = [];
 
 export type FooterLink = {
   label: string;
   href: string;
 };
 
-export const FOOTER_LINKS: {
-  product: FooterLink[];
-  company: FooterLink[];
-  legal: FooterLink[];
-} = {
-  product: [
-    { label: "Features", href: "/#features" },
-    { label: "Pricing", href: "/pricing" },
-    { label: "Get started", href: "/register" },
-    { label: "Live demo card", href: "/u/alex" },
-  ],
-  company: [
-    { label: "Privacy Policy", href: "/privacy" },
-    { label: "Terms of Service", href: "/terms" },
-    { label: "Cookie Policy", href: "/cookies" },
-    { label: "Support", href: "/support" },
-  ],
-  legal: [
-    { label: "Privacy Policy", href: "/privacy" },
-    { label: "Terms of Service", href: "/terms" },
-    { label: "Cookie Policy", href: "/cookies" },
-  ],
-};
+export const LEGAL_LINKS: FooterLink[] = [
+  { label: "Privacy Policy", href: "/privacy" },
+  { label: "Terms of Service", href: "/terms" },
+  { label: "Refund Policy", href: "/refunds" },
+  { label: "Cookie Policy", href: "/cookies" },
+  { label: "Accessibility", href: "/accessibility" },
+];

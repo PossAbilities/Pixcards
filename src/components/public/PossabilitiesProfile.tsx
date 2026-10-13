@@ -170,7 +170,7 @@ export function PossabilitiesProfile({
       >
         {data.avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={data.avatarUrl} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <img src={data.avatarUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         ) : (
           initialsOf(name || "P")
         )}
@@ -307,7 +307,7 @@ export function PossabilitiesProfile({
         <h1 style={{ fontSize: "clamp(56px,22vw,92px)", fontWeight: 900, lineHeight: 0.95, letterSpacing: "-3px", margin: 0, position: "relative", overflowWrap: "anywhere" }}>{firstName}</h1>
         <p style={{ fontSize: 17, fontWeight: 700, margin: "10px 0 0", position: "relative" }}>{[name, role].filter(Boolean).join(" · ")}</p>
       </header>
-      <main style={{ maxWidth: 480, width: "100%", margin: "0 auto", background: "#fff", borderRadius: "32px 32px 0 0", padding: "26px 22px 24px", display: "flex", flexDirection: "column", gap: 12, boxSizing: "border-box" }}>
+      <div style={{ maxWidth: 480, width: "100%", margin: "0 auto", background: "#fff", borderRadius: "32px 32px 0 0", padding: "26px 22px 24px", display: "flex", flexDirection: "column", gap: 12, boxSizing: "border-box" }}>
         <SaveButton
           style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, minHeight: 54, borderRadius: 16, background: PURPLE, color: "#fff", fontSize: 18, fontWeight: 900, textDecoration: "none" }}
           iconStroke={TEAL}
@@ -327,7 +327,7 @@ export function PossabilitiesProfile({
         <p style={{ textAlign: "center", fontWeight: 900, fontSize: 15, marginTop: "auto", paddingTop: 12 }}>
           Live The Life You Choose
         </p>
-      </main>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { OrderConsent } from "@/components/OrderConsent";
 import { useActionState, useEffect, useState, useTransition } from "react";
 import QRCode from "qrcode";
 import { Icon } from "@/components/Icon";
@@ -103,7 +104,7 @@ export function SavedCardPanel({
         </button>
       </div>
       {themeMsg && (
-        <p className="-mt-3 mb-5 flex items-center gap-1.5 text-sm font-semibold text-emerald-600">
+        <p className="-mt-3 mb-5 flex items-center gap-1.5 text-sm font-semibold text-emerald-700">
           <Icon name="check_circle" className="text-[16px]" />
           {themeMsg}{" "}
           <a href={merge.url} target="_blank" rel="noopener noreferrer" className="underline">
@@ -194,19 +195,23 @@ export function SavedCardPanel({
                   </button>
                 </div>
               )}
-              {codeErr && <p className="mt-1.5 text-sm font-medium text-red-600">{codeErr}</p>}
+              {codeErr && <p role="alert" className="mt-1.5 text-sm font-medium text-red-700">{codeErr}</p>}
+            </div>
+
+            <div className="sm:col-span-2">
+              <OrderConsent />
             </div>
 
             <div className="sm:col-span-2 flex flex-wrap items-center gap-3">
               <button type="submit" disabled={pending} className={buttonClass("primary", "md")}>
                 <Icon name="shopping_cart_checkout" className="text-[18px]" />
-                {pending ? "Starting checkout…" : `Order this design · ${money(totalCents)}`}
+                {pending ? "Starting checkout…" : `Continue to payment · ${money(totalCents)}`}
               </button>
               {applied && (
                 <span className="text-xs text-muted line-through">{money(unitPriceCents)}</span>
               )}
               <span className="text-xs text-muted">White CR80 card · secure checkout</span>
-              {state?.error && <span className="text-sm font-medium text-red-600">{state.error}</span>}
+              {state?.error && <span role="alert" className="text-sm font-medium text-red-700">{state.error}</span>}
             </div>
           </form>
         </>

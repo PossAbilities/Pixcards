@@ -9,7 +9,7 @@ export default async function AdminEmailsPage() {
 
   const [recipientCount, sent, delivered, opened, clicked, bounced, grouped] =
     await Promise.all([
-      prisma.user.count(),
+      prisma.user.count({ where: { marketingOptIn: true } }),
       prisma.emailMessage.count({ where: { status: { not: "demo" } } }),
       prisma.emailMessage.count({
         where: { status: { in: ["delivered", "opened", "clicked"] } },

@@ -8,10 +8,10 @@ export async function SiteNav() {
   const user = await getSessionUser();
   const dashboardHref = user?.role === "ADMIN" ? "/admin" : "/dashboard";
   return (
-    <nav className="sticky top-0 z-50 h-20 glass backdrop-blur-md border-b border-black/5">
+    <header className="sticky top-0 z-50 h-20 glass backdrop-blur-md border-b border-black/5">
       <div className="max-w-[1200px] mx-auto h-full px-4 md:px-12 flex items-center justify-between">
         <Logo />
-        <div className="hidden md:flex items-center gap-9 text-sm font-semibold">
+        <nav aria-label="Main" className="hidden md:flex items-center gap-9 text-sm font-semibold">
           <Link href="/#features" className="text-muted hover:text-primary transition-colors">
             Features
           </Link>
@@ -21,7 +21,7 @@ export async function SiteNav() {
           <Link href="/pricing" className="text-muted hover:text-primary transition-colors">
             Pricing
           </Link>
-        </div>
+        </nav>
         <div className="flex items-center gap-3">
           {user ? (
             <Link href={dashboardHref} className={buttonClass("primary", "md", "hidden sm:inline-flex")}>
@@ -33,16 +33,16 @@ export async function SiteNav() {
                 href="/login"
                 className="hidden sm:inline-flex text-sm font-semibold text-muted hover:text-primary transition-colors"
               >
-                Login
+                Log in
               </Link>
               <Link href="/register" className={buttonClass("primary", "md", "hidden sm:inline-flex")}>
-                Get Started
+                Create an account
               </Link>
             </>
           )}
           <MobileMenu authed={Boolean(user)} dashboardHref={dashboardHref} />
         </div>
       </div>
-    </nav>
+    </header>
   );
 }

@@ -1,106 +1,86 @@
 import type { Metadata } from "next";
-import { SiteNav } from "@/components/marketing/SiteNav";
-import { SiteFooter } from "@/components/marketing/SiteFooter";
-import { CONTACT_EMAIL } from "@/lib/site";
+import Link from "next/link";
+import { LegalPage, Section, MailLink } from "@/components/marketing/LegalPage";
 import { APP_NAME } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: `Cookie Policy | ${APP_NAME}`,
   description:
-    "How Pixcards uses cookies, including the essential session cookie that keeps you signed in and limited analytics.",
+    "Pixcards uses one strictly necessary sign-in cookie and no analytics or advertising cookies.",
 };
 
 export default function CookiesPage() {
   return (
-    <>
-      <SiteNav />
-      <main className="flex-1 bg-surface">
-        <article className="mx-auto max-w-3xl px-4 md:px-6 py-16">
-          <p className="text-sm font-semibold uppercase tracking-wider text-primary">
-            Legal
-          </p>
-          <h1 className="mt-2 font-display text-4xl font-extrabold tracking-tight text-ink">
-            Cookie Policy
-          </h1>
-          <p className="mt-3 text-sm text-faint">Last updated: June 2026</p>
+    <LegalPage title="Cookie Policy" updated="13 October 2026">
+      <p>
+        Cookies are small files a website stores in your browser. This page
+        lists every cookie {APP_NAME} sets.
+      </p>
 
-          <div className="mt-10 space-y-10 text-[15px] leading-relaxed text-muted">
-            <p>
-              This Cookie Policy explains how {APP_NAME} uses cookies and similar
-              technologies when you visit our website or use the Service.
-            </p>
+      <Section id="ours" title="Cookies we set">
+        <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Cookies table">
+          <table className="w-full min-w-[520px] border-collapse text-left text-sm">
+            <caption className="sr-only">Cookies set by {APP_NAME}</caption>
+            <thead>
+              <tr className="border-b border-outline text-ink">
+                <th scope="col" className="py-2 pr-4 font-semibold">Name</th>
+                <th scope="col" className="py-2 pr-4 font-semibold">Purpose</th>
+                <th scope="col" className="py-2 pr-4 font-semibold">Duration</th>
+                <th scope="col" className="py-2 font-semibold">Type</th>
+              </tr>
+            </thead>
+            <tbody className="align-top [&_td]:py-2.5 [&_td]:pr-4">
+              <tr className="border-b border-outline/60">
+                <td><code>pix_session</code></td>
+                <td>Keeps you signed in after you log in. Only set when you sign in.</td>
+                <td>30 days, or until you log out</td>
+                <td>Strictly necessary</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-4">
+          That is the only cookie. Because it is strictly necessary for a
+          service you have asked for, the law (the Privacy and Electronic
+          Communications Regulations) does not require us to ask for consent,
+          which is why there is no cookie banner.
+        </p>
+      </Section>
 
-            <Section title="What Are Cookies?">
-              <p>
-                Cookies are small text files placed on your device when you visit
-                a website. They allow the site to remember your actions and
-                preferences over time — for example, keeping you signed in so you
-                don&rsquo;t have to log in on every page.
-              </p>
-            </Section>
+      <Section id="analytics" title="Analytics">
+        <p>
+          We don&rsquo;t use Google Analytics or any other analytics or
+          advertising cookies. The view and tap counts that card owners see are
+          recorded on our own server without cookies and without storing IP
+          addresses &mdash; see our <Link href="/privacy">Privacy Policy</Link>.
+        </p>
+      </Section>
 
-            <Section title="Essential Session Cookie">
-              <p>
-                {APP_NAME} uses a single{" "}
-                <strong className="text-ink">essential session cookie</strong> to
-                authenticate you and keep you securely signed in to your
-                dashboard. This cookie is strictly necessary for the Service to
-                function and cannot be switched off without breaking sign-in. It
-                does not track you across other websites.
-              </p>
-            </Section>
+      <Section id="third" title="Third-party sites">
+        <p>
+          When you pay, you are taken to Stripe&rsquo;s secure checkout page,
+          which sets its own cookies for fraud prevention under{" "}
+          <a href="https://stripe.com/cookies-policy/legal" rel="noopener noreferrer">
+            Stripe&rsquo;s cookie policy
+          </a>
+          . Links on people&rsquo;s cards (for example to LinkedIn) take you to
+          other websites, which have their own cookie policies.
+        </p>
+      </Section>
 
-            <Section title="Analytics">
-              <p>
-                We use limited, privacy-respecting analytics to understand how the
-                Service is used in aggregate — for example, which features are
-                popular and how cards perform. These analytics help us improve{" "}
-                {APP_NAME} and are not used to build advertising profiles or to
-                identify you individually.
-              </p>
-            </Section>
+      <Section id="manage" title="Managing cookies">
+        <p>
+          You can delete or block cookies in your browser settings. If you block
+          the <code>pix_session</code> cookie you will not be able to sign in,
+          but you can still view cards.
+        </p>
+      </Section>
 
-            <Section title="Managing Cookies">
-              <p>
-                You can control and delete cookies through your browser settings.
-                Please note that blocking the essential session cookie will
-                prevent you from signing in and using your dashboard. Most
-                browsers let you clear existing cookies and block future ones from
-                the privacy or security section of their settings.
-              </p>
-            </Section>
-
-            <Section title="Contact">
-              <p>
-                If you have any questions about our use of cookies, email us at{" "}
-                <a
-                  href={`mailto:${CONTACT_EMAIL}`}
-                  className="font-semibold text-primary hover:text-primary-deep"
-                >
-                  {CONTACT_EMAIL}
-                </a>
-                .
-              </p>
-            </Section>
-          </div>
-        </article>
-      </main>
-      <SiteFooter />
-    </>
-  );
-}
-
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section>
-      <h2 className="mb-3 font-display text-xl font-bold text-ink">{title}</h2>
-      {children}
-    </section>
+      <Section id="contact" title="Contact">
+        <p>
+          Questions? Email <MailLink subject="Cookies" />.
+        </p>
+      </Section>
+    </LegalPage>
   );
 }

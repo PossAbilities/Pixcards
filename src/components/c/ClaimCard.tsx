@@ -49,7 +49,7 @@ export function ClaimCard({ code }: { code: string }) {
         )}
       </button>
       {error && (
-        <p className="mt-3 text-sm font-medium text-red-600">{error}</p>
+        <p role="alert" className="mt-3 text-sm font-medium text-red-700">{error}</p>
       )}
     </div>
   );

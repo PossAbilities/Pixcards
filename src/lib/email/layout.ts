@@ -5,6 +5,8 @@
  * These helpers return HTML strings so templates read declaratively.
  */
 
+import { BUSINESS, LEGAL_NAME } from "@/lib/site";
+
 export const BRAND = {
   gradient: "linear-gradient(135deg,#6366f1 0%,#4f46e5 55%,#3525cd 100%)",
   primary: "#4f46e5",
@@ -89,11 +91,11 @@ export function emailLayout(opts: LayoutOptions): string {
   const marketingFooter = opts.marketing
     ? `
       <p style="margin:0 0 6px;font-family:Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:${BRAND.faint};">
-        You're receiving this because you have a Pixcards account.
+        You're receiving this because you opted in to Pixcards news.
         ${opts.unsubscribeUrl ? `<a href="${opts.unsubscribeUrl}" style="color:${BRAND.faint};text-decoration:underline;">Unsubscribe</a>.` : ""}
       </p>
       <p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:${BRAND.faint};">
-        Pixcards, United Kingdom
+        ${escapeHtml([LEGAL_NAME, BUSINESS.address ?? "United Kingdom"].join(", "))}
       </p>`
     : `
       <p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:${BRAND.faint};">

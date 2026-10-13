@@ -28,6 +28,7 @@
     "html-to-image": "^1.11.13",
     "jose": "^6.2.3",
     "jszip": "^3.10.1",
+    "material-symbols": "^0.40.2",
     "next": "16.2.9",
     "node-forge": "^1.4.0",
     "opentype.js": "^2.0.0",

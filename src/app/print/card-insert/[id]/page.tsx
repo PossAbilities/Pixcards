@@ -215,6 +215,7 @@ function InsertSheet({
               }}
             >
               <span
+                aria-hidden="true"
                 className="material-symbols-outlined"
                 style={{ fontSize: "18px", color: "#4f46e5" }}
               >
@@ -388,6 +389,7 @@ function InsertSheet({
           }}
         >
           <span
+            aria-hidden="true"
             className="material-symbols-outlined"
             style={{ fontSize: "26px" }}
           >

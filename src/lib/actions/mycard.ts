@@ -126,6 +126,11 @@ export async function previewMyCardDiscount(
 export async function orderMyCard(formData: FormData): Promise<{ error: string } | void> {
   const user = await getSessionUser();
   if (!user) redirect("/login");
+  // Personalised goods: the buyer must acknowledge there's no 14-day
+  // cancellation right before ordering (CCR 2013 reg. 28(1)(b)).
+  if (formData.get("personalisedAck") !== "yes") {
+    return { error: "Please tick the box to confirm your design and order details." };
+  }
   const parsed = orderSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid order" };

@@ -97,8 +97,8 @@ export function DigitalCard({
   const template = data.templateId || "classic";
   const [copied, setCopied] = useState(false);
   const dark = t.surface !== "#ffffff";
-  const mutedColor = dark ? "#94a3b8" : "#777587";
-  const subtleColor = dark ? "#64748b" : "#9ca3af";
+  const mutedColor = dark ? "#94a3b8" : "#656374";
+  const subtleColor = dark ? "#94a3b8" : "#6b7280";
 
   function track(type: string, linkId?: string) {
     if (!interactive || !profileId) return;
@@ -187,6 +187,7 @@ export function DigitalCard({
     cls: string,
     style: React.CSSProperties,
     children: React.ReactNode,
+    ariaLabel?: string,
   ) {
     return interactive ? (
       <a
@@ -194,6 +195,7 @@ export function DigitalCard({
         href={link.url}
         target="_blank"
         rel="noopener noreferrer"
+        aria-label={ariaLabel}
         onClick={() => track("LINK_CLICK", link.id)}
         className={cls}
         style={style}
@@ -224,7 +226,7 @@ export function DigitalCard({
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={data.avatarUrl}
-          alt={data.name}
+          alt=""
           className="w-full h-full object-cover"
         />
       ) : (
@@ -269,7 +271,7 @@ export function DigitalCard({
         }}
       >
         <Icon name={copied ? "check" : "ios_share"} className="text-[20px]" />
-        {copied ? "Copied!" : "Share"}
+        <span aria-live="polite">{copied ? "Copied!" : "Share"}</span>
       </button>
     </div>
   );
@@ -387,7 +389,7 @@ export function DigitalCard({
   const footer = hideBranding ? null : (
     <div className="py-6 flex flex-col items-center gap-1 mt-auto">
       <span
-        className="text-[11px] font-bold tracking-widest opacity-60 font-display"
+        className="text-[11px] font-bold tracking-widest opacity-90 font-display"
         style={{ color: accent }}
       >
         POWERED BY PIXCARDS
@@ -501,7 +503,7 @@ export function DigitalCard({
     // Link items record a click; email/phone use a plain anchor.
     const wrapItem = (item: TileItem, cls: string, style: React.CSSProperties, children: React.ReactNode) =>
       item.link
-        ? wrapLink(item.link, cls, style, children)
+        ? wrapLink(item.link, cls, style, children, `${item.label} (opens in a new tab)`)
         : interactive
           ? <a key={item.key} href={item.href} className={cls} style={style} aria-label={item.label}>{children}</a>
           : <div key={item.key} className={cls} style={style}>{children}</div>;
@@ -527,7 +529,7 @@ export function DigitalCard({
           >
             {data.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={data.avatarUrl} alt={data.name} className="h-full w-full object-cover" />
+              <img src={data.avatarUrl} alt="" className="h-full w-full object-cover" />
             ) : (
               <span>{initials(data.name || "P")}</span>
             )}
@@ -604,7 +606,7 @@ export function DigitalCard({
               style={{ background: "#ffffff", color: inkOnWhite, borderColor: `${inkOnWhite}1f` }}
             >
               <Icon name={copied ? "check" : "ios_share"} className="text-[18px]" />
-              {copied ? "Copied!" : shareLabel}
+              <span aria-live="polite">{copied ? "Copied!" : shareLabel}</span>
             </button>
           </div>
 
@@ -661,7 +663,7 @@ export function DigitalCard({
       <div className={wrapperCls} style={wrapperStyle}>
         <div className="relative shrink-0" style={{ height: 340 }}>
           {data.avatarUrl ? (
-            coverImg(data.avatarUrl, data.name)
+            coverImg(data.avatarUrl, "")
           ) : (
             <div
               className="absolute inset-0 grid place-items-center text-white/90 font-display font-bold text-6xl"

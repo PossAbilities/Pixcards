@@ -112,7 +112,7 @@ export function ProBadge({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-0.5 bg-gradient-to-r from-tertiary-bright to-tertiary text-white px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide",
+        "inline-flex items-center gap-0.5 bg-tertiary text-white px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide",
         className,
       )}
     >
@@ -142,4 +142,4 @@ export function Label({
 }
 
 export const inputClass =
-  "w-full px-4 py-2.5 rounded-lg border border-outline bg-surface text-ink placeholder:text-faint/70 focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition";
+  "w-full px-4 py-2.5 rounded-lg border border-field-border bg-surface text-ink placeholder:text-faint focus:border-primary focus:outline-none focus-visible:outline-none focus:ring-2 focus:ring-primary transition";

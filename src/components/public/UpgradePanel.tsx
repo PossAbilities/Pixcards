@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
+import Link from "next/link";
 import { Icon } from "@/components/Icon";
 import { inputClass, buttonClass } from "@/components/ui";
 import { UpgradeButton } from "./UpgradeButton";
@@ -83,9 +84,10 @@ export function UpgradePanel() {
         </div>
         {msg && (
           <p
+            role="status"
             className={cn(
               "mt-1.5 flex items-center gap-1 text-xs font-medium",
-              msg.ok ? "text-emerald-600" : "text-red-600",
+              msg.ok ? "text-emerald-700" : "text-red-700",
             )}
           >
             <Icon
@@ -102,23 +104,48 @@ export function UpgradePanel() {
           <span className="font-medium text-emerald-700">You pay</span>
           <span className="font-display font-bold text-emerald-700">
             {money(applied.finalCents)}{" "}
-            <span className="font-normal text-emerald-600/70 line-through">
+            <span className="font-normal text-emerald-800 line-through">
               {money(PRO_PRICE_CENTS)}
             </span>
           </span>
         </div>
       )}
 
+      <label className="flex items-start gap-3 rounded-lg border border-outline bg-surface-low/60 p-3 text-xs leading-relaxed text-muted">
+        <input
+          type="checkbox"
+          name="immediateSupplyConsent"
+          value="yes"
+          required
+          className="mt-0.5 h-5 w-5 shrink-0 accent-primary"
+        />
+        <span>
+          I want Pro to start straight away, and I understand that once it
+          starts I lose my 14-day right to cancel. I agree to the{" "}
+          <Link href="/terms" className="font-semibold text-primary-deep underline">
+            Terms
+          </Link>{" "}
+          and{" "}
+          <Link href="/refunds" className="font-semibold text-primary-deep underline">
+            Refund Policy
+          </Link>
+          .
+        </span>
+      </label>
+
       {state?.error && (
-        <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+        >
           <Icon name="error" className="mt-0.5 text-[18px] shrink-0" />
           <span>{state.error}</span>
         </div>
       )}
 
-      <UpgradeButton />
-      <p className="text-center text-xs text-faint">
-        Secure checkout · One-time payment
+      <UpgradeButton label="Continue to secure payment" />
+      <p className="text-center text-xs text-muted">
+        One-time payment of {money(applied ? applied.finalCents : PRO_PRICE_CENTS)}, including any VAT. Payment is handled by Stripe.
       </p>
     </form>
   );

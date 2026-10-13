@@ -137,7 +137,7 @@ export default async function PublicCardPage({
   };
 
   return (
-    <main className="min-h-dvh bg-background">
+    <main id="main" className="min-h-dvh bg-background">
       {/* Subtle themed glow at the top for a premium feel */}
       <div
         className="absolute inset-x-0 top-0 h-56 -z-0 opacity-30 blur-3xl pointer-events-none"
@@ -173,7 +173,7 @@ export default async function PublicCardPage({
             </Link>
             <Link
               href="/"
-              className="text-[10px] font-medium uppercase tracking-wider text-faint/70 hover:text-faint transition-colors"
+              className="text-[11px] font-medium uppercase tracking-wider text-faint hover:text-ink transition-colors"
             >
               Powered by {APP_NAME}
             </Link>

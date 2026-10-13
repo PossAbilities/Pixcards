@@ -67,6 +67,7 @@ export async function registerAction(
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
   const { name, email, password } = parsed.data;
+  const marketingOptIn = formData.get("marketingOptIn") === "yes";
 
   let userId: string;
   try {
@@ -94,6 +95,8 @@ export async function registerAction(
         email: email.toLowerCase(),
         passwordHash: await hashPassword(password),
         role: isAdmin ? "ADMIN" : "USER",
+        // Unticked by default; only an explicit tick counts as consent (PECR).
+        ...(marketingOptIn ? { marketingOptIn: true, marketingOptInAt: new Date() } : {}),
         profile: {
           create: {
             username,
