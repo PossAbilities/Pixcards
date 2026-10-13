@@ -97,10 +97,11 @@ export async function registerAction(
         role: isAdmin ? "ADMIN" : "USER",
         // Unticked by default; only an explicit tick counts as consent (PECR).
         ...(marketingOptIn ? { marketingOptIn: true, marketingOptInAt: new Date() } : {}),
+        // The public card's email starts blank so a personal address is never
+        // published without the user choosing to (work domains are filled below).
         profile: {
           create: {
             username,
-            email: email.toLowerCase(),
           },
         },
       },
@@ -111,6 +112,7 @@ export async function registerAction(
     // one, seed it: brand theme + an editable copy of that card design.
     const chosenDesign = (formData.get("design") as string | null)?.trim() || null;
     const domainDesigns = domainDesignsForEmail(email);
+    let workDomain = Boolean(domainDesigns);
     if (chosenDesign && domainDesigns?.options.includes(chosenDesign)) {
       const t = PRESET_PROFILE_THEME[chosenDesign];
       const data: Record<string, unknown> = { cardPreset: chosenDesign };
@@ -136,6 +138,7 @@ export async function registerAction(
       const atDomain = email.slice(email.lastIndexOf("@") + 1).toLowerCase();
       const defaults = await getDomainDefaults(atDomain);
       if (hasDomainDefaults(defaults)) {
+        workDomain = true;
         const prof = await prisma.profile.findUnique({
           where: { userId },
           select: { id: true },
@@ -144,6 +147,15 @@ export async function registerAction(
       }
     } catch (e) {
       console.error("registerAction: could not apply domain defaults", e);
+    }
+
+    // An organisation-issued work address is expected on a work card, so
+    // pre-fill it there (the user can still remove it).
+    if (workDomain) {
+      await prisma.profile.update({
+        where: { userId },
+        data: { email: email.toLowerCase() },
+      });
     }
   } catch (e) {
     console.error("registerAction: database error", e);

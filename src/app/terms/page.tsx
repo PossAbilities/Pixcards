@@ -77,7 +77,9 @@ export default function TermsPage() {
           <Link href="/pricing">pricing page</Link> at the time you buy, for as
           long as your account exists and we operate the Service. If we ever
           close the Service we will give you at least 60 days&rsquo; notice.
-          Prices are shown in pounds sterling and include any VAT that applies.
+          &ldquo;Priority support&rdquo; means we answer Pro members&rsquo;
+          support emails before others in the queue; it is not a guaranteed
+          response time. Prices are shown in pounds sterling and include any VAT that applies.
         </p>
         <p>
           Pro starts immediately after payment. Before you pay, we ask you to
@@ -110,6 +112,7 @@ export default function TermsPage() {
             Cards are printed to your design, so please check names, spelling
             and artwork carefully before ordering. We print what you submit.
           </li>
+          <li>We deliver to addresses in the United Kingdom only.</li>
           <li>
             Unless we tell you otherwise, we will deliver within 30 days of your
             order. If we can&rsquo;t, we will tell you and you can cancel for a

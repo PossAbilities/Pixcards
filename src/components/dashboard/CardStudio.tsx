@@ -1,5 +1,6 @@
 "use client";
 
+import { keyboardRndProps, elementLabel } from "@/lib/keyboard-nudge";
 import { OrderConsent } from "@/components/OrderConsent";
 import {
   useCallback,
@@ -247,7 +248,7 @@ export function CardStudio({
   const [shipAddress, setShipAddress] = useState<string>("");
   const [shipCity, setShipCity] = useState<string>("");
   const [shipPostal, setShipPostal] = useState<string>("");
-  const [shipCountry, setShipCountry] = useState<string>("United Kingdom");
+  const shipCountry = "United Kingdom"; // UK delivery only
   const [personalisedAck, setPersonalisedAck] = useState(false);
   const [discountCode, setDiscountCode] = useState<string>("");
   const [appliedDiscount, setAppliedDiscount] = useState<{
@@ -774,7 +775,6 @@ export function CardStudio({
     if (!shipAddress.trim()) return "Enter a delivery address.";
     if (!shipCity.trim()) return "Enter a city.";
     if (!shipPostal.trim()) return "Enter a postcode.";
-    if (!shipCountry.trim()) return "Enter a country.";
     if (!personalisedAck) return "Please tick the box to confirm your design and order details.";
     return null;
   }
@@ -1038,6 +1038,17 @@ export function CardStudio({
                             setSelectedId(el.id);
                             setShowBgPanel(false);
                           }}
+                          {...keyboardRndProps({
+                            label: elementLabel(el.type, el.text),
+                            box: { x: el.x, y: el.y, w: el.w, h: el.h },
+                            canvas: { w: CARD_W, h: CARD_H },
+                            lockAspect: el.type === "qr",
+                            onSelect: () => {
+                              setSelectedId(el.id);
+                              setShowBgPanel(false);
+                            },
+                            onChange: (b) => updateElement(el.id, b),
+                          })}
                           enableResizing={{
                             top: true,
                             right: true,
@@ -1390,10 +1401,13 @@ export function CardStudio({
                 id="shipCountry"
                 type="text"
                 value={shipCountry}
-                onChange={(e) => setShipCountry(e.target.value)}
-                className={inputClass}
-                placeholder="Country"
+                readOnly
+                aria-describedby="shipCountry-hint"
+                className={`${inputClass} bg-surface-low`}
               />
+              <p id="shipCountry-hint" className="mt-1.5 text-xs text-muted">
+                We currently deliver to UK addresses only.
+              </p>
             </div>
           </div>
         </Card>

@@ -21,23 +21,33 @@ export default function AccessibilityPage() {
         <ul>
           <li>Every page can be used with a keyboard, with a visible focus outline and a &ldquo;Skip to main content&rdquo; link.</li>
           <li>Form fields have labels, and errors are announced to screen readers.</li>
-          <li>Text colours are chosen to meet WCAG contrast ratios.</li>
+          <li>Text on our pages meets WCAG contrast ratios, and we automatically adjust colours that card owners choose so text stays readable.</li>
           <li>Animations are switched off if your device is set to reduce motion.</li>
           <li>Pages work when zoomed to 200% and on small screens.</li>
+        </ul>
+      </Section>
+
+      <Section id="designer" title="Using the card designer with a keyboard">
+        <ul>
+          <li><strong>Tab</strong> to an element on the card to select it.</li>
+          <li><strong>Arrow keys</strong> move it by 1 pixel; hold <strong>Shift</strong> to move 10 pixels.</li>
+          <li><strong>Alt</strong> (Option on a Mac) + <strong>arrow keys</strong> resize it: right and down make it bigger, left and up make it smaller.</li>
+          <li>The panel next to the card sets text, colours, alignment and exact position.</li>
         </ul>
       </Section>
 
       <Section id="known" title="Known issues">
         <ul>
           <li>
-            The drag-and-drop card designer (used to lay out a physical card)
-            needs a mouse or touch screen to move and resize elements. If you
-            can&rsquo;t use it, email us your text and logo and we will lay out
-            the card for you.
+            Placing elements precisely in the card designer is easiest with a
+            mouse or touch screen. If the keyboard controls above don&rsquo;t
+            work for you, email us your text and logo and we&rsquo;ll help you
+            lay out the card.
           </li>
           <li>
-            Colours on a person&rsquo;s card are chosen by its owner, so some
-            custom card designs may have lower contrast.
+            People choose their own card colours and images. We adjust text
+            colours automatically to keep them readable, but a busy background
+            image could still make a card harder to read.
           </li>
         </ul>
       </Section>

@@ -129,8 +129,9 @@ export default function PrivacyPage() {
         <p>
           Your card is published at a public web address so anyone with the
           link, QR code or NFC card can see it. When you sign up, your card
-          starts with your name and sign-up email address; after that, only the
-          details you add are shown. You can unpublish your card or remove details at any
+          shows only your name (plus your work email address if you signed up
+          with an organisation address we support, such as a company domain);
+          after that, only the details you add are shown. You can unpublish your card or remove details at any
           time from your dashboard. Please only add information about other
           people (such as a colleague&rsquo;s photo) if you have the right to
           share it.
@@ -195,7 +196,8 @@ export default function PrivacyPage() {
             <strong>Account, card and activity data</strong> &mdash; until you
             delete your account. Deleting your account permanently removes your
             profile, links, orders, activity history and email records from
-            our systems.
+            our systems. (If a card you&rsquo;ve paid for is still being made,
+            we ask you to wait until it ships so we can deliver it.)
           </li>
           <li>
             <strong>Payment and accounting records</strong> &mdash; held by

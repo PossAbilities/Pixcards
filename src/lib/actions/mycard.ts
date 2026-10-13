@@ -101,7 +101,10 @@ const orderSchema = z.object({
   shipAddress: z.string().min(1, "Enter a delivery address").max(160),
   shipCity: z.string().min(1, "Enter a city").max(80),
   shipPostal: z.string().min(1, "Enter a postcode").max(20),
-  shipCountry: z.string().min(1).max(60).default("United Kingdom"),
+  shipCountry: z
+    .string()
+    .default("United Kingdom")
+    .refine((v) => v === "United Kingdom", "We currently deliver to UK addresses only."),
   discountCode: z.string().max(40).optional().default(""),
 });
 

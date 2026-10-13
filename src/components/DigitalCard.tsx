@@ -29,6 +29,38 @@ function readableInk(hex?: string | null): string {
   return luminance(hex) > 0.62 ? "#12142f" : "#ffffff";
 }
 
+/** WCAG relative luminance of a hex colour. */
+function relLum(hex: string): number {
+  const rgb = rgbOf(hex);
+  if (!rgb) return 1;
+  const [r, g, b] = rgb.map((c) => {
+    const v = c / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function contrastRatio(a: string, b: string): number {
+  const [hi, lo] = [relLum(a), relLum(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/**
+ * The owner's colour, nudged darker (on light backgrounds) or lighter (on
+ * dark ones) just enough to reach WCAG AA contrast for text.
+ */
+function readableOn(fg: string, bg: string, target = 4.5): string {
+  if (!rgbOf(fg) || !rgbOf(bg)) return fg;
+  const towardWhite = relLum(bg) < 0.18;
+  let out = fg;
+  for (let t = 0.05; contrastRatio(out, bg) < target && t <= 1; t += 0.05) {
+    const rgb = rgbOf(fg)!;
+    const m = rgb.map((c) => Math.round(towardWhite ? c + (255 - c) * t : c * (1 - t)));
+    out = `#${m.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
+  }
+  return out;
+}
+
 /** Mix a hex colour toward white by `t` (0 = colour, 1 = white). */
 function mixWhite(hex: string, t: number): string {
   const rgb = rgbOf(hex);
@@ -386,16 +418,19 @@ export function DigitalCard({
     </div>
   );
 
-  const footer = hideBranding ? null : (
-    <div className="py-6 flex flex-col items-center gap-1 mt-auto">
-      <span
-        className="text-[11px] font-bold tracking-widest opacity-90 font-display"
-        style={{ color: accent }}
-      >
-        POWERED BY PIXCARDS
-      </span>
-    </div>
-  );
+  // Branding line, coloured for legibility on whatever it sits on.
+  const renderFooter = (bg: string) =>
+    hideBranding ? null : (
+      <div className="py-6 flex flex-col items-center gap-1 mt-auto">
+        <span
+          className="text-[11px] font-bold tracking-widest font-display"
+          style={{ color: readableOn(accent, bg) }}
+        >
+          POWERED BY PIXCARDS
+        </span>
+      </div>
+    );
+  const footer = renderFooter(t.surface);
 
   const wrapperCls = cn("flex flex-col min-h-full", className);
   const wrapperStyle: React.CSSProperties = {
@@ -462,12 +497,12 @@ export function DigitalCard({
     const emailPhone = (icon: string): Pick<TileItem, "color" | "squarePx" | "squareFill"> => ({
       color: accent,
       squarePx: (px, radius, iconPx) => (
-        <span className="grid place-items-center" style={{ width: px, height: px, borderRadius: radius, background: accent, color: "#fff", boxShadow: shadow }}>
+        <span className="grid place-items-center" style={{ width: px, height: px, borderRadius: radius, background: accent, color: readableInk(accent), boxShadow: shadow }}>
           <Icon name={icon} style={{ fontSize: iconPx }} />
         </span>
       ),
       squareFill: (iconPx) => (
-        <span className="grid aspect-square w-full place-items-center rounded-2xl" style={{ background: accent, color: "#fff", boxShadow: shadow }}>
+        <span className="grid aspect-square w-full place-items-center rounded-2xl" style={{ background: accent, color: readableInk(accent), boxShadow: shadow }}>
           <Icon name={icon} style={{ fontSize: iconPx }} />
         </span>
       ),
@@ -651,7 +686,7 @@ export function DigitalCard({
             </div>
           )}
 
-          {footer}
+          {renderFooter(bodyBg)}
         </div>
       </div>
     );
@@ -791,7 +826,7 @@ export function DigitalCard({
           {(data.jobTitle || data.company) && (
             <span
               className="inline-block text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full"
-              style={{ background: `${accent}1a`, color: accent }}
+              style={{ background: `${accent}1a`, color: readableOn(accent, t.surface, 5) }}
             >
               {[data.jobTitle, data.company].filter(Boolean).join(" · ")}
             </span>
@@ -851,7 +886,7 @@ export function DigitalCard({
         {(data.jobTitle || data.company) && (
           <span
             className="inline-block text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full"
-            style={{ background: `${accent}1a`, color: accent }}
+            style={{ background: `${accent}1a`, color: readableOn(accent, t.surface, 5) }}
           >
             {[data.jobTitle, data.company].filter(Boolean).join(" · ")}
           </span>

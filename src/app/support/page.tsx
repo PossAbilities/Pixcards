@@ -108,8 +108,10 @@ export default function SupportPage() {
                   <p className="mt-3 text-[15px] leading-relaxed text-muted">
                     Our team reads every message. Email us with as much detail as
                     you can — including your account email and what you were
-                    trying to do — and we&rsquo;ll get back to you{" "}
-                    {SUPPORT_RESPONSE_TIME}.
+                    trying to do — and we aim to get back to you{" "}
+                    {SUPPORT_RESPONSE_TIME}. Pro members get priority support:
+                    put &ldquo;Pro&rdquo; in your subject line and we&rsquo;ll
+                    answer your message before others in the queue.
                   </p>
                   <a
                     href={`mailto:${CONTACT_EMAIL}`}
@@ -135,7 +137,7 @@ export default function SupportPage() {
                     Response time
                   </p>
                   <p className="mt-2 text-sm text-muted">
-                    We typically reply {SUPPORT_RESPONSE_TIME}, Monday to Friday.
+                    We aim to reply {SUPPORT_RESPONSE_TIME}, Monday to Friday.
                   </p>
                 </div>
               </div>

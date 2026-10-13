@@ -30,6 +30,18 @@ export async function deleteMyAccount(
   const ok = await verifyPassword(password, user.passwordHash);
   if (!ok) return { error: "That password is incorrect." };
 
+  // Don't wipe the delivery details of a card that's been paid for but not
+  // yet sent — we still need them to fulfil the order.
+  const inProgress = await prisma.order.count({
+    where: { userId: session.id, status: { in: ["PAID", "PRINTING"] } },
+  });
+  if (inProgress > 0) {
+    return {
+      error:
+        "You have a card order that's still being made. Please wait until it has shipped, or email us to cancel it, before deleting your account.",
+    };
+  }
+
   await prisma.user.delete({ where: { id: session.id } });
   await destroySession();
   redirect("/?deleted=1");
