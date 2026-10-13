@@ -11,7 +11,8 @@ const SOCIAL_ICONS: Record<string, string> = {
 
 export function SiteFooter() {
   const company = [
-    BUSINESS.legalForm,
+    BUSINESS.legalForm &&
+      BUSINESS.legalForm.charAt(0).toUpperCase() + BUSINESS.legalForm.slice(1),
     BUSINESS.companyNumber && `Company no. ${BUSINESS.companyNumber}`,
     BUSINESS.charityNumber && `Charity no. ${BUSINESS.charityNumber}`,
     BUSINESS.vatNumber && `VAT ${BUSINESS.vatNumber}`,

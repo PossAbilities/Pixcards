@@ -11,9 +11,8 @@ export const SUPPORT_RESPONSE_TIME = "within 1 business day";
  * operator's legal name, a geographic postal address and — where they exist —
  * the company/charity number and VAT number to be shown on the site.
  *
- * TODO(owner): fill in every `null` below before going live. Fields left as
- * `null` are simply not displayed, so nothing false is ever shown — but the
- * site is not compliant until `legalName` and `address` are set.
+ * Fields left as `null` are simply not displayed, so nothing false is ever
+ * shown.
  */
 export const BUSINESS = {
   /** Brand customers see. */
@@ -21,16 +20,19 @@ export const BUSINESS = {
   /** Who runs the service. */
   operatorName: "PossAbilities",
   /** Exact registered name, e.g. "PossAbilities CIC". */
-  legalName: null as string | null,
+  legalName: "PossAbilities CIC" as string | null,
   /** e.g. "Community interest company registered in England and Wales". */
-  legalForm: null as string | null,
+  legalForm: "community interest company registered in England and Wales" as string | null,
   /** Companies House number, e.g. "01234567". */
-  companyNumber: null as string | null,
+  companyNumber: "08837981" as string | null,
   /** Charity number, if a registered charity. */
   charityNumber: null as string | null,
   /** Registered office / trading address (a real postal address, not a PO box). */
-  address: null as string | null,
-  /** e.g. "GB 123 4567 89" — leave null if not VAT-registered. */
+  address:
+    "The Cherwell Wellbeing Hub, Cherwell Avenue, Heywood, Rochdale, Lancashire, OL10 4SY" as
+      | string
+      | null,
+  /** e.g. "GB 123 4567 89". TODO(owner): PossAbilities is VAT-registered — add the number. */
   vatNumber: null as string | null,
 };
 
