@@ -1,54 +1,94 @@
-# Deploying Pixcards (Netlify + Supabase)
+# Deploying Pixcards (Ryan's Cloud)
 
-A one-time setup. After this, every push to GitHub auto-publishes via Netlify.
+Pixcards runs on the Ryan's Cloud VPS (`178.104.251.61`) as Docker Compose project
+`pixcards`, from `/opt/pixcards` on the server:
 
-## 1. Connect the repo to Netlify
-- Netlify → **Add new site → Import from Git** → pick this repo.
-- Build settings are read from `netlify.toml` automatically:
-  - Build command: `prisma generate && prisma db push && next build`
-  - Node: 22 · Next.js runtime: auto-detected
-
-## 2. Get your Supabase connection strings (IPv4 pooler)
-In Supabase → top **Connect** button → **ORMs** tab → **Prisma**. Copy the two
-lines it shows:
-- `DATABASE_URL` → `...pooler.supabase.com:6543/...?pgbouncer=true`
-- `DIRECT_URL` → `...pooler.supabase.com:5432/...`
-
-> Use the **pooler** strings, not `db.<ref>.supabase.co` — that direct host is
-> IPv6-only and Netlify is IPv4, so it won't connect.
-
-## 3. Set environment variables (Netlify → Site settings → Environment variables)
-
-| Variable | Where to get it |
+| Piece | What it is |
 | --- | --- |
-| `DATABASE_URL` | Supabase Connect → ORMs → Prisma (port 6543) |
-| `DIRECT_URL` | Supabase Connect → ORMs → Prisma (port 5432) |
-| `NEXT_PUBLIC_SUPABASE_URL` | `https://<your-ref>.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Settings → API → anon/public |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API → service_role (secret) |
-| `SUPABASE_STORAGE_BUCKET` | `pixcards-media` |
-| `AUTH_SECRET` | `openssl rand -base64 32` |
-| `NEXT_PUBLIC_APP_URL` | your live URL, e.g. `https://your-site.netlify.app` |
-| `ADMIN_EMAIL` *(optional)* | email that should always be admin |
-| Stripe keys *(optional)* | omit to run payments in demo mode |
+| `pixcards` | the app container (service `app`), built from `/opt/pixcards/app` |
+| `pixcards-db` | PostgreSQL 17; data in the `pixcards_pixcards_db_data` volume |
+| `pixcards-backup` | nightly database backup to Cloudflare R2 |
+| `/opt/pixcards/.env` | the app's settings and secrets (never in git) |
 
-## 4. Deploy
-Trigger a deploy (or push a commit). On build, Netlify runs `prisma db push`,
-which **creates all tables in your Supabase database automatically**.
+On start-up the app runs `prisma db push`, so new database columns and tables are
+created automatically.
 
-## 5. First run
-1. Visit `/register` and create your account — the **first account becomes the
-   admin** (or whichever email matches `ADMIN_EMAIL`).
-2. Admin dashboard is at `/admin`; your public card is at `/u/<your-username>`.
-3. Profile-image uploads go to the Supabase Storage bucket `pixcards-media`
-   (auto-created on first upload).
+## Normal deploys: push to `main`
 
-## Notes
-- **Uploads:** abstracted in `src/lib/storage.ts` — Supabase Storage when the
-  keys are set, inline data-URI fallback otherwise.
-- **Payments:** without `STRIPE_SECRET_KEY`, checkout/upgrade run in demo mode
-  (simulate success) so all flows work before you add Stripe.
-- **Custom domain:** set it in Netlify, then update `NEXT_PUBLIC_APP_URL` to the
-  domain so QR codes / share links use it.
-- **Security:** rotate any DB password / service-role key that was shared in
-  plaintext. Never commit `.env` (it's gitignored).
+Merging a pull request into `main` runs `.github/workflows/deploy.yml`, which uploads
+the code to the server and runs `scripts/deploy-vps.sh`. That script:
+
+1. unpacks the code next to the old copy, then swaps it into `/opt/pixcards/app`
+   (the old code stays in `/opt/pixcards/app-prev`);
+2. rebuilds the image while the current site keeps running;
+3. restarts **only** the app container (the database is never restarted);
+4. checks the new version answers, and if it doesn't within ~90 seconds, rolls back to
+   the previous image automatically.
+
+You can also run it by hand from GitHub → **Actions → Deploy to Ryan's Cloud → Run
+workflow**. If a page still looks old afterwards, purge the Cloudflare cache.
+
+### One-time setup (repository secrets)
+
+On the server (`ssh root@178.104.251.61`), create a key just for GitHub:
+
+```bash
+ssh-keygen -t ed25519 -N "" -C github-deploy-pixcards -f /root/.ssh/github_deploy_pixcards
+cat /root/.ssh/github_deploy_pixcards.pub >> /root/.ssh/authorized_keys
+base64 -w0 /root/.ssh/github_deploy_pixcards; echo
+```
+
+Then in GitHub → repo **Settings → Secrets and variables → Actions → New repository
+secret**, add:
+
+| Name | Value |
+| --- | --- |
+| `VPS_HOST` | `178.104.251.61` |
+| `VPS_USER` | `root` |
+| `VPS_SSH_KEY` | the long line printed by the `base64` command |
+
+Until these exist, the workflow skips the deploy with a warning instead of failing.
+
+## Manual deploy (if GitHub Actions is unavailable)
+
+On the server:
+
+```bash
+curl -L -o /root/pixcards-release.tar.gz https://github.com/PossAbilities/Pixcards/archive/refs/heads/main.tar.gz
+mkdir -p /tmp/pixrel && tar xzf /root/pixcards-release.tar.gz -C /tmp/pixrel --strip-components=1
+cd /tmp/pixrel && tar czf /root/pixcards-release.tar.gz . && cd / && rm -rf /tmp/pixrel
+bash <(curl -sL https://raw.githubusercontent.com/PossAbilities/Pixcards/main/scripts/deploy-vps.sh)
+```
+
+## Rolling back
+
+The previous image is kept as `pixcards:previous`:
+
+```bash
+cd /opt/pixcards
+docker tag pixcards:previous pixcards:latest
+docker compose -p pixcards -f docker-compose.db.yml -f docker-compose.app.yml up -d --no-deps --force-recreate app
+```
+
+## Settings
+
+Edit `/opt/pixcards/.env`, then restart the app (no rebuild needed):
+
+```bash
+cd /opt/pixcards
+docker compose -p pixcards -f docker-compose.db.yml -f docker-compose.app.yml up -d --no-deps --force-recreate app
+```
+
+- `APP_URL` — the public address, e.g. `https://pixcards.co.uk`. Used for QR codes,
+  share links, emails and Stripe redirects. Read at runtime.
+- `DATABASE_URL`, `AUTH_SECRET`, Stripe, Resend and storage keys — see `.env.example`.
+  In production, checkout refuses to run without `STRIPE_SECRET_KEY`.
+
+## Backups
+
+`pixcards-backup` uploads a nightly dump to R2 (`ryan-cloud-backups/pixcards/`). For a
+one-off copy before risky changes:
+
+```bash
+docker exec pixcards-db sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' > /root/pixcards-$(date +%F).sql
+```

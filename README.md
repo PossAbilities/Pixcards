@@ -93,21 +93,11 @@ src/
 prisma/                schema + seed
 ```
 
-## Deploying to Netlify + Supabase
+## Deploying
 
-1. **Database (Supabase):** Project Settings → Database → Connection string.
-   - `DATABASE_URL` → the **Transaction pooler** URL (port `6543`) + `?pgbouncer=true`
-   - `DIRECT_URL` → the **direct/session** URL (port `5432`) — used by `prisma db push`
-2. **Storage (Supabase, optional):** Project Settings → API. Set
-   `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
-   `SUPABASE_SERVICE_ROLE_KEY`. A public bucket (`pixcards-media`) is created
-   automatically on first upload. Without these, uploads fall back to inline
-   data URIs. The **service-role key is secret** — set it in Netlify env, never
-   commit it.
-3. **Netlify:** connect the repo. `netlify.toml` builds with
-   `prisma generate && prisma db push && next build` on Node 22. Set the env
-   vars above plus `AUTH_SECRET` and `NEXT_PUBLIC_APP_URL`. Stripe keys optional
-   (omit → demo mode).
+Production runs on Ryan's Cloud (Docker on the VPS) and deploys automatically when
+`main` changes. See [DEPLOY.md](DEPLOY.md) for the setup, manual deploys, rollback
+and settings.
 
 Image storage is abstracted in `src/lib/storage.ts` (Supabase Storage with an
 inline-data-URI fallback).
