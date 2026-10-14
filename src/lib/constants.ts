@@ -13,8 +13,13 @@ export function configuredAppUrl(): string | undefined {
   return APP_URL_KEYS.map((k) => env[k]).find(Boolean);
 }
 
+/** The live site. Used in production if no URL is configured. */
+export const PRODUCTION_URL = "https://pixcards.co.uk";
+
 export function appUrl(): string {
-  const url = configuredAppUrl() || "http://localhost:3000";
+  const url =
+    configuredAppUrl() ||
+    (process.env.NODE_ENV === "production" ? PRODUCTION_URL : "http://localhost:3000");
   // Strip any trailing slash so `${appUrl()}/u/...` never produces `//u/...`.
   return url.replace(/\/+$/, "");
 }

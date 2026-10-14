@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { domainDesignsForEmail } from "@/lib/card-preset-meta";
+import { DomainDesignPicker } from "@/components/dashboard/DomainDesignPicker";
 import { ensureProfile } from "@/lib/ensure-profile";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -24,6 +26,7 @@ function parseTileOrder(raw: string | null): string[] | null {
 
 export default async function EditProfilePage() {
   const user = await requireUser();
+  const domainDesigns = domainDesignsForEmail(user.email);
   const profile = await prisma.profile.findUnique({
     where: { userId: user.id },
     include: { links: { orderBy: { position: "asc" } } },
@@ -71,6 +74,13 @@ export default async function EditProfilePage() {
           <p className="mt-1 text-muted">Changes go live on your page as you save.</p>
         </div>
       </header>
+      {domainDesigns && (
+        <DomainDesignPicker
+          options={domainDesigns.options}
+          current={profile.cardPreset}
+          orgLabel={domainDesigns.label}
+        />
+      )}
 
       <ProfileEditor
         plan={user.plan}

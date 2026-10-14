@@ -6,6 +6,8 @@ import { CardStudio } from "@/components/dashboard/CardStudio";
 import { SavedCardPanel } from "@/components/dashboard/SavedCardPanel";
 import { appUrl, material } from "@/lib/constants";
 import { loadMyCard } from "@/lib/mycard";
+import { domainDesignsForEmail } from "@/lib/card-preset-meta";
+import { DomainDesignPicker } from "@/components/dashboard/DomainDesignPicker";
 
 export const metadata: Metadata = { title: "Order a card" };
 
@@ -26,6 +28,7 @@ export default async function OrderPage({
   const showSavedCard = Boolean(profile?.cardPreset);
   const myCard = showSavedCard ? await loadMyCard(user.id) : null;
   const presetPrice = material("white-gloss").priceCents;
+  const domainDesigns = domainDesignsForEmail(user.email);
   const defaultTitle =
     profile?.jobTitle && profile.jobTitle.trim().length > 0
       ? profile.jobTitle
@@ -53,6 +56,13 @@ export default async function OrderPage({
         </div>
       )}
 
+      {domainDesigns && (
+        <DomainDesignPicker
+          options={domainDesigns.options}
+          current={profile?.cardPreset ?? null}
+          orgLabel={domainDesigns.label}
+        />
+      )}
       {showSavedCard && myCard ? (
         <>
           <SavedCardPanel
