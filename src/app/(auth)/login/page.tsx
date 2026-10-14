@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Logo } from "@/components/Logo";
@@ -5,6 +6,13 @@ import { Icon } from "@/components/Icon";
 import { CardMockup } from "@/components/CardMockup";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { getSessionUser } from "@/lib/auth";
+
+export const metadata: Metadata = {
+  title: "Log in",
+  description:
+    "Log in to your Pixcards account to edit your digital business card and manage your NFC cards.",
+  alternates: { canonical: "/login" },
+};
 
 const trust = [
   "Tap-to-share NFC cards & dynamic QR codes",
@@ -55,7 +63,7 @@ export default async function LoginPage({
             Welcome back.
           </p>
           <p className="mt-4 text-white/80 text-lg leading-relaxed">
-            Your digital identity, ready to share. Sign in to manage your cards,
+            Your digital identity, ready to share. Log in to manage your cards,
             profile and connections.
           </p>
 

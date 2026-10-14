@@ -156,7 +156,7 @@ export function PossabilitiesManager({
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
       <header className="mb-5">
-        <div className="flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-tertiary-bright">
+        <div className="flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-tertiary">
           <Icon name="domain" className="text-[18px]" />
           DOMAIN CONSOLE
         </div>
@@ -267,7 +267,7 @@ export function PossabilitiesManager({
 
       {/* Per-account table */}
       <Card className="overflow-hidden p-0">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Table">
           <table className="w-full text-left">
             <thead className="bg-surface-low/60 text-[11px] font-semibold uppercase tracking-wide text-muted">
               <tr>

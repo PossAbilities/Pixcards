@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/guards";
 import { Card } from "@/components/ui";
@@ -6,6 +7,8 @@ import {
   DiscountRow,
   type AdminDiscount,
 } from "@/components/admin/DiscountRow";
+
+export const metadata: Metadata = { title: "Discount codes · Admin" };
 
 export default async function AdminDiscountsPage() {
   await requireAdmin();
@@ -46,7 +49,7 @@ export default async function AdminDiscountsPage() {
         </div>
 
         <Card className="overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Table">
             <table className="w-full text-left min-w-[820px]">
               <thead>
                 <tr className="text-xs font-semibold text-faint uppercase tracking-wide bg-surface-low/60">

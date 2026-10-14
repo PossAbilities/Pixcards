@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import { requireAdmin } from "@/lib/guards";
 import { prisma } from "@/lib/db";
 import { cardTapUrl } from "@/lib/cards";
 import { AdminCardsTable, type AdminCardRow } from "@/components/admin/AdminCardsTable";
+
+export const metadata: Metadata = { title: "Cards · Admin" };
 
 export default async function AdminCardsPage() {
   await requireAdmin();

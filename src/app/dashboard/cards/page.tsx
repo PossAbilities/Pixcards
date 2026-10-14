@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { requireUser } from "@/lib/guards";
 import { prisma } from "@/lib/db";
 import { cardTapUrl } from "@/lib/cards";
@@ -10,6 +11,8 @@ import {
   appleWalletMissing,
 } from "@/lib/wallet/config";
 import { CardsManager, type MyCard } from "@/components/dashboard/CardsManager";
+
+export const metadata: Metadata = { title: "My cards" };
 
 export default async function MyCardsPage() {
   const user = await requireUser();
@@ -41,7 +44,7 @@ export default async function MyCardsPage() {
   return (
     <div>
       <header className="mb-6 md:mb-8">
-        <h1 className="font-display text-3xl font-bold text-ink">My Cards</h1>
+        <h1 className="font-display text-3xl font-bold text-ink">My cards</h1>
         <p className="text-muted mt-1">
           Add your card to your phone and manage your physical Pixcards.
         </p>

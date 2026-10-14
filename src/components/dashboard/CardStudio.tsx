@@ -853,11 +853,9 @@ export function CardStudio({
       } catch (err) {
         setMountExport(false);
         setPhase("idle");
-        const reason = err instanceof Error ? err.message : "";
+        console.error("artwork export failed", err);
         setError(
-          `We couldn't prepare your artwork — please try again.${
-            reason ? ` (${reason})` : ""
-          }`,
+          "We couldn't prepare your artwork. Please try again — if it keeps happening, try removing any uploaded images and adding them again.",
         );
         return;
       }
@@ -912,7 +910,7 @@ export function CardStudio({
   /* ------------------------------------------------------------------ */
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_minmax(320px,420px)] gap-8 items-start">
+    <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] gap-8 items-start">
       {/* LEFT — designer + options */}
       <div className="space-y-6">
         {/* ---------------- Designer ---------------- */}
@@ -954,7 +952,7 @@ export function CardStudio({
                       name={s === "front" ? "badge" : "flip_to_back"}
                       className="text-[18px]"
                     />
-                    {s === "front" ? "Front Side" : "Back Side"}
+                    {s === "front" ? "Front" : "Back"}
                   </button>
                 );
               })}
@@ -1118,7 +1116,7 @@ export function CardStudio({
                   className={buttonClass("outline", "sm")}
                 >
                   <Icon name="image" className="text-[18px]" />
-                  Add Image
+                  Add image
                 </button>
                 <button
                   type="button"
@@ -1126,7 +1124,7 @@ export function CardStudio({
                   className={buttonClass("outline", "sm")}
                 >
                   <Icon name="text_fields" className="text-[18px]" />
-                  Add Text
+                  Add text
                 </button>
                 <button
                   type="button"
@@ -1414,7 +1412,7 @@ export function CardStudio({
       </div>
 
       {/* RIGHT — sticky summary + submit */}
-      <div className="lg:sticky lg:top-6 space-y-6">
+      <div className="xl:sticky xl:top-6 space-y-6">
         <Card className="p-6">
           <div className="space-y-5">
             <div>
@@ -1532,7 +1530,7 @@ export function CardStudio({
               ) : (
                 <>
                   <Icon name="lock" className="text-[18px]" />
-                  Continue to payment — {total}
+                  Continue to payment · {total}
                 </>
               )}
             </button>

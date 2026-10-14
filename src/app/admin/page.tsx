@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { Icon } from "@/components/Icon";
 import { Badge, Card, buttonClass } from "@/components/ui";
 import { material, money } from "@/lib/constants";
 import { formatDate, initials } from "@/lib/utils";
+
+export const metadata: Metadata = { title: "Overview · Admin" };
 
 type StatColor = "primary" | "tertiary" | "amber" | "indigo";
 
@@ -124,7 +127,7 @@ export default async function AdminOverviewPage() {
           </Link>
           <Link href="/dashboard/order" className={buttonClass("primary", "md")}>
             <Icon name="add" className="text-[18px]" />
-            Create Order
+            Create order
           </Link>
         </div>
       </header>
@@ -134,28 +137,28 @@ export default async function AdminOverviewPage() {
         <StatCard
           icon="group"
           color="primary"
-          label="Total Users"
+          label="Total users"
           value={nf.format(totalUsers)}
           delta={12}
         />
         <StatCard
           icon="contactless"
           color="tertiary"
-          label="Active Cards"
+          label="Active cards"
           value={nf.format(activeCards)}
           delta={8}
         />
         <StatCard
           icon="pending_actions"
           color="amber"
-          label="Pending Orders"
+          label="Pending orders"
           value={nf.format(pendingOrders)}
           delta={-4}
         />
         <StatCard
           icon="payments"
           color="indigo"
-          label="Total Revenue"
+          label="Total revenue"
           value={money(revenue)}
           delta={18}
         />
@@ -168,7 +171,7 @@ export default async function AdminOverviewPage() {
             <div className="flex items-center gap-2">
               <Icon name="receipt_long" className="text-primary text-[22px]" />
               <h2 className="font-display text-lg font-semibold">
-                Recent Orders
+                Recent orders
               </h2>
             </div>
             <Link
@@ -178,7 +181,7 @@ export default async function AdminOverviewPage() {
               View all
             </Link>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Table">
             <table className="w-full text-left">
               <thead>
                 <tr className="text-xs font-semibold text-faint uppercase tracking-wide">
@@ -243,7 +246,7 @@ export default async function AdminOverviewPage() {
           <div className="flex items-center gap-2">
             <Icon name="local_shipping" fill className="text-[22px]" />
             <h2 className="font-display text-lg font-semibold">
-              Fulfilment Health
+              Fulfilment health
             </h2>
           </div>
           <p className="mt-1 text-sm text-white/70">

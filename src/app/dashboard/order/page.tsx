@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { requireUser } from "@/lib/guards";
 import { prisma } from "@/lib/db";
 import { Icon } from "@/components/Icon";
@@ -5,6 +6,8 @@ import { CardStudio } from "@/components/dashboard/CardStudio";
 import { SavedCardPanel } from "@/components/dashboard/SavedCardPanel";
 import { appUrl, material } from "@/lib/constants";
 import { loadMyCard } from "@/lib/mycard";
+
+export const metadata: Metadata = { title: "Order a card" };
 
 export default async function OrderPage({
   searchParams,
@@ -35,7 +38,7 @@ export default async function OrderPage({
     <div className="mx-auto max-w-6xl">
       <header className="mb-8">
         <h1 className="font-display text-3xl font-bold tracking-tight text-ink">
-          Design Your Pixcard
+          Design your Pixcard
         </h1>
         <p className="mt-1 text-muted">
           Pick a material, personalise your card, and we&apos;ll print and ship

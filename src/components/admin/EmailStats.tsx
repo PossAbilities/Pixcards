@@ -57,7 +57,7 @@ export function EmailStats({ data }: { data: EmailStatsData }) {
       )}
 
       {data.byType.length > 0 && (
-        <div className="mt-5 overflow-x-auto">
+        <div className="mt-5 overflow-x-auto" tabIndex={0} role="region" aria-label="Email types table">
           <table className="w-full min-w-[420px] text-sm">
             <thead>
               <tr className="text-left text-xs font-semibold uppercase tracking-wide text-faint">

@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { OrdersTable } from "@/components/admin/OrdersTable";
 import { type AdminOrder } from "@/components/admin/OrderRow";
+
+export const metadata: Metadata = { title: "Orders · Admin" };
 
 export default async function AdminOrdersPage() {
   const orders = await prisma.order.findMany({

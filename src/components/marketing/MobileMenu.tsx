@@ -76,7 +76,7 @@ export function MobileMenu({
                 onClick={() => setOpen(false)}
                 className={buttonClass("primary", "lg", "w-full")}
               >
-                Go to Dashboard
+                Go to dashboard
               </Link>
             ) : (
               <div className="flex flex-col gap-2">

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
-import { stripe, stripeEnabled } from "@/lib/stripe";
+import { stripe, stripeEnabled, paymentsUnavailable, PAYMENTS_UNAVAILABLE } from "@/lib/stripe";
 import { material, appUrl, PRO_PRICE_CENTS, APP_NAME } from "@/lib/constants";
 import { validateDiscount, recordRedemption } from "@/lib/discounts";
 import { sendOrderReceipt, sendProWelcome } from "@/lib/email/dispatch";
@@ -29,6 +29,7 @@ const orderSchema = z.object({
 export async function createCardOrder(formData: FormData): Promise<{ error: string } | void> {
   const user = await getSessionUser();
   if (!user) redirect("/login");
+  if (paymentsUnavailable) return { error: PAYMENTS_UNAVAILABLE };
 
   // Personalised goods: the buyer must acknowledge there's no 14-day
   // cancellation right before ordering (CCR 2013 reg. 28(1)(b)).
@@ -137,6 +138,7 @@ export async function upgradeToPro(
   const user = await getSessionUser();
   if (!user) redirect("/login");
   if (user.plan === "PRO") redirect("/dashboard?already=pro");
+  if (paymentsUnavailable) return { error: PAYMENTS_UNAVAILABLE };
 
   // Digital content starts immediately, so the buyer must expressly agree and
   // acknowledge losing the 14-day cancellation right first (CCR 2013 reg. 37).

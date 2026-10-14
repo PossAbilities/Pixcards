@@ -8,6 +8,7 @@
  *
  * Started once on server boot from src/instrumentation.ts.
  */
+import { configuredAppUrl } from "@/lib/constants";
 import { prisma } from "@/lib/db";
 
 type Kind = "health" | "security" | "notification";
@@ -106,7 +107,7 @@ async function reportSecurity(): Promise<void> {
   const issues: Issue[] = [];
 
   // What do real clients actually receive? Self-check the public headers.
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const appUrl = configuredAppUrl();
   if (appUrl) {
     try {
       const res = await fetch(appUrl, {

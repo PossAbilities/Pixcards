@@ -82,7 +82,7 @@ export function OrdersTable({ orders }: { orders: AdminOrder[] }) {
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-display text-3xl font-extrabold text-ink">
-            Order Management
+            Order management
           </h1>
           <p className="mt-1 text-muted">
             Production &amp; logistics ·{" "}
@@ -161,7 +161,7 @@ export function OrdersTable({ orders }: { orders: AdminOrder[] }) {
       </header>
 
       <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Table">
           <table className="w-full text-left min-w-[760px]">
             <thead>
               <tr className="text-xs font-semibold text-faint uppercase tracking-wide bg-surface-low/60">

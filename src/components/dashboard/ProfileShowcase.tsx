@@ -67,14 +67,14 @@ export function ProfileShowcase({
           <Icon name="open_in_new" className="text-[18px]" />
           View live page
         </a>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2">
           <button type="button" onClick={downloadQr} className={buttonClass("dark", "md")}>
             <Icon name="qr_code_2" className="text-[18px]" />
-            QR Code
+            Download QR code
           </button>
           <button type="button" onClick={copy} className={buttonClass("outline", "md")}>
             <Icon name={copied ? "check" : "content_copy"} className="text-[18px]" />
-            {copied ? "Copied!" : "Copy Link"}
+            {copied ? "Copied!" : "Copy link"}
           </button>
         </div>
       </div>

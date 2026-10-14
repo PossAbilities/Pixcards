@@ -1,10 +1,19 @@
+import type { Metadata } from "next";
+import { Notice } from "@/components/Notice";
 import { requireUser } from "@/lib/guards";
 import { prisma } from "@/lib/db";
 import { getMyOrg } from "@/lib/org";
 import { OrgManager, type OrgData } from "@/components/dashboard/OrgManager";
 
-export default async function OrgPage() {
+export const metadata: Metadata = { title: "Organisation" };
+
+export default async function OrgPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ subscribed?: string; ordered?: string; cancelled?: string }>;
+}) {
   const user = await requireUser();
+  const query = (await searchParams) ?? {};
   const myOrg = await getMyOrg(user.id);
 
   let data: OrgData = null;
@@ -119,6 +128,19 @@ export default async function OrgPage() {
           Manage your team&apos;s cards, brand and members in one place.
         </p>
       </header>
+      {query.subscribed === "1" && (
+        <Notice className="mb-6">Your organisation plan is active. Thanks!</Notice>
+      )}
+      {query.ordered === "1" && (
+        <Notice className="mb-6">
+          Payment received — your team&apos;s cards are now being made.
+        </Notice>
+      )}
+      {query.cancelled === "1" && (
+        <Notice tone="info" className="mb-6">
+          Checkout cancelled — no payment was taken.
+        </Notice>
+      )}
       <OrgManager data={data} />
     </div>
   );

@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { requireAdmin } from "@/lib/guards";
 import { SecurityCenter } from "@/components/admin/SecurityCenter";
+
+export const metadata: Metadata = { title: "Security · Admin" };
 
 export default async function AdminSecurityPage() {
   await requireAdmin();
@@ -7,7 +10,7 @@ export default async function AdminSecurityPage() {
     <div>
       <header className="mb-6 md:mb-8">
         <h1 className="font-display text-3xl font-bold text-ink">
-          Security &amp; Health
+          Security &amp; health
         </h1>
         <p className="text-muted mt-1">
           Automated checks across your data and configuration, with one-click

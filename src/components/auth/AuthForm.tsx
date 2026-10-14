@@ -26,7 +26,7 @@ function SubmitButton({ mode }: { mode: "login" | "register" }) {
       {pending ? (
         <>
           <Icon name="progress_activity" className="text-[20px] animate-spin" />
-          {mode === "login" ? "Signing in…" : "Creating account…"}
+          {mode === "login" ? "Logging in…" : "Creating account…"}
         </>
       ) : (
         <>

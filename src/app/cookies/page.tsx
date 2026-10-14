@@ -4,7 +4,8 @@ import { LegalPage, Section, MailLink } from "@/components/marketing/LegalPage";
 import { APP_NAME } from "@/lib/constants";
 
 export const metadata: Metadata = {
-  title: `Cookie Policy | ${APP_NAME}`,
+  alternates: { canonical: "/cookies" },
+  title: "Cookie Policy",
   description:
     "Pixcards uses one strictly necessary sign-in cookie and no analytics or advertising cookies.",
 };
@@ -32,7 +33,7 @@ export default function CookiesPage() {
             <tbody className="align-top [&_td]:py-2.5 [&_td]:pr-4">
               <tr className="border-b border-outline/60">
                 <td><code>pix_session</code></td>
-                <td>Keeps you signed in after you log in. Only set when you sign in.</td>
+                <td>Keeps you logged in. Only set when you log in.</td>
                 <td>30 days, or until you log out</td>
                 <td>Strictly necessary</td>
               </tr>
@@ -71,7 +72,7 @@ export default function CookiesPage() {
       <Section id="manage" title="Managing cookies">
         <p>
           You can delete or block cookies in your browser settings. If you block
-          the <code>pix_session</code> cookie you will not be able to sign in,
+          the <code>pix_session</code> cookie you will not be able to log in,
           but you can still view cards.
         </p>
       </Section>

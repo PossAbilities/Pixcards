@@ -5,7 +5,7 @@ The last business card you'll ever need. Pixcards is a full-stack platform for
 premium physical card pre-linked to your account, and grow your network.
 
 Built with **Next.js 16 (App Router)**, **TypeScript**, **Tailwind CSS v4**,
-**Prisma + SQLite**, custom JWT-cookie auth, and **Stripe** (with a built-in
+**Prisma + PostgreSQL**, custom JWT-cookie auth, and **Stripe** (with a built-in
 demo mode so it runs with zero secrets).
 
 ## Features
@@ -49,11 +49,14 @@ Visit `/u/alex` to see a live public card.
 ## Environment
 
 All optional except the database. Without Stripe keys the app runs in **demo
-mode** — checkout flows simulate a successful payment so every flow is testable.
+mode** during local development — checkout flows simulate a successful payment
+so every flow is testable. In production, checkout is refused until Stripe is
+configured.
 
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://user:password@localhost:5432/pixcards"
 AUTH_SECRET="<random-string>"
+# Public site URL, read at runtime (APP_URL also works)
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 
 # Stripe (optional — leave blank for demo mode)

@@ -43,14 +43,17 @@ async function allowedLinkTypes(userId: string): Promise<string[] | null> {
 }
 
 const profileSchema = z.object({
-  name: z.string().min(1).max(60),
-  jobTitle: z.string().max(80).optional().default(""),
-  company: z.string().max(80).optional().default(""),
-  bio: z.string().max(300).optional().default(""),
-  location: z.string().max(80).optional().default(""),
-  phone: z.string().max(40).optional().default(""),
-  email: z.string().max(120).optional().default(""),
-  username: z.string().min(3).max(32),
+  name: z.string().min(1, "Enter your name.").max(60, "Your name can be up to 60 characters."),
+  jobTitle: z.string().max(80, "Job title can be up to 80 characters.").optional().default(""),
+  company: z.string().max(80, "Company can be up to 80 characters.").optional().default(""),
+  bio: z.string().max(300, "Your bio can be up to 300 characters.").optional().default(""),
+  location: z.string().max(80, "Location can be up to 80 characters.").optional().default(""),
+  phone: z.string().max(40, "Phone number can be up to 40 characters.").optional().default(""),
+  email: z.string().max(120, "Email can be up to 120 characters.").optional().default(""),
+  username: z
+    .string()
+    .min(3, "Your username needs at least 3 characters.")
+    .max(32, "Your username can be up to 32 characters."),
 });
 
 export type ActionResult = { ok: boolean; error?: string };
@@ -59,7 +62,7 @@ export async function updateProfile(formData: FormData): Promise<ActionResult> {
   const { user, profile } = await myProfile();
   const parsed = profileSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Please check your details and try again." };
   }
   const d = parsed.data;
   const username = slugify(d.username);
@@ -234,9 +237,9 @@ export async function setTemplate(templateId: string): Promise<ActionResult> {
 const FREE_LINK_LIMIT = 5;
 
 const linkSchema = z.object({
-  platform: z.string().min(1),
-  label: z.string().min(1).max(60),
-  url: z.string().min(1).max(300),
+  platform: z.string().min(1, "Choose a link type."),
+  label: z.string().min(1, "Give the link a label.").max(60, "Labels can be up to 60 characters."),
+  url: z.string().min(1, "Enter the link address.").max(300, "That link is too long."),
 });
 
 function normalizeUrl(platformId: string, raw: string): string {

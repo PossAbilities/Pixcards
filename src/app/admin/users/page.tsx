@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/guards";
 import { UsersTable } from "@/components/admin/UsersTable";
 import { type AdminUser } from "@/components/admin/UserRow";
+
+export const metadata: Metadata = { title: "Users · Admin" };
 
 export default async function AdminUsersPage() {
   const admin = await requireAdmin();

@@ -2,12 +2,12 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Logo } from "@/components/Logo";
 import { Icon } from "@/components/Icon";
+import { buttonClass } from "@/components/ui";
 import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
 import { verifyResetToken } from "@/lib/password-reset";
-import { APP_NAME } from "@/lib/constants";
 
 export const metadata: Metadata = {
-  title: `Set a new password | ${APP_NAME}`,
+  title: "Set a new password",
   robots: { index: false },
 };
 
@@ -29,7 +29,7 @@ export default async function ResetPasswordPage({
             className="inline-flex items-center gap-1 text-sm font-medium text-muted transition hover:text-ink"
           >
             <Icon name="arrow_back" className="text-[16px]" />
-            Back to login
+            Back to log in
           </Link>
         </div>
 
@@ -41,7 +41,7 @@ export default async function ResetPasswordPage({
               </h1>
               <p className="mt-1.5 mb-6 text-sm text-muted">
                 Enter a new password for your Pixcards account. You&rsquo;ll be
-                signed in automatically.
+                logged in automatically.
               </p>
               <ResetPasswordForm token={token} />
             </>
@@ -60,7 +60,7 @@ export default async function ResetPasswordPage({
               </p>
               <Link
                 href="/forgot-password"
-                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:-translate-y-0.5"
+                className={buttonClass("primary", "md", "mt-5 w-full")}
               >
                 Request a new link
               </Link>

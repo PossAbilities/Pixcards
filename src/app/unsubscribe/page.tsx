@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import { Logo } from "@/components/Logo";
 import { UnsubscribeForm } from "@/components/public/UnsubscribeForm";
-import { APP_NAME } from "@/lib/constants";
 
 export const metadata: Metadata = {
-  title: `Unsubscribe | ${APP_NAME}`,
+  title: "Unsubscribe",
   robots: { index: false },
 };
 

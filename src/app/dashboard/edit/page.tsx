@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { ensureProfile } from "@/lib/ensure-profile";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -5,6 +7,8 @@ import { requireUser } from "@/lib/guards";
 import { appUrl } from "@/lib/constants";
 import { Icon } from "@/components/Icon";
 import { ProfileEditor } from "@/components/dashboard/ProfileEditor";
+
+export const metadata: Metadata = { title: "Edit profile" };
 
 
 /** Safe-parse the saved tile order (JSON array of tokens). */
@@ -25,7 +29,11 @@ export default async function EditProfilePage() {
     include: { links: { orderBy: { position: "asc" } } },
   });
 
-  if (!profile) redirect("/login");
+  if (!profile) {
+    // Repair a missing profile instead of looping back through /login.
+    await ensureProfile(user.id, user.name);
+    redirect("/dashboard/edit");
+  }
 
   const shareUrl = `${appUrl()}/u/${profile.username}`;
 

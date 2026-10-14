@@ -10,7 +10,8 @@ import { LEGAL_NAME } from "@/lib/site";
 import { APP_NAME } from "@/lib/constants";
 
 export const metadata: Metadata = {
-  title: `Terms of Service | ${APP_NAME}`,
+  alternates: { canonical: "/terms" },
+  title: "Terms of Service",
   description:
     "The terms for using Pixcards, including accounts, Pro, organisation plans and physical card orders.",
 };

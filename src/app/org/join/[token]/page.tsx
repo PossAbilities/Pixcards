@@ -7,10 +7,9 @@ import { buttonClass } from "@/components/ui";
 import { AcceptInvite } from "@/components/org/AcceptInvite";
 import { prisma } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
-import { APP_NAME } from "@/lib/constants";
 
 export const metadata: Metadata = {
-  title: `Join a team | ${APP_NAME}`,
+  title: "Join a team",
   robots: { index: false },
 };
 
@@ -65,7 +64,7 @@ export default async function OrgJoinPage({
           Join {invite.org.name}
         </h1>
         <p className="mt-2 text-sm text-muted">
-          Sign in or create your free account to join the team and get your
+          Log in or create your free account to join the team and get your
           branded card.
         </p>
         <Link href={`/login?next=${next}`} className={buttonClass("primary", "md", "mt-5 w-full")}>

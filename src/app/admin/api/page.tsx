@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import { requireAdmin } from "@/lib/guards";
 import { prisma } from "@/lib/db";
 import { appUrl } from "@/lib/constants";
 import { ApiKeysManager, type ApiKeyRow } from "@/components/admin/ApiKeysManager";
+
+export const metadata: Metadata = { title: "Monitoring API · Admin" };
 
 export default async function AdminApiPage() {
   await requireAdmin();

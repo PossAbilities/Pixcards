@@ -4,10 +4,10 @@ import { Logo } from "@/components/Logo";
 import { Icon } from "@/components/Icon";
 import { CardMockup } from "@/components/CardMockup";
 import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm";
-import { APP_NAME } from "@/lib/constants";
 
 export const metadata: Metadata = {
-  title: `Reset your password | ${APP_NAME}`,
+  alternates: { canonical: "/forgot-password" },
+  title: "Reset your password",
   description:
     "Forgot your Pixcards password? Enter your email and we'll send reset instructions.",
 };
@@ -102,7 +102,7 @@ export default function ForgotPasswordPage() {
                 className="inline-flex items-center gap-1 font-semibold text-primary hover:text-primary-deep"
               >
                 <Icon name="arrow_back" className="text-[16px]" />
-                Back to login
+                Back to log in
               </Link>
             </p>
           </div>

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Icon } from "@/components/Icon";
 import { Badge, Card, SectionHeading } from "@/components/ui";
 import {
@@ -10,6 +11,8 @@ import {
 import { prisma } from "@/lib/db";
 import { storageProvider } from "@/lib/storage";
 import { MigrateImages } from "@/components/admin/MigrateImages";
+
+export const metadata: Metadata = { title: "Settings · Admin" };
 
 export default async function AdminSettingsPage() {
   const environment = process.env.NODE_ENV ?? "development";
@@ -114,12 +117,12 @@ export default async function AdminSettingsPage() {
                       key={v}
                       className="flex items-center justify-between gap-2 text-xs"
                     >
-                      <code className="font-mono text-faint">{v}</code>
+                      <code className="min-w-0 break-all font-mono text-faint">{v}</code>
                       <span
                         className={
                           has(v)
-                            ? "inline-flex items-center gap-1 font-semibold text-emerald-600"
-                            : "inline-flex items-center gap-1 font-semibold text-red-500"
+                            ? "inline-flex shrink-0 items-center gap-1 font-semibold text-emerald-700"
+                            : "inline-flex shrink-0 items-center gap-1 font-semibold text-red-700"
                         }
                       >
                         <Icon
@@ -242,7 +245,7 @@ export default async function AdminSettingsPage() {
             </p>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Table">
             <table className="w-full text-left">
               <thead>
                 <tr className="text-xs font-semibold text-faint uppercase tracking-wide">

@@ -8,10 +8,11 @@ import { buttonClass, ProBadge, Badge } from "@/components/ui";
 import { UpgradePanel } from "@/components/public/UpgradePanel";
 import { getSessionUser } from "@/lib/auth";
 import { CONTACT_EMAIL } from "@/lib/site";
-import { money, PRO_PRICE_CENTS, CARD_MATERIALS, APP_NAME } from "@/lib/constants";
+import { money, PRO_PRICE_CENTS, CARD_MATERIALS } from "@/lib/constants";
 
 export const metadata: Metadata = {
-  title: `Pricing | ${APP_NAME}`,
+  alternates: { canonical: "/pricing" },
+  title: "Pricing",
   description:
     "Simple, transparent pricing. Start free, or unlock unlimited links, premium themes, advanced analytics and custom branding with a one-time Pro upgrade.",
 };
@@ -95,11 +96,11 @@ export default async function PricingPage({
 
         {/* Plans */}
         <section className="px-4 md:px-12 py-16 bg-surface">
-          <div className="mx-auto grid max-w-4xl items-stretch gap-6 md:grid-cols-2">
+          <div className="mx-auto grid max-w-4xl grid-cols-1 items-stretch gap-6 md:grid-cols-2">
             {/* Basic */}
             <Reveal className="flex flex-col rounded-2xl border border-black/5 bg-surface p-8 shadow-sm">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted">
-                Free Starter
+                Free starter
               </span>
               <h2 className="mt-1 font-display text-2xl font-bold">Basic</h2>
               <div className="mt-3 flex items-baseline gap-1">

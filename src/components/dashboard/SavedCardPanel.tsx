@@ -107,8 +107,10 @@ export function SavedCardPanel({
         <p className="-mt-3 mb-5 flex items-center gap-1.5 text-sm font-semibold text-emerald-700">
           <Icon name="check_circle" className="text-[16px]" />
           {themeMsg}{" "}
-          <a href={merge.url} target="_blank" rel="noopener noreferrer" className="underline">
-            View my profile ↗
+          <a href={merge.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 underline">
+            View my profile
+            <Icon name="open_in_new" className="text-[14px]" />
+            <span className="sr-only">(opens in a new tab)</span>
           </a>
         </p>
       )}

@@ -4,11 +4,11 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/guards";
 import { cardTapUrl } from "@/lib/cards";
-import { appUrl, APP_NAME } from "@/lib/constants";
+import { appUrl } from "@/lib/constants";
 import { PrintToolbar } from "@/components/print/PrintToolbar";
 
 export const metadata: Metadata = {
-  title: `Card insert | ${APP_NAME}`,
+  title: "Card insert",
   robots: { index: false },
 };
 

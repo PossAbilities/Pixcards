@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { ensureProfile } from "@/lib/ensure-profile";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -5,6 +7,8 @@ import { requireUser } from "@/lib/guards";
 import { Card, ProBadge } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import { cn } from "@/lib/utils";
+
+export const metadata: Metadata = { title: "Analytics" };
 
 function startOfDay(d: Date): Date {
   const x = new Date(d);
@@ -20,7 +24,11 @@ export default async function AnalyticsPage() {
     where: { userId: user.id },
     include: { links: true },
   });
-  if (!profile) redirect("/login");
+  if (!profile) {
+    // Repair a missing profile instead of looping back through /login.
+    await ensureProfile(user.id, user.name);
+    redirect("/dashboard/analytics");
+  }
 
   const events = await prisma.analyticsEvent.findMany({
     where: { profileId: profile.id },
@@ -76,9 +84,9 @@ export default async function AnalyticsPage() {
   const maxLink = Math.max(1, ...topLinks.map((l) => l.count));
 
   const stats = [
-    { label: "Total Views", value: totalViews, icon: "visibility", sub: `${views7} in last 7 days` },
-    { label: "Link Clicks", value: linkClicks, icon: "ads_click", sub: "All time" },
-    { label: "Contacts Saved", value: saves, icon: "contact_phone", sub: "vCard downloads" },
+    { label: "Total views", value: totalViews, icon: "visibility", sub: `${views7} in last 7 days` },
+    { label: "Link clicks", value: linkClicks, icon: "ads_click", sub: "All time" },
+    { label: "Contacts saved", value: saves, icon: "contact_phone", sub: "vCard downloads" },
     { label: "Click-through Rate", value: `${ctr}%`, icon: "trending_up", sub: "Clicks / views" },
   ];
 
@@ -122,10 +130,18 @@ export default async function AnalyticsPage() {
         >
           {/* Daily chart */}
           <Card className="p-6">
-            <h3 className="font-display text-lg font-semibold mb-1">
-              Daily Activity
-            </h3>
+            <h2 className="font-display text-lg font-semibold mb-1">
+              Daily activity
+            </h2>
             <p className="text-xs text-muted mb-5">Views over the last 14 days</p>
+            {daily.every((d) => d.count === 0) ? (
+              <div className="grid h-40 place-items-center rounded-xl border border-dashed border-outline text-center text-sm text-muted">
+                <p className="px-6">
+                  No views yet. Share your card link or QR code and your daily
+                  views will show up here.
+                </p>
+              </div>
+            ) : (
             <div className="flex items-end gap-1.5 h-40">
               {daily.map((d, i) => (
                 <div
@@ -140,6 +156,7 @@ export default async function AnalyticsPage() {
                 </div>
               ))}
             </div>
+            )}
             <div className="flex justify-between text-[10px] text-faint mt-2">
               <span>{daily[0]?.label}</span>
               <span>{daily[daily.length - 1]?.label}</span>
@@ -148,7 +165,7 @@ export default async function AnalyticsPage() {
 
           {/* Top links */}
           <Card className="p-6">
-            <h3 className="font-display text-lg font-semibold mb-1">Top Links</h3>
+            <h2 className="font-display text-lg font-semibold mb-1">Top links</h2>
             <p className="text-xs text-muted mb-5">Most clicked destinations</p>
             {topLinks.length === 0 ? (
               <p className="text-sm text-muted py-8 text-center">
@@ -181,9 +198,9 @@ export default async function AnalyticsPage() {
           <div className="absolute inset-0 grid place-items-center">
             <div className="text-center bg-surface/80 backdrop-blur-md rounded-2xl border border-black/5 shadow-lg p-8 max-w-sm">
               <ProBadge className="mb-3" />
-              <h3 className="font-display text-xl font-bold text-ink">
-                Advanced Analytics
-              </h3>
+              <h2 className="font-display text-xl font-bold text-ink">
+                Advanced analytics
+              </h2>
               <p className="text-sm text-muted mt-2 mb-4">
                 Upgrade to Pro to unlock daily activity charts and top-link
                 breakdowns.

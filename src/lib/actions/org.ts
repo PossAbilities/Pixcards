@@ -7,7 +7,7 @@ import { getSessionUser, hashPassword } from "@/lib/auth";
 import { slugify } from "@/lib/utils";
 import { appUrl, material, platform } from "@/lib/constants";
 import { generateCardCode } from "@/lib/cards";
-import { stripe, stripeEnabled } from "@/lib/stripe";
+import { stripe, stripeEnabled, paymentsUnavailable, PAYMENTS_UNAVAILABLE } from "@/lib/stripe";
 import { validateDiscount, recordRedemption } from "@/lib/discounts";
 import { sendOrgInvite } from "@/lib/email/dispatch";
 import { recordEvent } from "@/lib/events";
@@ -33,7 +33,7 @@ async function uniqueUsername(base: string): Promise<string> {
 /** The caller's org membership, or throws. Requires admin role when asked. */
 async function requireOrg(adminOnly: boolean) {
   const user = await getSessionUser();
-  if (!user) throw new Error("Not signed in.");
+  if (!user) throw new Error("Please log in first.");
   const member = await prisma.orgMember.findUnique({
     where: { userId: user.id },
     include: { org: true },
@@ -345,7 +345,7 @@ export async function analyzeBrandGuidelines(input: {
   if (!brandAnalysisEnabled()) {
     return {
       ok: false,
-      error: "AI brand analysis isn't configured yet (ANTHROPIC_API_KEY).",
+      error: "Automatic brand matching isn't available right now. You can set your colours by hand below.",
     };
   }
 
@@ -383,9 +383,10 @@ export async function analyzeBrandGuidelines(input: {
     }
     return { ok: true, suggestion };
   } catch (e) {
+    console.error("analyzeBrandGuidelines failed", e);
     return {
       ok: false,
-      error: e instanceof Error ? e.message : "Brand analysis failed.",
+      error: "We couldn't read that file. Try a PDF, PNG or JPG of your brand guidelines, or set your colours by hand.",
     };
   }
 }
@@ -468,7 +469,7 @@ export async function inviteMember(
 
 export async function acceptOrgInvite(rawToken: string): Promise<OrgResult> {
   const user = await getSessionUser();
-  if (!user) return { ok: false, error: "Please sign in to accept the invite." };
+  if (!user) return { ok: false, error: "Please log in to accept the invite." };
 
   const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
   const invite = await prisma.orgInvite.findUnique({
@@ -531,6 +532,9 @@ export async function startOrgSubscription(): Promise<BillingResult> {
   const { user, org } = await requireOrg(true);
   const seats = Math.max(1, await prisma.orgMember.count({ where: { orgId: org.id } }));
   const priceId = process.env.STRIPE_ORG_SEAT_PRICE_ID;
+  if (process.env.NODE_ENV === "production" && !(stripeEnabled && priceId)) {
+    return { ok: false, error: PAYMENTS_UNAVAILABLE };
+  }
 
   if (stripeEnabled && stripe && priceId) {
     const session = await stripe.checkout.sessions.create({
@@ -641,6 +645,7 @@ export async function orderTeamCards(input: {
   discountCode?: string;
 }): Promise<BillingResult> {
   const { org, user } = await requireOrg(true);
+  if (paymentsUnavailable) return { ok: false, error: PAYMENTS_UNAVAILABLE };
   const members = await prisma.orgMember.findMany({
     where: { id: { in: input.memberIds }, orgId: org.id },
     include: { user: { include: { profile: true } } },

@@ -207,7 +207,7 @@ export function OrgCardDesigner({ data }: { data: NonNullable<OrgData> }) {
       <p className="-mt-1 mb-4 text-sm text-muted">
         Design the front and back once. Each member&apos;s card is printed from
         this with their own details merged into the{" "}
-        <code className="rounded bg-surface-2 px-1 text-xs">{"{{name}}"}</code>{" "}
+        <code className="rounded bg-surface-high px-1 text-xs">{"{{name}}"}</code>{" "}
         fields.
       </p>
 
@@ -342,10 +342,10 @@ export function OrgCardDesigner({ data }: { data: NonNullable<OrgData> }) {
                   {selected.kind} element
                 </span>
                 <div className="flex gap-1">
-                  <button type="button" onClick={() => reorder(selected.id, "back")} title="Send back" className="rounded p-1 hover:bg-surface-2">
+                  <button type="button" onClick={() => reorder(selected.id, "back")} title="Send back" className="rounded p-1 hover:bg-surface-high">
                     <Icon name="flip_to_back" className="text-[16px]" />
                   </button>
-                  <button type="button" onClick={() => reorder(selected.id, "front")} title="Bring forward" className="rounded p-1 hover:bg-surface-2">
+                  <button type="button" onClick={() => reorder(selected.id, "front")} title="Bring forward" className="rounded p-1 hover:bg-surface-high">
                     <Icon name="flip_to_front" className="text-[16px]" />
                   </button>
                   <button type="button" onClick={() => deleteEl(selected.id)} title="Delete" className="rounded p-1 text-red-600 hover:bg-red-50">
@@ -372,13 +372,13 @@ export function OrgCardDesigner({ data }: { data: NonNullable<OrgData> }) {
                     <div className="flex gap-1">
                       {(["left", "center", "right"] as const).map((a) => (
                         <button key={a} type="button" aria-label={`Align ${a}`} aria-pressed={(selected.align ?? "left") === a} onClick={() => updateEl(selected.id, { align: a })}
-                          className={cn("rounded p-1", (selected.align ?? "left") === a ? "bg-primary text-white" : "hover:bg-surface-2")}>
+                          className={cn("rounded p-1", (selected.align ?? "left") === a ? "bg-primary text-white" : "hover:bg-surface-high")}>
                           <Icon name={`format_align_${a}`} className="text-[16px]" />
                         </button>
                       ))}
                     </div>
                     <button type="button" onClick={() => updateEl(selected.id, { fontWeight: (selected.fontWeight ?? 600) >= 700 ? 500 : 700 })}
-                      className={cn("rounded p-1", (selected.fontWeight ?? 600) >= 700 ? "bg-primary text-white" : "hover:bg-surface-2")} title="Bold" aria-label="Bold" aria-pressed={(selected.fontWeight ?? 600) >= 700}>
+                      className={cn("rounded p-1", (selected.fontWeight ?? 600) >= 700 ? "bg-primary text-white" : "hover:bg-surface-high")} title="Bold" aria-label="Bold" aria-pressed={(selected.fontWeight ?? 600) >= 700}>
                       <Icon name="format_bold" className="text-[16px]" />
                     </button>
                   </div>

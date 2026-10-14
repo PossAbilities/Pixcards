@@ -24,7 +24,7 @@ export async function unsubscribeWithToken(
 ): Promise<{ done?: boolean; error?: string }> {
   const userId = await verifyUnsubscribeToken(String(formData.get("token") ?? ""));
   if (!userId) {
-    return { error: "This unsubscribe link is invalid. Please sign in and change your email preferences in your account settings." };
+    return { error: "This unsubscribe link is invalid. Please log in and change your email preferences in your account settings." };
   }
   await prisma.user.updateMany({
     where: { id: userId },

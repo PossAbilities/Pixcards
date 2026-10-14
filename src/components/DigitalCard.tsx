@@ -5,7 +5,7 @@ import { Icon } from "./Icon";
 import { BrandTile, BrandGlyph, brandColor } from "./BrandIcon";
 import { PossabilitiesProfile } from "./public/PossabilitiesProfile";
 import { theme as getTheme } from "@/lib/constants";
-import { buildVCard, initials, cn, orderByTokens } from "@/lib/utils";
+import { buildVCard, initials, cn, orderByTokens, telHref } from "@/lib/utils";
 
 function rgbOf(hex?: string | null): [number, number, number] | null {
   if (!hex || !/^#[0-9a-fA-F]{6}$/.test(hex)) return null;
@@ -129,6 +129,9 @@ export function DigitalCard({
   const template = data.templateId || "classic";
   const [copied, setCopied] = useState(false);
   const dark = t.surface !== "#ffffff";
+  // The person's name is the page heading on their public card, but only a
+  // label inside the dashboard's preview (which has its own <h1>).
+  const NameHeading = interactive ? "h1" : "p";
   const mutedColor = dark ? "#94a3b8" : "#656374";
   const subtleColor = dark ? "#94a3b8" : "#6b7280";
 
@@ -290,7 +293,7 @@ export function DigitalCard({
         style={{ background: accent, boxShadow: `0 10px 24px -8px ${accent}99` }}
       >
         <Icon name="person_add" className="text-[20px]" />
-        Save Contact
+        Save contact
       </button>
       <button
         type="button"
@@ -308,7 +311,11 @@ export function DigitalCard({
     </div>
   );
 
-  const sectionLabel = (
+  // Visitors never see an empty "Connect with me" section; the owner's
+  // preview keeps it, with a prompt to add links.
+  const hideEmptyLinks = interactive && data.links.length === 0;
+
+  const sectionLabel = hideEmptyLinks ? null : (
     <div className="flex items-center gap-2.5">
       <span
         className="text-xs font-semibold uppercase tracking-widest"
@@ -322,7 +329,7 @@ export function DigitalCard({
 
   const linkRows = (
     <div className="flex flex-col gap-3">
-      {data.links.length === 0 && (
+      {data.links.length === 0 && !interactive && (
         <p className="text-sm text-center py-6" style={{ color: subtleColor }}>
           No links added yet.
         </p>
@@ -385,13 +392,13 @@ export function DigitalCard({
     data.email || data.phone ? (
       <div className="flex flex-col gap-3">
         {data.email && contactItem("mail", data.email, `mailto:${data.email}`)}
-        {data.phone && contactItem("call", data.phone, `tel:${data.phone}`)}
+        {data.phone && contactItem("call", data.phone, telHref(data.phone))}
       </div>
     ) : null;
 
   const linkGrid = (
     <div className="grid grid-cols-3 gap-3">
-      {data.links.length === 0 && (
+      {data.links.length === 0 && !interactive && (
         <p
           className="col-span-3 text-sm text-center py-6"
           style={{ color: subtleColor }}
@@ -432,7 +439,8 @@ export function DigitalCard({
     );
   const footer = renderFooter(t.surface);
 
-  const wrapperCls = cn("flex flex-col min-h-full", className);
+  // Long unbroken words (names, emails, URLs) wrap instead of spilling out.
+  const wrapperCls = cn("flex flex-col min-h-full [overflow-wrap:anywhere]", className);
   const wrapperStyle: React.CSSProperties = {
     background: t.surface,
     color: t.ink,
@@ -513,7 +521,7 @@ export function DigitalCard({
           ? [{ key: "email", label: "Email", sub: data.email, href: `mailto:${data.email}`, ...emailPhone("mail") }]
           : []),
         ...(data.phone
-          ? [{ key: "phone", label: "Call", sub: data.phone, href: `tel:${data.phone}`, ...emailPhone("call") }]
+          ? [{ key: "phone", label: "Call", sub: data.phone, href: telHref(data.phone), ...emailPhone("call") }]
           : []),
         ...data.links.map((link) => ({
           key: link.id,
@@ -589,9 +597,9 @@ export function DigitalCard({
             {brandAvatar(avatarPx)}
             {/* pr keeps the name/role clear of the ring accent pinned top-right */}
             <div className="min-w-0 pr-8">
-              <h1 className="font-display text-2xl font-bold leading-tight tracking-tight text-white truncate">
+              <NameHeading className="font-display text-2xl font-bold leading-tight tracking-tight text-white truncate">
                 {data.name || "Your Name"}
-              </h1>
+              </NameHeading>
               {(data.jobTitle || data.company) && (
                 <p className="mt-0.5 truncate text-sm font-semibold" style={{ color: panel }}>
                   {[data.jobTitle, data.company].filter(Boolean).join(" · ")}
@@ -632,7 +640,7 @@ export function DigitalCard({
               style={{ background: accent, boxShadow: `0 10px 24px -8px ${accent}99` }}
             >
               <Icon name="person_add" className="text-[20px]" />
-              Save Contact
+              Save contact
             </button>
             <button
               type="button"
@@ -715,9 +723,9 @@ export function DigitalCard({
             }}
           />
           <div className="absolute bottom-0 left-0 right-0 p-5 pb-6 text-white">
-            <h1 className="font-display text-[28px] font-bold leading-tight tracking-tight drop-shadow">
+            <NameHeading className="font-display text-[28px] font-bold leading-tight tracking-tight drop-shadow">
               {data.name || "Your Name"}
-            </h1>
+            </NameHeading>
             {(data.jobTitle || data.company) && (
               <p className="text-sm font-medium text-white/90 mt-0.5">
                 {[data.jobTitle, data.company].filter(Boolean).join(" · ")}
@@ -773,9 +781,9 @@ export function DigitalCard({
         </div>
 
         <div className="mt-12 px-5 text-center flex flex-col items-center gap-1">
-          <h1 className="font-display text-xl font-bold leading-tight">
+          <NameHeading className="font-display text-xl font-bold leading-tight">
             {data.name || "Your Name"}
-          </h1>
+          </NameHeading>
           {(data.jobTitle || data.company) && (
             <p className="text-xs font-medium" style={{ color: mutedColor }}>
               {[data.jobTitle, data.company].filter(Boolean).join(" · ")}
@@ -799,7 +807,7 @@ export function DigitalCard({
             style={{ background: accent }}
           >
             <Icon name="person_add" className="text-[20px]" />
-            Save Contact
+            Save contact
           </button>
         </div>
 
@@ -820,9 +828,9 @@ export function DigitalCard({
         <div className="h-1.5 w-full shrink-0" style={{ background: accent }} aria-hidden />
         <div className="pt-10 px-5 flex flex-col items-center text-center gap-1.5">
           {avatarNode(96)}
-          <h1 className="font-display text-2xl font-bold leading-tight mt-3">
+          <NameHeading className="font-display text-2xl font-bold leading-tight mt-3">
             {data.name || "Your Name"}
-          </h1>
+          </NameHeading>
           {(data.jobTitle || data.company) && (
             <span
               className="inline-block text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full"
@@ -880,9 +888,9 @@ export function DigitalCard({
       </div>
 
       <div className="mt-14 px-5 text-center flex flex-col items-center gap-1.5">
-        <h1 className="font-display text-[26px] font-bold leading-tight tracking-tight">
+        <NameHeading className="font-display text-[26px] font-bold leading-tight tracking-tight">
           {data.name || "Your Name"}
-        </h1>
+        </NameHeading>
         {(data.jobTitle || data.company) && (
           <span
             className="inline-block text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full"

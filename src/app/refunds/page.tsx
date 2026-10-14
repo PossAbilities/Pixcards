@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalPage, Section, MailLink } from "@/components/marketing/LegalPage";
-import { APP_NAME } from "@/lib/constants";
 
 export const metadata: Metadata = {
-  title: `Refund Policy | ${APP_NAME}`,
+  alternates: { canonical: "/refunds" },
+  title: "Refund Policy",
   description:
     "Cancellations, refunds and faulty cards for Pixcards Pro, organisation plans and physical NFC cards.",
 };

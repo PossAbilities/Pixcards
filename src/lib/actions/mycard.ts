@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
-import { stripe, stripeEnabled } from "@/lib/stripe";
+import { stripe, stripeEnabled, paymentsUnavailable, PAYMENTS_UNAVAILABLE } from "@/lib/stripe";
 import { material, appUrl, APP_NAME } from "@/lib/constants";
 import { recordEvent } from "@/lib/events";
 import { loadMyCard } from "@/lib/mycard";
@@ -25,7 +25,7 @@ export type ActionResult = { ok: boolean; error?: string };
  */
 export async function applyMyCardBrandTheme(): Promise<ActionResult> {
   const user = await getSessionUser();
-  if (!user) return { ok: false, error: "Not signed in." };
+  if (!user) return { ok: false, error: "Please log in first." };
   const profile = await prisma.profile.findUnique({ where: { userId: user.id } });
   if (!profile) return { ok: false, error: "Profile not found." };
   if (!profile.cardPreset) {
@@ -59,7 +59,7 @@ export async function applyMyCardBrandTheme(): Promise<ActionResult> {
  */
 export async function resetMyCardDesign(): Promise<ActionResult & { spec?: string }> {
   const user = await getSessionUser();
-  if (!user) return { ok: false, error: "Not signed in." };
+  if (!user) return { ok: false, error: "Please log in first." };
   const profile = await prisma.profile.findUnique({ where: { userId: user.id } });
   if (!profile) return { ok: false, error: "Profile not found." };
   const preset = profile.cardPreset ?? "perspective";
@@ -76,7 +76,7 @@ export async function resetMyCardDesign(): Promise<ActionResult & { spec?: strin
 /** Save the user's own front+back card design (JSON CardTemplateSpec). */
 export async function updateMyCardDesign(specJson: string): Promise<ActionResult> {
   const user = await getSessionUser();
-  if (!user) return { ok: false, error: "Not signed in." };
+  if (!user) return { ok: false, error: "Please log in first." };
   if (typeof specJson !== "string" || specJson.length > 4_000_000) {
     return { ok: false, error: "That design is too large — try smaller images." };
   }
@@ -117,7 +117,7 @@ export async function previewMyCardDiscount(
   | { ok: false; error: string }
 > {
   const user = await getSessionUser();
-  if (!user) return { ok: false, error: "Not signed in." };
+  if (!user) return { ok: false, error: "Please log in first." };
   const qty = Math.min(50, Math.max(1, Math.floor(quantity) || 1));
   const priceCents = material("white-gloss").priceCents * qty;
   const res = await validateDiscount(code, "CARD", priceCents, user.id);
@@ -129,6 +129,7 @@ export async function previewMyCardDiscount(
 export async function orderMyCard(formData: FormData): Promise<{ error: string } | void> {
   const user = await getSessionUser();
   if (!user) redirect("/login");
+  if (paymentsUnavailable) return { error: PAYMENTS_UNAVAILABLE };
   // Personalised goods: the buyer must acknowledge there's no 14-day
   // cancellation right before ordering (CCR 2013 reg. 28(1)(b)).
   if (formData.get("personalisedAck") !== "yes") {

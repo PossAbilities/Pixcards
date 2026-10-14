@@ -53,7 +53,7 @@ export async function renameCard(
   label: string,
 ): Promise<CardResult> {
   const user = await getSessionUser();
-  if (!user) return { ok: false, error: "Not signed in." };
+  if (!user) return { ok: false, error: "Please log in first." };
 
   const card = await prisma.card.findUnique({ where: { id: cardId } });
   if (!card || card.userId !== user.id) {
@@ -72,7 +72,7 @@ export async function setCardActive(
   active: boolean,
 ): Promise<CardResult> {
   const user = await getSessionUser();
-  if (!user) return { ok: false, error: "Not signed in." };
+  if (!user) return { ok: false, error: "Please log in first." };
 
   const card = await prisma.card.findUnique({ where: { id: cardId } });
   if (!card || card.userId !== user.id) {
@@ -86,7 +86,7 @@ export async function setCardActive(
 /** Unlink a card from the current user so it can be re-activated elsewhere. */
 export async function releaseCard(cardId: string): Promise<CardResult> {
   const user = await getSessionUser();
-  if (!user) return { ok: false, error: "Not signed in." };
+  if (!user) return { ok: false, error: "Please log in first." };
 
   const card = await prisma.card.findUnique({ where: { id: cardId } });
   if (!card || card.userId !== user.id) {

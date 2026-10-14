@@ -38,7 +38,10 @@ export async function POST(req: NextRequest) {
     const url = await storeImage(bytes, file.type, user.id);
     return NextResponse.json({ url });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Upload failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("upload failed", err);
+    return NextResponse.json(
+      { error: "We couldn't save that image. Please try again." },
+      { status: 500 },
+    );
   }
 }

@@ -1,4 +1,5 @@
 import "server-only";
+import { configuredAppUrl } from "@/lib/constants";
 import { prisma } from "@/lib/db";
 import { storageProvider } from "@/lib/storage";
 
@@ -104,7 +105,7 @@ export async function runAudit(): Promise<Finding[]> {
   /* -------------------------- Configuration -------------------------- */
 
   // Public URL.
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+  const appUrl = configuredAppUrl() ?? "";
   out.push(
     !appUrl || appUrl.includes("localhost") || appUrl.includes("netlify.app")
       ? {
