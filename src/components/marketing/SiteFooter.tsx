@@ -15,7 +15,7 @@ export function SiteFooter() {
       BUSINESS.legalForm.charAt(0).toUpperCase() + BUSINESS.legalForm.slice(1),
     BUSINESS.companyNumber && `Company no. ${BUSINESS.companyNumber}`,
     BUSINESS.charityNumber && `Charity no. ${BUSINESS.charityNumber}`,
-    BUSINESS.vatNumber && `VAT ${BUSINESS.vatNumber}`,
+    BUSINESS.vatNumber && `VAT no. ${BUSINESS.vatNumber}`,
     BUSINESS.address,
   ].filter(Boolean);
 

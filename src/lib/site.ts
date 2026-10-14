@@ -32,8 +32,8 @@ export const BUSINESS = {
     "The Cherwell Wellbeing Hub, Cherwell Avenue, Heywood, Rochdale, Lancashire, OL10 4SY" as
       | string
       | null,
-  /** e.g. "GB 123 4567 89". TODO(owner): PossAbilities is VAT-registered — add the number. */
-  vatNumber: null as string | null,
+  /** e.g. "GB 123 4567 89" — leave null if not VAT-registered. */
+  vatNumber: "GB 184 9739 48" as string | null,
 };
 
 /** The name to use in legal text: the registered name once set, else the operator. */
