@@ -226,7 +226,7 @@ export function AdminCardsTable({ cards }: { cards: AdminCardRow[] }) {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Table">
             <table className="w-full min-w-[640px]">
               <thead>
                 <tr className="text-left text-xs font-semibold uppercase tracking-wide text-faint">

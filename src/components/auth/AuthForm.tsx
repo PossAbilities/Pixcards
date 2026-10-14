@@ -6,14 +6,8 @@ import Link from "next/link";
 import { loginAction, registerAction, type AuthState } from "@/app/(auth)/actions";
 import { buttonClass, inputClass, Label } from "@/components/ui";
 import { Icon } from "@/components/Icon";
-import { domainDesignsForEmail } from "@/lib/card-preset-meta";
+import { domainDesignsForEmail, DESIGN_META } from "@/lib/card-preset-meta";
 
-/** Short name + descriptor for each selectable design in the picker. */
-const DESIGN_META: Record<string, { name: string; blurb: string }> = {
-  "pa-colourbar": { name: "Colour Bar", blurb: "Clean & formal" },
-  "pa-wave": { name: "Purple Wave", blurb: "Warm & friendly" },
-  "pa-bigpink": { name: "Big Pink", blurb: "Bold & playful" },
-};
 
 function SubmitButton({ mode }: { mode: "login" | "register" }) {
   const { pending } = useFormStatus();
@@ -26,7 +20,7 @@ function SubmitButton({ mode }: { mode: "login" | "register" }) {
       {pending ? (
         <>
           <Icon name="progress_activity" className="text-[20px] animate-spin" />
-          {mode === "login" ? "Signing in…" : "Creating account…"}
+          {mode === "login" ? "Logging in…" : "Creating account…"}
         </>
       ) : (
         <>

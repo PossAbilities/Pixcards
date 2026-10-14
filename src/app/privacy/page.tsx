@@ -10,7 +10,8 @@ import { LEGAL_NAME } from "@/lib/site";
 import { APP_NAME } from "@/lib/constants";
 
 export const metadata: Metadata = {
-  title: `Privacy Policy | ${APP_NAME}`,
+  alternates: { canonical: "/privacy" },
+  title: "Privacy Policy",
   description:
     "What personal data Pixcards collects, why, who we share it with, how long we keep it and your rights under UK GDPR.",
 };
@@ -245,7 +246,7 @@ export default function PrivacyPage() {
 
       <Section id="cookies" title="9. Cookies">
         <p>
-          We use one strictly necessary cookie to keep you signed in, and no
+          We use one strictly necessary cookie to keep you logged in, and no
           analytics or advertising cookies. See our{" "}
           <Link href="/cookies">Cookie Policy</Link>.
         </p>

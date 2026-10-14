@@ -61,10 +61,18 @@ export const PRESET_OPTIONS: { id: string; label: string }[] = [
   { id: "possabilities", label: "PossAbilities (legacy)" },
 ];
 
+/** Short name + descriptor for each domain design (sign-up and dashboard pickers). */
+export const DESIGN_META: Record<string, { name: string; blurb: string }> = {
+  "pa-colourbar": { name: "Colour Bar", blurb: "Clean & formal" },
+  "pa-wave": { name: "Purple Wave", blurb: "Warm & friendly" },
+  "pa-bigpink": { name: "Big Pink", blurb: "Bold & playful" },
+};
+
 /** The design options offered to a given email domain (registration picker +
  *  the admin domain console). Order is the order shown. */
-export const DOMAIN_DESIGNS: Record<string, { default: string; options: string[] }> = {
+export const DOMAIN_DESIGNS: Record<string, { label: string; default: string; options: string[] }> = {
   "possabilities.org.uk": {
+    label: "PossAbilities",
     default: "pa-colourbar",
     options: ["pa-colourbar", "pa-wave", "pa-bigpink"],
   },
@@ -73,7 +81,7 @@ export const DOMAIN_DESIGNS: Record<string, { default: string; options: string[]
 /** Designs allowed for an email address's domain, or null if none configured. */
 export function domainDesignsForEmail(
   email: string,
-): { domain: string; default: string; options: string[] } | null {
+): { domain: string; label: string; default: string; options: string[] } | null {
   const at = email.lastIndexOf("@");
   if (at < 0) return null;
   const domain = email.slice(at + 1).toLowerCase().trim();

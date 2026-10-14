@@ -8,7 +8,8 @@ import { CONTACT_EMAIL, SUPPORT_RESPONSE_TIME } from "@/lib/site";
 import { APP_NAME } from "@/lib/constants";
 
 export const metadata: Metadata = {
-  title: `Support | ${APP_NAME}`,
+  alternates: { canonical: "/support" },
+  title: "Support",
   description:
     "Help and answers for Pixcards — how NFC works, updating your card, ordering a physical card, Pro features and account help.",
 };
@@ -22,7 +23,7 @@ const TOPICS: { icon: string; q: string; a: string }[] = [
   {
     icon: "edit",
     q: "How do I update my card?",
-    a: "Sign in and head to your dashboard. Edit your name, title, links, photo or theme and changes go live instantly — your physical card always points to the latest version, so you never reprint.",
+    a: "Log in and head to your dashboard. Edit your name, title, links, photo or theme and changes go live instantly — your physical card always points to the latest version, so you never reprint.",
   },
   {
     icon: "local_shipping",
@@ -57,7 +58,7 @@ export default function SupportPage() {
           <div className="relative mx-auto max-w-[1200px] px-4 md:px-12 pt-16 pb-20 text-center">
             <Badge color="primary" className="mb-5">
               <Icon name="help" className="text-[14px]" />
-              Help Center
+              Help centre
             </Badge>
             <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tight text-ink">
               How can we help?

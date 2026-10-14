@@ -1,3 +1,6 @@
+import type { Metadata } from "next";
+import { Notice } from "@/components/Notice";
+import { ensureProfile } from "@/lib/ensure-profile";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/guards";
@@ -5,6 +8,8 @@ import { appUrl, theme as getTheme } from "@/lib/constants";
 import { Icon } from "@/components/Icon";
 import type { CardData } from "@/components/DigitalCard";
 import { ProfileShowcase } from "@/components/dashboard/ProfileShowcase";
+
+export const metadata: Metadata = { title: "Your profile" };
 
 
 /** Safe-parse the saved tile order (JSON array of tokens). */
@@ -21,10 +26,11 @@ function parseTileOrder(raw: string | null): string[] | null {
 export default async function ProfilePage({
   searchParams,
 }: {
-  searchParams?: Promise<{ admin?: string }>;
+  searchParams?: Promise<{ admin?: string; upgraded?: string; already?: string; reset?: string }>;
 }) {
   const user = await requireUser();
-  const adminDenied = (await searchParams)?.admin === "denied";
+  const query = (await searchParams) ?? {};
+  const adminDenied = query.admin === "denied";
   const profile = await prisma.profile.findUnique({
     where: { userId: user.id },
     include: {
@@ -32,7 +38,11 @@ export default async function ProfilePage({
     },
   });
 
-  if (!profile) redirect("/login");
+  if (!profile) {
+    // Repair a missing profile instead of looping back through /login.
+    await ensureProfile(user.id, user.name);
+    redirect("/dashboard");
+  }
 
   const shareUrl = `${appUrl()}/u/${profile.username}`;
   const t = getTheme(profile.theme);
@@ -79,11 +89,25 @@ export default async function ProfilePage({
         <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <Icon name="shield_person" className="mt-0.5 text-[18px]" />
           <span>
-            The admin panel needs an admin account — you&apos;re signed in as{" "}
-            <strong>{user.email}</strong>. Log out, then sign in with your
+            The admin panel needs an admin account — you&apos;re logged in as{" "}
+            <strong>{user.email}</strong>. Log out, then log in with your
             admin account to access it.
           </span>
         </div>
+      )}
+      {query.upgraded === "1" && (
+        <Notice className="mb-6">
+          Payment received — you&apos;re on Pro. Premium themes, unlimited
+          links and advanced analytics are now unlocked.
+        </Notice>
+      )}
+      {query.already === "pro" && (
+        <Notice tone="info" className="mb-6">
+          You&apos;re already on Pro, so there&apos;s nothing more to pay.
+        </Notice>
+      )}
+      {query.reset === "1" && (
+        <Notice className="mb-6">Your password has been changed.</Notice>
       )}
       <header className="mb-6 text-center md:mb-8">
         <h1 className="font-display text-3xl font-bold text-ink">

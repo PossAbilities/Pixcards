@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { DigitalCard, type CardData } from "@/components/DigitalCard";
+import { Icon } from "@/components/Icon";
 import { prisma } from "@/lib/db";
 import { getSessionUser, isPro } from "@/lib/auth";
 import { appUrl, theme as getTheme, APP_NAME } from "@/lib/constants";
@@ -36,7 +37,7 @@ export async function generateMetadata({
   const { username } = await params;
   const profile = await getProfile(username);
   if (!profile) {
-    return { title: `Card not found | ${APP_NAME}` };
+    return { title: "Card not found", robots: { index: false } };
   }
   const name = profile.user.name || username;
   const titleBits = [name, profile.jobTitle].filter(Boolean).join(" — ");
@@ -44,29 +45,21 @@ export async function generateMetadata({
     profile.bio ||
     [profile.jobTitle, profile.company].filter(Boolean).join(" at ") ||
     `${name}'s digital business card on ${APP_NAME}.`;
-  const url = `${appUrl()}/u/${username}`;
-  // Use the image endpoint (never a raw data-URI) for the social preview, so
-  // megabytes of base64 don't end up inside the page <head>.
-  const ogImage = profile.avatarUrl
-    ? profile.avatarUrl.startsWith("data:")
-      ? `${appUrl()}/api/img/avatar/${profile.id}`
-      : profile.avatarUrl
-    : undefined;
+  const path = `/u/${username}`;
+  // The social preview image comes from ./opengraph-image.tsx (a rendered card).
   return {
-    title: `${titleBits} | ${APP_NAME}`,
+    title: titleBits,
     description,
+    alternates: { canonical: path },
+    // Unpublished cards are only visible to their owner — keep them out of search.
+    robots: profile.published ? undefined : { index: false, follow: false },
     openGraph: {
-      title: `${titleBits} | ${APP_NAME}`,
+      title: titleBits,
       description,
-      url,
+      url: path,
       type: "profile",
-      images: ogImage ? [{ url: ogImage }] : undefined,
     },
-    twitter: {
-      card: "summary",
-      title: `${titleBits} | ${APP_NAME}`,
-      description,
-    },
+    twitter: { card: "summary_large_image", title: titleBits, description },
   };
 }
 
@@ -167,15 +160,10 @@ export default async function PublicCardPage({
           <div className="flex flex-col items-center gap-1.5 pt-1 text-center">
             <Link
               href={`/register?from=${encodeURIComponent(`/u/${username}`)}`}
-              className="text-xs font-medium text-faint hover:text-primary transition-colors"
+              className="inline-flex items-center gap-1 text-xs font-medium text-faint hover:text-primary transition-colors"
             >
-              Create your own free card →
-            </Link>
-            <Link
-              href="/"
-              className="text-[11px] font-medium uppercase tracking-wider text-faint hover:text-ink transition-colors"
-            >
-              Powered by {APP_NAME}
+              Create your own free card
+              <Icon name="arrow_forward" className="text-[14px]" />
             </Link>
           </div>
         )}

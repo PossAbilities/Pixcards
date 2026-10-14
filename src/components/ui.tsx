@@ -99,7 +99,7 @@ export function SectionHeading({
     <div className="flex items-center justify-between mb-5">
       <div className="flex items-center gap-2">
         <Icon name={icon} className="text-primary text-[22px]" />
-        <h3 className="font-display text-lg font-semibold">{title}</h3>
+        <h2 className="font-display text-lg font-semibold">{title}</h2>
       </div>
       {action}
     </div>

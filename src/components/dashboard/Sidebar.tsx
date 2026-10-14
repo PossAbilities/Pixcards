@@ -15,8 +15,8 @@ const BASE_NAV: NavItem[] = [
   { href: "/dashboard", label: "Profile", icon: "contact_page" },
   { href: "/dashboard/analytics", label: "Analytics", icon: "monitoring" },
   { href: "/dashboard/orders", label: "Orders", icon: "inventory_2" },
-  { href: "/dashboard/cards", label: "My Cards", icon: "contactless" },
-  { href: "/dashboard/order", label: "Order a Card", icon: "add_card" },
+  { href: "/dashboard/cards", label: "My cards", icon: "contactless" },
+  { href: "/dashboard/order", label: "Order a card", icon: "add_card" },
   { href: "/dashboard/settings", label: "Settings", icon: "settings" },
 ];
 const ORG_NAV_ITEM: NavItem = { href: "/dashboard/org", label: "Organisation", icon: "corporate_fare" };
@@ -66,13 +66,14 @@ export function Sidebar({ user, hasOrg = false }: { user: SidebarUser; hasOrg?: 
           </div>
         </div>
 
-        <nav className="flex-1 px-3 flex flex-col gap-1 overflow-y-auto">
+        <nav aria-label="Dashboard" className="flex-1 px-3 flex flex-col gap-1 overflow-y-auto">
           {NAV.map((item) => {
             const active = isActive(pathname, item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors",
                   active
@@ -97,7 +98,7 @@ export function Sidebar({ user, hasOrg = false }: { user: SidebarUser; hasOrg?: 
               )}
             >
               <Icon name="shield_person" className="text-[20px]" />
-              Admin Panel
+              Admin panel
             </Link>
           )}
         </nav>
@@ -154,15 +155,19 @@ export function Sidebar({ user, hasOrg = false }: { user: SidebarUser; hasOrg?: 
       </header>
 
       {/* Mobile bottom tab bar */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-surface/95 backdrop-blur border-t border-black/5 flex items-stretch justify-around px-1 pb-[env(safe-area-inset-bottom)]">
+      <nav
+        aria-label="Dashboard"
+        className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-surface/95 backdrop-blur border-t border-black/5 flex items-stretch justify-around px-1 pb-[env(safe-area-inset-bottom)]"
+      >
         {NAV.map((item) => {
           const active = isActive(pathname, item.href);
           return (
             <Link
               key={item.href}
               href={item.href}
+              aria-current={active ? "page" : undefined}
               className={cn(
-                "flex flex-col items-center justify-center gap-0.5 flex-1 py-2 text-[10px] font-semibold transition-colors",
+                "flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-semibold transition-colors",
                 active ? "text-primary" : "text-faint",
               )}
             >

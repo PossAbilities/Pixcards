@@ -1,5 +1,10 @@
+import type { Metadata } from "next";
 import { requireAdmin } from "@/lib/guards";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
+
+
+// Private area: keep it out of search results.
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default async function AdminLayout({
   children,

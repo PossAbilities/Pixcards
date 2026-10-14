@@ -3,7 +3,8 @@ import { LegalPage, Section, MailLink } from "@/components/marketing/LegalPage";
 import { APP_NAME } from "@/lib/constants";
 
 export const metadata: Metadata = {
-  title: `Accessibility | ${APP_NAME}`,
+  alternates: { canonical: "/accessibility" },
+  title: "Accessibility",
   description: "How we make Pixcards accessible, known issues and how to get help.",
 };
 

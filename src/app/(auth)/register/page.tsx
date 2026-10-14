@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Logo } from "@/components/Logo";
@@ -5,6 +6,13 @@ import { Icon } from "@/components/Icon";
 import { CardMockup } from "@/components/CardMockup";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { getSessionUser } from "@/lib/auth";
+
+export const metadata: Metadata = {
+  title: "Create your free account",
+  description:
+    "Create a free Pixcards account and build your digital business card in minutes.",
+  alternates: { canonical: "/register" },
+};
 
 const features: { icon: string; text: string }[] = [
   { icon: "contactless", text: "NFC tap & QR code sharing — no app to download" },

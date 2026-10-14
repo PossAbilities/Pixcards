@@ -25,14 +25,14 @@ export function initials(name: string): string {
     .join("");
 }
 
-/** Deterministic pastel colour from a string (for avatar fallbacks). */
+/** Deterministic colour from a string (for avatar fallbacks), dark enough for white initials. */
 export function colorFromString(str: string): string {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);
   }
   const hue = Math.abs(hash) % 360;
-  return `hsl(${hue} 55% 55%)`;
+  return `hsl(${hue} 55% 28%)`; // ≥5:1 against white for every hue
 }
 
 /** Build an RFC-6350 vCard string for "Save Contact". */
@@ -136,4 +136,18 @@ export function orderByTokens<T>(
   return [...items].sort(
     (a, b) => (pos.get(key(a)) ?? fallback(a)) - (pos.get(key(b)) ?? fallback(b)),
   );
+}
+
+/**
+ * A dialable `tel:` link from a typed phone number: keeps the digits and a
+ * leading +, and turns an extension ("ext. 123", "x123") into a ;ext= suffix.
+ */
+export function telHref(phone: string): string {
+  // "+44 (0)20 …": the bracketed trunk 0 is dropped when dialling internationally.
+  const [main, ext] = phone
+    .replace(/\(0\)/g, "")
+    .split(/\s*(?:ext\.?|extension|x)\s*(?=\d)/i);
+  const number = main.trim().replace(/(?!^\+)[^\d]/g, "");
+  const extDigits = ext?.replace(/\D/g, "");
+  return `tel:${number}${extDigits ? `;ext=${extDigits}` : ""}`;
 }

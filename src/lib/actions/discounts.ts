@@ -69,7 +69,7 @@ export async function createDiscount(
   };
   const parsed = createSchema.safeParse(raw);
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Please check your details and try again." };
   }
   const d = parsed.data;
 

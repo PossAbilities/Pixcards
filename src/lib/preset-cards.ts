@@ -276,7 +276,7 @@ export async function defaultPossabilitiesSpec(): Promise<CardTemplateSpec> {
         { id: eid(), kind: "image", x: 0.126, y: 0.6, w: 0.03, h: 0.047, src: c.mail },
         { id: eid(), kind: "text", x: 0.178, y: 0.602, w: 0.45, h: 0.05, text: "{{email}}", color: PA_INK, fontSize: 21, fontWeight: 500, align: "left" },
         { id: eid(), kind: "image", x: 0.126, y: 0.68, w: 0.03, h: 0.047, src: c.globe },
-        { id: eid(), kind: "text", x: 0.178, y: 0.682, w: 0.45, h: 0.05, text: "possabilities.com.au", color: PA_INK, fontSize: 21, fontWeight: 500, align: "left" },
+        { id: eid(), kind: "text", x: 0.178, y: 0.682, w: 0.45, h: 0.05, text: "possabilities.org.uk", color: PA_INK, fontSize: 21, fontWeight: 500, align: "left" },
         { id: eid(), kind: "image", x: 0.126, y: 0.76, w: 0.03, h: 0.047, src: c.pin },
         { id: eid(), kind: "text", x: 0.178, y: 0.762, w: 0.45, h: 0.05, text: "{{location}}", color: PA_INK, fontSize: 21, fontWeight: 500, align: "left" },
         // tap disc labels
@@ -295,7 +295,7 @@ export async function defaultPossabilitiesSpec(): Promise<CardTemplateSpec> {
         paWordmark({ y: 200, size: 62, possColor: "#ffffff", abilColor: PA_MAGENTA, centerX: 0.5 }),
         { id: eid(), kind: "text", x: 0.15, y: 0.45, w: 0.7, h: 0.05, text: "ENABLING INCLUSIVE POSSIBILITIES", color: "#ffffff", fontSize: 18, fontWeight: 600, align: "center" },
         { id: eid(), kind: "text", x: 0.1, y: 0.6, w: 0.8, h: 0.06, text: "EMPOWER  ·  INCLUDE  ·  ACHIEVE", richText: empowerRich, color: "#ffffff", fontSize: 22, fontWeight: 700, align: "center" },
-        { id: eid(), kind: "text", x: 0.42, y: 0.845, w: 0.45, h: 0.05, text: "possabilities.com.au", color: "#ffffff", fontSize: 24, fontWeight: 600, align: "left" },
+        { id: eid(), kind: "text", x: 0.42, y: 0.845, w: 0.45, h: 0.05, text: "possabilities.org.uk", color: "#ffffff", fontSize: 24, fontWeight: 600, align: "left" },
       ],
     },
   };

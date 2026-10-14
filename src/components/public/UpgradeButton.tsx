@@ -3,6 +3,7 @@
 import { useFormStatus } from "react-dom";
 import { Icon } from "@/components/Icon";
 import { cn } from "@/lib/utils";
+import { buttonClass } from "@/components/ui";
 
 export function UpgradeButton({
   label = "Upgrade to Pro",
@@ -16,10 +17,7 @@ export function UpgradeButton({
     <button
       type="submit"
       disabled={pending}
-      className={cn(
-        "inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-base font-semibold text-white shadow-sm shadow-primary/30 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/40 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-60",
-        className,
-      )}
+      className={buttonClass("primary", "lg", cn("w-full", className))}
     >
       {pending ? (
         <>

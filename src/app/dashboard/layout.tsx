@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import { requireUser } from "@/lib/guards";
 import { prisma } from "@/lib/db";
 import { Sidebar } from "@/components/dashboard/Sidebar";
+
+
+// Private area: keep it out of search results.
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default async function DashboardLayout({
   children,

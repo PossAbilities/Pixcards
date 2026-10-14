@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { Notice } from "@/components/Notice";
 import Link from "next/link";
 import { SiteNav } from "@/components/marketing/SiteNav";
 import { SiteFooter } from "@/components/marketing/SiteFooter";
@@ -7,11 +9,28 @@ import { Icon } from "@/components/Icon";
 import { buttonClass, Badge } from "@/components/ui";
 import { money, PRO_PRICE_CENTS } from "@/lib/constants";
 
-export default function LandingPage() {
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
+
+export default async function LandingPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ deleted?: string }>;
+}) {
+  const deleted = (await searchParams)?.deleted === "1";
   return (
     <>
       <SiteNav />
       <main id="main" className="flex-1">
+        {deleted && (
+          <div className="mx-auto max-w-[1200px] px-4 pt-6 md:px-12">
+            <Notice>
+              Your account and its data have been deleted. Thanks for using
+              Pixcards.
+            </Notice>
+          </div>
+        )}
         {/* Hero */}
         <section className="relative hero-gradient overflow-hidden">
           <div className="absolute -top-10 -right-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl" />
@@ -35,7 +54,7 @@ export default function LandingPage() {
                   Create your free card
                 </Link>
                 <Link href="/pricing" className={buttonClass("outline", "lg")}>
-                  View Pricing
+                  View pricing
                 </Link>
               </div>
               <p className="mt-6 text-sm text-muted">
@@ -112,7 +131,7 @@ export default function LandingPage() {
             </Reveal>
             <div className="grid md:grid-cols-4 gap-6">
               {[
-                { icon: "person_add", title: "Create your profile", body: "Sign up free and build your digital card with links, socials and contact details." },
+                { icon: "person_add", title: "Create your profile", body: "Create a free account and build your digital card with links, socials and contact details." },
                 { icon: "design_services", title: "Design your card", body: "Design the front and back of your physical card to match your brand." },
                 { icon: "local_shipping", title: "We print & ship", body: "Your NFC card is produced and delivered, pre-linked to your account." },
                 { icon: "contactless", title: "Tap & share", body: "Tap your card or show your QR code to share everything instantly." },
@@ -137,9 +156,9 @@ export default function LandingPage() {
               <h2 className="font-display text-3xl font-bold">Simple, Transparent Pricing</h2>
               <p className="mt-2 text-muted">Choose the plan that fits your networking style.</p>
             </Reveal>
-            <div className="grid md:grid-cols-2 gap-6 items-stretch">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
               <Reveal className="bg-surface rounded-2xl border border-black/5 shadow-sm p-8 flex flex-col">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted">Free Starter</span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted">Free starter</span>
                 <h3 className="font-display text-2xl font-bold mt-1">Basic</h3>
                 <div className="flex items-baseline gap-1 mt-3">
                   <span className="font-display text-4xl font-extrabold">£0</span>

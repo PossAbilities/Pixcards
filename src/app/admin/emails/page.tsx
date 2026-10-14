@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import { requireAdmin } from "@/lib/guards";
 import { prisma } from "@/lib/db";
 import { emailEnabled } from "@/lib/email/send";
 import { EmailStudio } from "@/components/admin/EmailStudio";
 import { EmailStats, type EmailStatsData } from "@/components/admin/EmailStats";
+
+export const metadata: Metadata = { title: "Emails · Admin" };
 
 export default async function AdminEmailsPage() {
   await requireAdmin();

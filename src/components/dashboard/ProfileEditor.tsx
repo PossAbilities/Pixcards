@@ -91,6 +91,8 @@ export function ProfileEditor({
   allowedPlatforms?: string[];
 }) {
   const isPro = plan === "PRO";
+  // "pixcards.co.uk/u/" — the real public-link prefix, without the protocol.
+  const linkPrefix = shareUrl.replace(/^https?:\/\//, "").replace(/[^/]*$/, "");
 
   const [form, setForm] = useState<ProfileState>(profile);
   const [links, setLinks] = useState<EditorLink[]>(initialLinks);
@@ -103,7 +105,7 @@ export function ProfileEditor({
 
   function handleResult(res: ActionResult, success: string) {
     if (res.ok) showToast(success, "success");
-    else showToast(res.error ?? "Something went wrong", "error");
+    else showToast(res.error ?? "That didn't save. Please try again.", "error");
   }
 
   /* ----------------------------- Live preview ---------------------------- */
@@ -284,7 +286,7 @@ export function ProfileEditor({
         {/* Personal details */}
         <Section icon="person" title="Profile details" subtitle="Name, role, bio and contact info" defaultOpen>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Full Name">
+            <Field label="Full name">
               <input
                 className={inputClass}
                 value={form.name}
@@ -292,7 +294,7 @@ export function ProfileEditor({
                 placeholder="Jane Doe"
               />
             </Field>
-            <Field label="Job Title">
+            <Field label="Job title">
               <input
                 className={inputClass}
                 value={form.jobTitle}
@@ -327,7 +329,7 @@ export function ProfileEditor({
                 />
               </Field>
             </div>
-            <Field label="Public Email">
+            <Field label="Public email">
               <input
                 className={inputClass}
                 type="email"
@@ -346,9 +348,9 @@ export function ProfileEditor({
             </Field>
             <div className="sm:col-span-2">
               <Field label="Username">
-                <div className="flex items-stretch rounded-lg border border-outline overflow-hidden focus-within:ring-2 focus-within:ring-primary/40 focus-within:border-primary">
+                <div className="flex items-stretch rounded-lg border border-field-border overflow-hidden focus-within:ring-2 focus-within:ring-primary focus-within:border-primary">
                   <span className="grid place-items-center px-3 bg-surface-low text-xs font-semibold text-muted border-r border-outline whitespace-nowrap">
-                    pixcards.app/u/
+                    {linkPrefix}
                   </span>
                   <input
                     className="flex-1 px-3 py-2.5 bg-surface text-ink outline-none min-w-0"
@@ -368,7 +370,7 @@ export function ProfileEditor({
               className={buttonClass("primary", "md")}
             >
               <Icon name="save" className="text-[18px]" />
-              Save Changes
+              Save changes
             </button>
           </div>
         </Section>
@@ -637,9 +639,15 @@ async function uploadFile(file: File): Promise<string> {
   const fd = new FormData();
   fd.set("file", file);
   const res = await fetch("/api/upload", { method: "POST", body: fd });
-  const json = (await res.json()) as { url?: string; error?: string };
+  // A proxy can reject a large upload with an HTML page, so don't assume JSON.
+  const json = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
   if (!res.ok || !json.url) {
-    throw new Error(json.error ?? "Upload failed");
+    throw new Error(
+      json.error ??
+        (res.status === 413
+          ? "That image is too large. Please use one under 5MB."
+          : "We couldn't upload that image. Please try again."),
+    );
   }
   return json.url;
 }

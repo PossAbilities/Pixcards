@@ -24,7 +24,7 @@ export async function SiteNav() {
         </nav>
         <div className="flex items-center gap-3">
           {user ? (
-            <Link href={dashboardHref} className={buttonClass("primary", "md", "hidden sm:inline-flex")}>
+            <Link href={dashboardHref} className={buttonClass("primary", "md", "max-sm:hidden")}>
               Dashboard
             </Link>
           ) : (
@@ -35,7 +35,7 @@ export async function SiteNav() {
               >
                 Log in
               </Link>
-              <Link href="/register" className={buttonClass("primary", "md", "hidden sm:inline-flex")}>
+              <Link href="/register" className={buttonClass("primary", "md", "max-sm:hidden")}>
                 Create an account
               </Link>
             </>

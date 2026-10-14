@@ -5,10 +5,13 @@ export function Logo({
   className,
   href = "/",
   mark = true,
+  onDark = false,
 }: {
   className?: string;
   href?: string;
   mark?: boolean;
+  /** White wordmark for dark backgrounds (e.g. the admin sidebar). */
+  onDark?: boolean;
 }) {
   return (
     <Link
@@ -22,7 +25,12 @@ export function Logo({
           </span>
         </span>
       )}
-      <span className="font-display text-2xl font-extrabold tracking-tight text-primary-deep">
+      <span
+        className={cn(
+          "font-display text-2xl font-extrabold tracking-tight",
+          onDark ? "text-white" : "text-primary-deep",
+        )}
+      >
         Pixcards
       </span>
     </Link>

@@ -51,6 +51,11 @@ export async function POST(req: NextRequest) {
   const body = await req.text();
   const secret = process.env.RESEND_WEBHOOK_SECRET;
 
+  // Unsigned events are only accepted in local development.
+  if (!secret && process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Webhook not configured" }, { status: 503 });
+  }
+
   if (secret) {
     const id = req.headers.get("svix-id") ?? "";
     const timestamp = req.headers.get("svix-timestamp") ?? "";

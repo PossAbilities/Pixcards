@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Icon } from "@/components/Icon";
@@ -10,6 +11,8 @@ import { formatDate } from "@/lib/utils";
 import { OrderStatusForm } from "@/components/admin/OrderStatusForm";
 import { OrderNfcPanel } from "@/components/admin/OrderNfcPanel";
 import { DeleteOrderButton } from "@/components/admin/DeleteOrderButton";
+
+export const metadata: Metadata = { title: "Order · Admin" };
 
 const STATUS_COLOR: Record<
   string,

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/guards";
 import { DOMAIN_DESIGNS } from "@/lib/card-preset-meta";
@@ -6,6 +7,8 @@ import {
   PossabilitiesManager,
   type DomainAccount,
 } from "@/components/admin/PossabilitiesManager";
+
+export const metadata: Metadata = { title: "PossAbilities · Admin" };
 
 const DOMAIN = "possabilities.org.uk";
 

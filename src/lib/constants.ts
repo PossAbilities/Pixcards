@@ -2,12 +2,26 @@
 
 export const APP_NAME = "Pixcards";
 
+// Read via a computed key so the value comes from the running server's
+// environment. `process.env.NEXT_PUBLIC_*` written literally is frozen into the
+// bundle at build time, and the Docker build runs without the live URL.
+const APP_URL_KEYS = ["APP_URL", "NEXT_PUBLIC_APP_URL"] as const;
+
+/** The configured public URL, or undefined if none is set. */
+export function configuredAppUrl(): string | undefined {
+  const env = process.env as Record<string, string | undefined>;
+  return APP_URL_KEYS.map((k) => env[k]).find(Boolean);
+}
+
+/** The live site. Used in production if no URL is configured. */
+export const PRODUCTION_URL = "https://pixcards.co.uk";
+
 export function appUrl(): string {
+  const url =
+    configuredAppUrl() ||
+    (process.env.NODE_ENV === "production" ? PRODUCTION_URL : "http://localhost:3000");
   // Strip any trailing slash so `${appUrl()}/u/...` never produces `//u/...`.
-  return (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(
-    /\/+$/,
-    "",
-  );
+  return url.replace(/\/+$/, "");
 }
 
 export type LinkPlatform = {
@@ -31,7 +45,7 @@ export const PLATFORMS: LinkPlatform[] = [
   { id: "phone", label: "Phone", icon: "call", placeholder: "+44 1234 567890", prefix: "tel:" },
   { id: "email", label: "Email", icon: "mail", placeholder: "you@email.com", prefix: "mailto:" },
   { id: "calendar", label: "Book a Meeting", icon: "event", placeholder: "https://calendly.com/you" },
-  { id: "custom", label: "Custom Link", icon: "link", placeholder: "https://..." },
+  { id: "custom", label: "Custom link", icon: "link", placeholder: "https://..." },
 ];
 
 export function platform(id: string): LinkPlatform {

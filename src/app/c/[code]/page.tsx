@@ -11,7 +11,7 @@ import { normaliseCardCode } from "@/lib/cards";
 import { APP_NAME } from "@/lib/constants";
 
 export const metadata: Metadata = {
-  title: `Activate your card | ${APP_NAME}`,
+  title: "Activate your card",
   robots: { index: false },
 };
 
@@ -118,7 +118,7 @@ export default async function CardTapPage({
           Activate your Pixcard
         </h1>
         <p className="mt-2 text-sm text-muted">
-          Sign in or create a free account to link this card to your digital
+          Log in or create a free account to link this card to your digital
           profile. After that, every tap opens your card.
         </p>
         <p className="mt-4 rounded-lg bg-surface-low py-2 font-mono text-sm font-bold tracking-widest text-ink">

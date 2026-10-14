@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { requireUser } from "@/lib/guards";
 import { prisma } from "@/lib/db";
@@ -5,6 +6,8 @@ import { material, money } from "@/lib/constants";
 import { Icon } from "@/components/Icon";
 import { buttonClass, Badge, Card } from "@/components/ui";
 import { cn, formatDate } from "@/lib/utils";
+
+export const metadata: Metadata = { title: "Orders" };
 
 type BadgeColor = "neutral" | "primary" | "success" | "warning" | "danger" | "info";
 
@@ -35,8 +38,10 @@ function StatusTimeline({ status }: { status: string }) {
     );
   }
   const currentIndex = TIMELINE.findIndex((s) => s.status === status);
+  // Side padding keeps the first and last labels (centred under their
+  // circles) inside narrow screens.
   return (
-    <div className="flex items-center">
+    <div className="flex items-center px-2 sm:px-0">
       {TIMELINE.map((step, i) => {
         const done = i <= currentIndex;
         const isCurrent = i === currentIndex;
@@ -58,6 +63,8 @@ function StatusTimeline({ status }: { status: string }) {
                 className={cn(
                   "text-[11px] font-semibold",
                   done ? "text-ink" : "text-faint",
+                  // Small phones only have room for the current step's label.
+                  !isCurrent && "max-sm:sr-only",
                 )}
               >
                 {step.label}
@@ -96,7 +103,7 @@ export default async function OrdersPage({
       <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-3xl font-bold tracking-tight text-ink">
-            My Orders
+            Your orders
           </h1>
           <p className="mt-1 text-muted">
             Track your physical NFC card orders.
@@ -111,7 +118,7 @@ export default async function OrdersPage({
       {success && (
         <div className="mb-6 flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
           <Icon name="celebration" className="text-[20px] mt-0.5 shrink-0" />
-          <span>Order placed! 🎉 We&apos;ll start production shortly.</span>
+          <span>Order placed. We&apos;ll start making your card shortly.</span>
         </div>
       )}
 
@@ -150,9 +157,9 @@ export default async function OrdersPage({
                     />
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-display font-semibold text-ink">
+                        <h2 className="font-display font-semibold text-ink">
                           {mat.name}
-                        </h3>
+                        </h2>
                         <Badge color={badgeColor}>{order.status}</Badge>
                       </div>
                       <p className="mt-0.5 text-sm text-muted">

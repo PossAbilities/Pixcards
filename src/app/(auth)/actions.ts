@@ -64,7 +64,7 @@ export async function registerAction(
     password: formData.get("password"),
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
+    return { error: parsed.error.issues[0]?.message ?? "Please check your details and try again." };
   }
   const { name, email, password } = parsed.data;
   const marketingOptIn = formData.get("marketingOptIn") === "yes";
@@ -161,7 +161,7 @@ export async function registerAction(
     console.error("registerAction: database error", e);
     return {
       error:
-        "We couldn't create your account — the database may be unreachable. Please try again shortly (if this persists, check the DATABASE_URL configuration).",
+        "We couldn't create your account just now. Please try again in a moment.",
     };
   }
 
@@ -185,7 +185,7 @@ export async function loginAction(
     password: formData.get("password"),
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
+    return { error: parsed.error.issues[0]?.message ?? "Please check your details and try again." };
   }
   const { email, password } = parsed.data;
 
@@ -198,7 +198,7 @@ export async function loginAction(
     console.error("loginAction: database error", e);
     return {
       error:
-        "We couldn't reach the database. Please try again shortly (if this persists, check the DATABASE_URL configuration).",
+        "We couldn't sign you in just now. Please try again in a moment.",
     };
   }
   if (!user || !(await verifyPassword(password, user.passwordHash))) {

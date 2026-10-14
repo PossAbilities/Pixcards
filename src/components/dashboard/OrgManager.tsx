@@ -339,7 +339,7 @@ function BrandForm({ data }: { data: NonNullable<OrgData> }) {
         but not the colours or layout.
       </p>
 
-      <div className="mb-5 rounded-xl border border-dashed border-outline bg-surface-2/40 p-4">
+      <div className="mb-5 rounded-xl border border-dashed border-outline bg-surface-high/40 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="flex items-center gap-1.5 text-sm font-semibold text-ink">
@@ -892,8 +892,10 @@ function MemberRow({ m, departments }: { m: Member; departments: Department[] })
             </button>
             {m.username && (
               <a href={`/u/${m.username}`} target="_blank" rel="noopener noreferrer"
-                className="text-xs font-semibold text-primary hover:underline">
-                View card ↗
+                className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+                View card
+                <Icon name="open_in_new" className="text-[14px]" />
+                <span className="sr-only">(opens in a new tab)</span>
               </a>
             )}
             {msg && <span className="text-sm font-semibold text-emerald-600">{msg}</span>}
@@ -920,7 +922,7 @@ function MembersCard({ data }: { data: NonNullable<OrgData> }) {
     startTransition(async () => {
       const res = await fn();
       if (res.ok) setMsg(ok);
-      else setError(res.error ?? "Something went wrong.");
+      else setError(res.error ?? "That didn't save. Please try again.");
     });
   }
 
@@ -1078,7 +1080,7 @@ function TeamOrderCard({ data }: { data: NonNullable<OrgData> }) {
       </p>
 
       {/* Card design preview — what every member's card will look like */}
-      <div className="mb-4 rounded-xl border border-outline bg-surface-2/40 p-4">
+      <div className="mb-4 rounded-xl border border-outline bg-surface-high/40 p-4">
         <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-faint">
           Card design
         </p>

@@ -30,7 +30,7 @@ export function UsersTable({
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-display text-3xl font-extrabold text-ink">
-            User Management
+            User management
           </h1>
           <p className="mt-1 text-muted">
             {query.trim() ? (
@@ -67,7 +67,7 @@ export function UsersTable({
       <DomainPresetTool />
 
       <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Table">
           <table className="w-full text-left min-w-[820px]">
             <thead>
               <tr className="text-xs font-semibold text-faint uppercase tracking-wide bg-surface-low/60">

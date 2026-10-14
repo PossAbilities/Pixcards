@@ -66,7 +66,7 @@ export const INSERT_THEMES: Record<string, InsertTheme> = {
     accent: "#e0007a",
     kicker: "#4fd1c5",
     brandName: "PossAbilities",
-    footerUrl: "possabilities.com.au",
+    footerUrl: "possabilities.org.uk",
     stripStops: [
       { off: 0, color: "#16a79f" },
       { off: 100, color: "#e0007a" },

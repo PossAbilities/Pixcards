@@ -40,24 +40,25 @@ export function AdminSidebar({ user }: { user: AdminSidebarUser }) {
       {/* Desktop sidebar */}
       <aside className="hidden md:flex md:fixed md:inset-y-0 md:left-0 md:w-64 md:flex-col bg-inverse text-white z-30">
         <div className="px-5 py-5 border-b border-white/10">
-          <Logo href="/admin" />
+          <Logo href="/admin" onDark />
           <p className="mt-2 text-[10px] font-bold tracking-[0.18em] text-tertiary-bright">
             ADMIN PANEL
           </p>
         </div>
 
-        <nav className="flex-1 px-3 py-4 flex flex-col gap-1 overflow-y-auto">
+        <nav aria-label="Admin" className="flex-1 px-3 py-4 flex flex-col gap-1 overflow-y-auto">
           {NAV.map((item) => {
             const active = isActive(pathname, item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors",
                   active
                     ? "bg-primary text-white shadow-sm shadow-primary/30"
-                    : "text-white/60 hover:bg-white/10 hover:text-white",
+                    : "text-white/75 hover:bg-white/10 hover:text-white",
                 )}
               >
                 <Icon name={item.icon} fill={active} className="text-[20px]" />
@@ -68,7 +69,7 @@ export function AdminSidebar({ user }: { user: AdminSidebarUser }) {
 
           <Link
             href="/dashboard"
-            className="mt-2 flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-white/50 hover:bg-white/10 hover:text-white transition-colors"
+            className="mt-2 flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-white/75 hover:bg-white/10 hover:text-white transition-colors"
           >
             <Icon name="arrow_back" className="text-[20px]" />
             Back to app
@@ -82,7 +83,7 @@ export function AdminSidebar({ user }: { user: AdminSidebarUser }) {
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold truncate">{user.name}</p>
-              <p className="text-xs text-white/50 truncate">{user.email}</p>
+              <p className="text-xs text-white/75 truncate">{user.email}</p>
             </div>
             <form action={logoutAction}>
               <button
@@ -100,7 +101,7 @@ export function AdminSidebar({ user }: { user: AdminSidebarUser }) {
       {/* Mobile top bar */}
       <header className="md:hidden sticky top-0 z-30 flex items-center justify-between bg-inverse text-white px-4 py-3">
         <div className="flex items-center gap-2">
-          <Logo href="/admin" />
+          <Logo href="/admin" onDark />
           <span className="text-[10px] font-bold tracking-[0.18em] text-tertiary-bright">
             ADMIN
           </span>
@@ -117,16 +118,20 @@ export function AdminSidebar({ user }: { user: AdminSidebarUser }) {
       </header>
 
       {/* Mobile bottom tab bar */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-inverse text-white flex items-stretch justify-around px-1 pb-[env(safe-area-inset-bottom)]">
+      <nav
+        aria-label="Admin"
+        className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-inverse text-white flex items-stretch overflow-x-auto scrollbar-hide px-1 pb-[env(safe-area-inset-bottom)]"
+      >
         {NAV.map((item) => {
           const active = isActive(pathname, item.href);
           return (
             <Link
               key={item.href}
               href={item.href}
+              aria-current={active ? "page" : undefined}
               className={cn(
-                "flex flex-col items-center justify-center gap-0.5 flex-1 py-2 text-[10px] font-semibold transition-colors",
-                active ? "text-tertiary-bright" : "text-white/50",
+                "flex min-w-[68px] shrink-0 flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-semibold transition-colors",
+                active ? "text-tertiary-bright" : "text-white/75",
               )}
             >
               <Icon name={item.icon} fill={active} className="text-[22px]" />

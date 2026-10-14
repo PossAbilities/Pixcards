@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -11,6 +12,8 @@ import { updateProfile } from "@/lib/actions/profile";
 import { setMarketingPreference } from "@/lib/actions/marketing";
 import { logoutAction } from "@/app/(auth)/actions";
 import { formatDate } from "@/lib/utils";
+
+export const metadata: Metadata = { title: "Settings" };
 
 async function saveProfileAction(formData: FormData): Promise<void> {
   "use server";
@@ -87,7 +90,7 @@ export default async function SettingsPage() {
               </p>
             </div>
             <div>
-              <Label htmlFor="name">Full Name</Label>
+              <Label htmlFor="name">Full name</Label>
               <input id="name" name="name" className={inputClass} defaultValue={data.name} />
             </div>
             <input type="hidden" name="username" value={p.username} />
@@ -95,7 +98,7 @@ export default async function SettingsPage() {
             <div className="flex justify-end">
               <button type="submit" className={buttonClass("primary", "md")}>
                 <Icon name="save" className="text-[18px]" />
-                Save Account
+                Save account
               </button>
             </div>
           </form>
@@ -103,13 +106,13 @@ export default async function SettingsPage() {
 
         {/* Public profile */}
         <Card className="p-6">
-          <SectionHeading icon="public" title="Public Profile" />
+          <SectionHeading icon="public" title="Public profile" />
           <form action={saveProfileAction} className="flex flex-col gap-4">
             <div>
               <Label htmlFor="username">Username</Label>
-              <div className="flex items-stretch rounded-lg border border-outline overflow-hidden focus-within:ring-2 focus-within:ring-primary/40 focus-within:border-primary">
+              <div className="flex items-stretch rounded-lg border border-field-border overflow-hidden focus-within:ring-2 focus-within:ring-primary focus-within:border-primary">
                 <span className="grid place-items-center px-3 bg-surface-low text-xs font-semibold text-muted border-r border-outline whitespace-nowrap">
-                  pixcards.app/u/
+                  {appUrl().replace(/^https?:\/\//, "")}/u/
                 </span>
                 <input
                   id="username"
@@ -133,7 +136,7 @@ export default async function SettingsPage() {
             <div className="flex justify-end">
               <button type="submit" className={buttonClass("primary", "md")}>
                 <Icon name="save" className="text-[18px]" />
-                Save Username
+                Save username
               </button>
             </div>
           </form>
@@ -147,10 +150,10 @@ export default async function SettingsPage() {
         <Card className="p-6">
           <SectionHeading icon="workspace_premium" title="Plan" />
           {isPro ? (
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-semibold text-ink flex items-center gap-2">
-                  You&apos;re on Pro <span aria-hidden>🎉</span> <ProBadge />
+                  You&apos;re on Pro <ProBadge />
                 </p>
                 <p className="text-xs text-muted mt-1">
                   {data.proSince
@@ -161,7 +164,7 @@ export default async function SettingsPage() {
               <Icon name="verified" fill className="text-primary text-[28px]" />
             </div>
           ) : (
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-semibold text-ink">Free plan</p>
                 <p className="text-xs text-muted mt-1">
@@ -205,7 +208,7 @@ export default async function SettingsPage() {
               Save email preference
             </button>
           </form>
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-sm font-semibold text-ink">Export my data</p>
               <p className="mt-1 text-xs text-muted">
@@ -225,16 +228,16 @@ export default async function SettingsPage() {
 
         {/* Danger zone */}
         <Card className="p-6 border-red-200">
-          <SectionHeading icon="warning" title="Danger Zone" />
-          <div className="flex items-center justify-between gap-4">
+          <SectionHeading icon="warning" title="Danger zone" />
+          <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-sm font-semibold text-ink">Log out</p>
               <p className="text-xs text-muted mt-1">
-                Sign out of your Pixcards account on this device.
+                Log out of your Pixcards account on this device.
               </p>
             </div>
             <form action={logoutAction}>
-              <button type="submit" className={buttonClass("danger", "md")}>
+              <button type="submit" className={buttonClass("outline", "md")}>
                 <Icon name="logout" className="text-[18px]" />
                 Log out
               </button>

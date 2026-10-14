@@ -55,7 +55,7 @@ export async function resetPassword(
     confirm: formData.get("confirm"),
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
+    return { error: parsed.error.issues[0]?.message ?? "Please check your details and try again." };
   }
 
   // Consume the token (single-use) and update the password.

@@ -1,7 +1,7 @@
 "use client";
 
 import type { CardData, CardLink } from "@/components/DigitalCard";
-import { initials as initialsOf } from "@/lib/utils";
+import { initials as initialsOf, telHref } from "@/lib/utils";
 
 /* PossAbilities digital profile — pixel-faithful ports of the three brand
  * landing-page designs (A Colour Bar, B Purple Wave, C Big Pink). Rendered on
@@ -20,7 +20,7 @@ const TINT = "#f4eef6";
 // it natively. Nunito Sans is the bundled free fallback everywhere else (and
 // the licensed Avenir webfont slots in ahead of it once supplied).
 const FONT =
-  "'Avenir Next','Avenir','Nunito Sans',ui-sans-serif,system-ui,sans-serif";
+  "'Avenir Next','Avenir',var(--font-nunito-sans),'Nunito Sans',ui-sans-serif,system-ui,sans-serif";
 
 /** Stroke-icon paths matching the brand mockups. */
 const ICON: Record<string, string> = {
@@ -95,7 +95,7 @@ export function PossabilitiesProfile({
       ? [{ key: "email", kind: "email", icon: "mail", label: data.email, href: `mailto:${data.email}` } as Item]
       : []),
     ...(data.phone
-      ? [{ key: "phone", kind: "phone", icon: "phone", label: data.phone, href: `tel:${data.phone}` } as Item]
+      ? [{ key: "phone", kind: "phone", icon: "phone", label: data.phone, href: telHref(data.phone) } as Item]
       : []),
     ...data.links.map(
       (l): Item => ({
@@ -189,20 +189,12 @@ export function PossabilitiesProfile({
     </div>
   );
 
-  const fontLink = (
-    // eslint-disable-next-line @next/next/no-page-custom-font
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;700;900&display=swap"
-    />
-  );
 
   /* ------------------------------- A · Colour Bar ----------------------- */
   if (variant === "pa-colourbar") {
     const borders = [TEAL, PURPLE, PINK];
     return (
       <div style={{ fontFamily: FONT, background: "#fff", color: PURPLE }}>
-        {fontLink}
         {bars}
         <div style={{ maxWidth: 480, margin: "0 auto", padding: "26px 22px 28px", display: "flex", flexDirection: "column", alignItems: "center" }}>
           <div style={{ fontSize: 24, fontWeight: 900, letterSpacing: "-0.4px" }}>
@@ -243,7 +235,6 @@ export function PossabilitiesProfile({
   if (variant === "pa-wave") {
     return (
       <div style={{ fontFamily: FONT, background: "#fff", color: PURPLE }}>
-        {fontLink}
         <div style={{ background: PURPLE, textAlign: "center", padding: "36px 24px 28px" }}>
           <div style={{ fontSize: 27, fontWeight: 900, letterSpacing: "-0.4px" }}>
             <span style={{ color: TEAL }}>Poss</span>
@@ -298,7 +289,6 @@ export function PossabilitiesProfile({
   });
   return (
     <div style={{ fontFamily: FONT, background: TEAL, color: PURPLE }}>
-      {fontLink}
       <header style={{ maxWidth: 480, width: "100%", margin: "0 auto", padding: "36px 26px 36px", position: "relative", overflow: "hidden", boxSizing: "border-box" }}>
         <svg viewBox="0 0 24 24" aria-hidden style={{ position: "absolute", right: -80, top: -16, width: 300, height: 300, fill: "none", stroke: "#fff", strokeOpacity: 0.5, strokeWidth: 1.2, strokeLinecap: "round" }}>
           {ICON.tap.split(" M").map((seg, i) => <path key={i} d={(i ? "M" : "") + seg} />)}

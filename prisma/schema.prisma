@@ -208,7 +208,7 @@ model Profile {
   userId String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  username  String  @unique // public slug: pixcards.app/u/<username>
+  username  String  @unique // public slug: pixcards.co.uk/u/<username>
   jobTitle  String  @default("")
   company   String  @default("")
   bio       String  @default("")
