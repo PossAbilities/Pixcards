@@ -1,4 +1,5 @@
 name: Claude Hub Fix
+run-name: Central Hub change ${{ inputs.change_id }}
 
 # Dispatched by Ryan's Cloud Central Hub to make a fix or design change.
 on:
@@ -77,6 +78,20 @@ jobs:
             --model claude-opus-5-5
             --allowedTools "Edit,Write,Read,Glob,Grep"
             --disallowedTools "Bash,WebFetch,WebSearch"
+
+      # For the hub's log view: Claude's own messages and which files it read
+      # or changed. Never tool output, which can include file contents.
+      # Each line starts with a marker, so nothing in it is read as a
+      # workflow command.
+      - name: Summarise what Claude did
+        if: always()
+        run: |
+          f="$RUNNER_TEMP/claude-execution-output.json"
+          [ -f "$f" ] || exit 0
+          jq -r '.[] | select(.type == "assistant") | .message.content[]? |
+            if .type == "text" then "CLAUDE: " + (.text | gsub("[[:space:]]+"; " ") | .[0:400])
+            elif .type == "tool_use" then "TOOL: " + .name + " " + ((.input.file_path // .input.path // .input.pattern // "") | tostring | .[0:200])
+            else empty end' "$f" | sed 's/^/[hub-activity] /' || true
 
       - name: Commit, push & open pull request
         env:
