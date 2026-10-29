@@ -1,0 +1,113 @@
+name: Hub checks
+
+# Added by Ryan's Cloud Central Hub. The hub only merges a pull request once
+# these pass.
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hub-checks-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    name: Type check
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Install and type-check each app
+        run: |
+          status=0
+          found=0
+          for lock in $(git ls-files 'package-lock.json' '*/package-lock.json' '*/*/package-lock.json'); do
+            dir="$(dirname "$lock")"
+            found=1
+            echo "::group::$dir: install"
+            if ! (cd "$dir" && npm ci --no-audit --no-fund); then
+              echo "::endgroup::"; echo "::error::$dir: npm ci failed"; status=1; continue
+            fi
+            echo "::endgroup::"
+            if [ ! -f "$dir/tsconfig.json" ]; then
+              echo "::notice::$dir has no tsconfig.json, so there's nothing to type-check."
+              continue
+            fi
+            echo "::group::$dir: type check"
+            (
+              cd "$dir"
+              if [ -d node_modules/next ]; then
+                # Next's route and asset types (gitignored, made by next build).
+                npx --no-install next typegen >/dev/null 2>&1 || true
+                [ -f next-env.d.ts ] || printf '/// <reference types="next" />\n/// <reference types="next/image-types/global" />\n' > next-env.d.ts
+              fi
+              npx --no-install tsc --noEmit -p .
+            ) || { echo "::endgroup::"; echo "::error::$dir: type check failed"; status=1; continue; }
+            echo "::endgroup::"
+          done
+          [ "$found" = 1 ] || echo "::notice::No Node apps with a package-lock.json found."
+          exit $status
+
+  dependencies:
+    name: Dependencies
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      # npm audit reads the lockfile only; nothing from the pull request runs.
+      - name: Fail on new high or critical advisories
+        env:
+          BASE_REF: ${{ github.base_ref || github.event.repository.default_branch }}
+        run: |
+          high() { (cd "$1" 2>/dev/null && npm audit --omit=dev --json 2>/dev/null) \
+            | jq -r '.vulnerabilities // {} | to_entries[] | select(.value.severity == "high" or .value.severity == "critical") | "\(.key) (\(.value.severity))"' | sort -u; }
+          git worktree add -q "$RUNNER_TEMP/base" "origin/$BASE_REF"
+          status=0
+          for lock in $(git ls-files 'package-lock.json' '*/package-lock.json' '*/*/package-lock.json'); do
+            dir="$(dirname "$lock")"
+            now="$(high "$dir")"
+            before="$(high "$RUNNER_TEMP/base/$dir")"
+            added="$(comm -13 <(printf '%s\n' "$before") <(printf '%s\n' "$now") | sed '/^$/d')"
+            existing="$(comm -12 <(printf '%s\n' "$before") <(printf '%s\n' "$now") | sed '/^$/d')"
+            [ -z "$existing" ] || echo "::warning::$dir already had (not caused by this pull request): $(echo $existing)"
+            if [ -n "$added" ]; then echo "::error::$dir: this pull request adds $(echo $added)"; status=1; fi
+          done
+          exit $status
+
+  strix:
+    name: Strix security scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      # Without the key Strix scans nothing, which must never count as a pass.
+      - name: Check Strix can run
+        env:
+          LLM_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$LLM_API_KEY" ]; then
+            echo "::error::No ANTHROPIC_API_KEY secret. Press Set up Fix with Claude on this site in the hub."
+            exit 1
+          fi
+      - name: Install Strix
+        run: pipx install strix-agent==1.7.0
+      # Strix exits non-zero when it finds a vulnerability, failing this check.
+      - name: Scan the changed code
+        env:
+          STRIX_LLM: anthropic/claude-sonnet-5-5
+          LLM_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BASE_REF: ${{ github.base_ref || github.event.repository.default_branch }}
+        run: strix -n -t ./ --scan-mode quick --scope-mode diff --diff-base "origin/$BASE_REF"
