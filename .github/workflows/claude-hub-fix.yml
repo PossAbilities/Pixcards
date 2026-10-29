@@ -26,7 +26,6 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
   claude-fix:
@@ -93,14 +92,14 @@ jobs:
             elif .type == "tool_use" then "TOOL: " + .name + " " + ((.input.file_path // .input.path // .input.pattern // "") | tostring | .[0:200])
             else empty end' "$f" | sed 's/^/[hub-activity] /' || true
 
-      - name: Commit, push & open pull request
+      # The hub opens the pull request itself (through its GitHub App) once
+      # this branch is pushed: GitHub doesn't let workflows open pull
+      # requests by default, and a pull request opened by the app also runs
+      # the repo's own checks.
+      - name: Commit and push Claude's changes
         env:
-          GH_TOKEN: ${{ github.token }}
           BRANCH: ${{ inputs.branch }}
-          BASE: ${{ inputs.base }}
           TITLE: ${{ inputs.title }}
-          CHANGE_ID: ${{ inputs.change_id }}
-          INSTRUCTION: ${{ inputs.instruction }}
         run: |
           if [ -z "$(git status --porcelain)" ]; then
             echo "Claude produced no changes."; exit 0
@@ -110,7 +109,3 @@ jobs:
           git add -A
           git commit -m "$TITLE"
           git push -u origin "$BRANCH"
-          printf 'Automated change requested from Ryan%ss Cloud Central Hub (change %s).\n\nInstruction:\n%s\n' \
-            "'" "$CHANGE_ID" "$INSTRUCTION" > "$RUNNER_TEMP/pr-body.md"
-          gh pr create --base "$BASE" --head "$BRANCH" --title "$TITLE" \
-            --body-file "$RUNNER_TEMP/pr-body.md"
