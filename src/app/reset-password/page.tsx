@@ -14,9 +14,10 @@ export const metadata: Metadata = {
 export default async function ResetPasswordPage({
   searchParams,
 }: {
-  searchParams: Promise<{ token?: string }>;
+  searchParams: Promise<{ token?: string; invite?: string }>;
 }) {
-  const { token } = await searchParams;
+  const { token, invite: inviteParam } = await searchParams;
+  const invite = inviteParam === "1";
   const valid = token ? Boolean(await verifyResetToken(token)) : false;
 
   return (
@@ -37,13 +38,14 @@ export default async function ResetPasswordPage({
           {valid && token ? (
             <>
               <h1 className="font-display text-2xl font-bold text-ink">
-                Choose a new password
+                {invite ? "Set up your account" : "Choose a new password"}
               </h1>
               <p className="mt-1.5 mb-6 text-sm text-muted">
-                Enter a new password for your Pixcards account. You&rsquo;ll be
-                logged in automatically.
+                {invite
+                  ? "Choose a password for your Pixcards account. Next you\u2019ll add your photo, bio and links to finish your card."
+                  : "Enter a new password for your Pixcards account. You\u2019ll be logged in automatically."}
               </p>
-              <ResetPasswordForm token={token} />
+              <ResetPasswordForm token={token} invite={invite} />
             </>
           ) : (
             <div className="text-center">
@@ -55,8 +57,9 @@ export default async function ResetPasswordPage({
                 Link expired or invalid
               </h1>
               <p className="mt-2 text-sm text-muted">
-                This password reset link has expired or has already been used.
-                Reset links are valid for 60 minutes.
+                {invite
+                  ? "This set-up link has expired or has already been used. Request a new one below with the same email address, or ask your admin to resend your invitation."
+                  : "This password reset link has expired or has already been used. Reset links are valid for 60 minutes."}
               </p>
               <Link
                 href="/forgot-password"

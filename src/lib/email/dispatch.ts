@@ -1,7 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { appUrl, material } from "@/lib/constants";
-import { sendEmail } from "./send";
+import { sendEmail, type SendResult } from "./send";
 import {
   welcomeEmail,
   orderReceiptEmail,
@@ -9,6 +9,7 @@ import {
   orderShippedEmail,
   passwordResetEmail,
   orgInviteEmail,
+  accountInviteEmail,
 } from "./templates";
 
 export async function sendOrgInvite(
@@ -22,6 +23,23 @@ export async function sendOrgInvite(
   } catch (e) {
     console.error("sendOrgInvite failed", e);
   }
+}
+
+/** Admin-sent "your card is ready, come and finish it" email. Returns the send
+ *  result so the admin can be told whether it went. */
+export async function sendAccountInvite(args: {
+  email: string;
+  name: string;
+  setupUrl: string;
+  orgName?: string | null;
+  userId: string;
+}): Promise<SendResult> {
+  const built = accountInviteEmail({
+    name: args.name,
+    setupUrl: args.setupUrl,
+    orgName: args.orgName,
+  });
+  return sendEmail({ to: args.email, ...built, type: "OTHER", userId: args.userId });
 }
 
 export async function sendPasswordReset(

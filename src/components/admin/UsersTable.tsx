@@ -2,24 +2,28 @@
 
 import { useMemo, useState } from "react";
 import { Icon } from "@/components/Icon";
-import { Card, inputClass } from "@/components/ui";
-import { UserRow, type AdminUser } from "@/components/admin/UserRow";
+import { Card, buttonClass, inputClass } from "@/components/ui";
+import { UserRow, type AdminUser, type AdminOrgOption } from "@/components/admin/UserRow";
+import { AddUserPanel } from "@/components/admin/AddUserPanel";
 import { DomainPresetTool } from "@/components/admin/DomainPresetTool";
 
 export function UsersTable({
   users,
+  orgs,
   currentAdminId,
 }: {
   users: AdminUser[];
+  orgs: AdminOrgOption[];
   currentAdminId: string;
 }) {
   const [query, setQuery] = useState("");
+  const [adding, setAdding] = useState(false);
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return users;
     return users.filter((u) =>
-      [u.name, u.email, u.username ?? ""].some((field) =>
+      [u.name, u.email, u.username ?? "", u.orgName ?? ""].some((field) =>
         field.toLowerCase().includes(q),
       ),
     );
@@ -49,6 +53,16 @@ export function UsersTable({
             )}
           </p>
         </div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <button
+          type="button"
+          onClick={() => setAdding((v) => !v)}
+          className={buttonClass("primary", "md")}
+          aria-expanded={adding}
+        >
+          <Icon name="person_add" className="text-[18px]" />
+          Add user
+        </button>
         <div className="relative sm:w-72">
           <Icon
             name="search"
@@ -62,7 +76,10 @@ export function UsersTable({
             className={`${inputClass} pl-10`}
           />
         </div>
+        </div>
       </header>
+
+      {adding && <AddUserPanel orgs={orgs} onClose={() => setAdding(false)} />}
 
       <DomainPresetTool />
 
@@ -90,7 +107,7 @@ export function UsersTable({
                 </tr>
               )}
               {visible.map((u) => (
-                <UserRow key={u.id} user={u} currentAdminId={currentAdminId} />
+                <UserRow key={u.id} user={u} orgs={orgs} currentAdminId={currentAdminId} />
               ))}
             </tbody>
           </table>

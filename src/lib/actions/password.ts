@@ -72,5 +72,7 @@ export async function resetPassword(
   });
 
   await createSession(userId);
+  // Admin-invited people land straight in the card editor to finish their card.
+  if (formData.get("invite") === "1") redirect("/dashboard/edit?welcome=1");
   redirect("/dashboard?reset=1");
 }

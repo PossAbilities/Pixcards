@@ -3,6 +3,8 @@ import crypto from "crypto";
 import { prisma } from "@/lib/db";
 
 const TOKEN_TTL_MS = 60 * 60 * 1000; // 60 minutes
+/** Admin account invitations give people longer to get round to it. */
+export const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 function hashToken(raw: string): string {
   return crypto.createHash("sha256").update(raw).digest("hex");
@@ -12,7 +14,10 @@ function hashToken(raw: string): string {
  * Issue a single-use reset token for a user. Returns the *raw* token (only ever
  * known here + in the emailed link); the DB stores only its hash.
  */
-export async function createResetToken(userId: string): Promise<string> {
+export async function createResetToken(
+  userId: string,
+  ttlMs: number = TOKEN_TTL_MS,
+): Promise<string> {
   const raw = crypto.randomBytes(32).toString("base64url");
   // Invalidate any outstanding tokens for this user first.
   await prisma.passwordResetToken.deleteMany({ where: { userId, usedAt: null } });
@@ -20,7 +25,7 @@ export async function createResetToken(userId: string): Promise<string> {
     data: {
       userId,
       tokenHash: hashToken(raw),
-      expiresAt: new Date(Date.now() + TOKEN_TTL_MS),
+      expiresAt: new Date(Date.now() + ttlMs),
     },
   });
   return raw;

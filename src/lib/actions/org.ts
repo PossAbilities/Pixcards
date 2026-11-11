@@ -5,12 +5,13 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { getSessionUser, hashPassword } from "@/lib/auth";
 import { slugify } from "@/lib/utils";
-import { appUrl, material, platform } from "@/lib/constants";
+import { appUrl, material } from "@/lib/constants";
 import { generateCardCode } from "@/lib/cards";
 import { stripe, stripeEnabled, paymentsUnavailable, PAYMENTS_UNAVAILABLE } from "@/lib/stripe";
 import { validateDiscount, recordRedemption } from "@/lib/discounts";
 import { sendOrgInvite } from "@/lib/email/dispatch";
 import { recordEvent } from "@/lib/events";
+import { parseSharedLinks, applyLinksToMember, type SharedLink } from "@/lib/org-membership";
 import { analyzeBrand, brandAnalysisEnabled, type BrandSuggestion } from "@/lib/brand-analyze";
 import type { OrgRole } from "@prisma/client";
 
@@ -64,46 +65,6 @@ async function applyBranding(orgId: string) {
       }),
     ),
   );
-}
-
-type SharedLink = { platform: string; label: string; url: string };
-
-function parseSharedLinks(json: string): SharedLink[] {
-  try {
-    const v = JSON.parse(json) as SharedLink[];
-    if (Array.isArray(v)) {
-      return v
-        .filter((l) => l && typeof l.url === "string" && l.url.trim())
-        .slice(0, 12)
-        .map((l) => ({
-          platform: String(l.platform || "custom"),
-          label: String(l.label || "").slice(0, 60),
-          url: String(l.url).slice(0, 400),
-        }));
-    }
-  } catch {
-    /* ignore */
-  }
-  return [];
-}
-
-/** Replace a member's org-locked links with the given set. */
-async function applyLinksToMember(userId: string, links: SharedLink[]) {
-  const profile = await prisma.profile.findUnique({ where: { userId }, select: { id: true } });
-  if (!profile) return;
-  await prisma.link.deleteMany({ where: { profileId: profile.id, orgLocked: true } });
-  if (links.length === 0) return;
-  await prisma.link.createMany({
-    data: links.map((l, i) => ({
-      profileId: profile.id,
-      platform: l.platform,
-      label: l.label || platform(l.platform).label,
-      url: l.url,
-      icon: platform(l.platform).icon,
-      position: i,
-      orgLocked: true,
-    })),
-  });
 }
 
 /** A member's effective shared links: their department's, else the org's. */

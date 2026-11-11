@@ -9,14 +9,20 @@ export const metadata: Metadata = { title: "Users · Admin" };
 export default async function AdminUsersPage() {
   const admin = await requireAdmin();
 
-  const users = await prisma.user.findMany({
+  const [users, orgs] = await Promise.all([
+    prisma.user.findMany({
     orderBy: { createdAt: "desc" },
     include: {
       profile: { select: { username: true, cardPreset: true } },
       orgMembership: { include: { org: { select: { name: true } } } },
       _count: { select: { orders: true } },
     },
-  });
+    }),
+    prisma.organisation.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
+  ]);
 
   const rows: AdminUser[] = users.map((u) => ({
     id: u.id,
@@ -28,10 +34,12 @@ export default async function AdminUsersPage() {
     proComplimentary: u.proComplimentary,
     role: u.role,
     cardPreset: u.profile?.cardPreset ?? null,
+    orgId: u.orgMembership?.orgId ?? null,
     orgName: u.orgMembership?.org.name ?? null,
+    orgRole: u.orgMembership?.role ?? null,
     ordersCount: u._count.orders,
     createdAt: u.createdAt.toISOString(),
   }));
 
-  return <UsersTable users={rows} currentAdminId={admin.id} />;
+  return <UsersTable users={rows} orgs={orgs} currentAdminId={admin.id} />;
 }
