@@ -12,9 +12,18 @@ import { presetUpdate } from "@/lib/preset-apply";
 import {
   applyDomainDefaultsToProfile,
   getDomainDefaults,
+  hasDomainDefaults,
   type DomainDefaultsData,
 } from "@/lib/domain-defaults";
-import type { OrderStatus, Plan, Role } from "@prisma/client";
+import crypto from "crypto";
+import { z } from "zod";
+import { hashPassword } from "@/lib/auth";
+import { appUrl } from "@/lib/constants";
+import { slugify } from "@/lib/utils";
+import { createResetToken, INVITE_TTL_MS } from "@/lib/password-reset";
+import { sendAccountInvite } from "@/lib/email/dispatch";
+import { applyLinksToMember, syncProfileToOrg } from "@/lib/org-membership";
+import type { OrderStatus, OrgRole, Plan, Role } from "@prisma/client";
 
 async function requireAdminUser() {
   const user = await getSessionUser();
@@ -483,4 +492,210 @@ export async function adminDeleteCard(cardId: string): Promise<AdminResult> {
   revalidatePath("/admin/cards");
   if (card?.orderId) revalidatePath(`/admin/orders/${card.orderId}`);
   return { ok: true };
+}
+
+/* ---------------------- Manual users + invitations ----------------------- */
+
+async function uniqueUsername(base: string): Promise<string> {
+  const root = slugify(base) || "user";
+  let candidate = root;
+  let n = 0;
+  for (;;) {
+    const exists = await prisma.profile.findUnique({ where: { username: candidate } });
+    if (!exists) return candidate;
+    n += 1;
+    candidate = `${root}${n}`;
+  }
+}
+
+const ORG_ROLES: OrgRole[] = ["OWNER", "ADMIN", "MEMBER"];
+
+const createUserSchema = z.object({
+  name: z.string().trim().min(2, "Enter their name.").max(60),
+  email: z.string().trim().toLowerCase().email("Enter a valid email address."),
+  jobTitle: z.string().trim().max(80).optional().default(""),
+  phone: z.string().trim().max(40).optional().default(""),
+  orgId: z.string().trim().optional().default(""),
+  orgRole: z.enum(["OWNER", "ADMIN", "MEMBER"]).optional().default("MEMBER"),
+  sendInvite: z.boolean().optional().default(false),
+});
+
+export type AdminCreateUserInput = z.input<typeof createUserSchema>;
+export type AdminCreateUserResult = AdminResult & { invited?: boolean; inviteError?: string };
+
+/**
+ * Admin creates an account on someone's behalf so their card can be started
+ * (and printed) before they've logged in. They get a random password they never
+ * see; the invitation email lets them set their own and finish the profile.
+ */
+export async function adminCreateUser(
+  input: AdminCreateUserInput,
+): Promise<AdminCreateUserResult> {
+  try {
+    const admin = await requireAdminUser();
+    const parsed = createUserSchema.safeParse(input);
+    if (!parsed.success) {
+      return { ok: false, error: parsed.error.issues[0]?.message ?? "Check the details and try again." };
+    }
+    const { name, email, jobTitle, phone, orgId, orgRole, sendInvite } = parsed.data;
+
+    if (await prisma.user.findUnique({ where: { email } })) {
+      return { ok: false, error: "An account with that email already exists." };
+    }
+    const org = orgId ? await prisma.organisation.findUnique({ where: { id: orgId } }) : null;
+    if (orgId && !org) return { ok: false, error: "That organisation no longer exists." };
+
+    const username = await uniqueUsername(name);
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        passwordHash: await hashPassword(crypto.randomBytes(24).toString("base64url")),
+        profile: { create: { username, email, jobTitle, phone } },
+        ...(org ? { orgMembership: { create: { orgId: org.id, role: orgRole } } } : {}),
+      },
+    });
+
+    if (org) {
+      await syncProfileToOrg(user.id, org.id);
+    } else {
+      // Same as self sign-up: pre-fill the email domain's standard details.
+      try {
+        const defaults = await getDomainDefaults(email.slice(email.lastIndexOf("@") + 1));
+        if (hasDomainDefaults(defaults)) {
+          const prof = await prisma.profile.findUnique({ where: { userId: user.id }, select: { id: true } });
+          if (prof) await applyDomainDefaultsToProfile(prof.id, defaults, { overwriteCompany: true });
+        }
+      } catch (e) {
+        console.error("adminCreateUser: could not apply domain defaults", e);
+      }
+    }
+
+    await recordEvent({
+      type: "USER_REGISTERED",
+      title: `Account created by admin: ${name}`,
+      message: `${email} (by ${admin.email})`,
+      meta: { userId: user.id, email, byAdmin: admin.id, orgId: org?.id ?? null },
+    });
+
+    let invited = false;
+    let inviteError: string | undefined;
+    if (sendInvite) {
+      const res = await sendInviteFor(user.id);
+      invited = res.ok;
+      inviteError = res.error;
+    }
+
+    revalidatePath("/admin/users");
+    revalidatePath("/dashboard/org");
+    return { ok: true, invited, inviteError };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Could not create the account." };
+  }
+}
+
+async function sendInviteFor(userId: string): Promise<AdminResult> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { orgMembership: { include: { org: { select: { name: true } } } } },
+  });
+  if (!user) return { ok: false, error: "User not found." };
+  const token = await createResetToken(user.id, INVITE_TTL_MS);
+  const setupUrl = `${appUrl()}/reset-password?invite=1&token=${encodeURIComponent(token)}`;
+  const res = await sendAccountInvite({
+    email: user.email,
+    name: user.name,
+    setupUrl,
+    orgName: user.orgMembership?.org.name ?? null,
+    userId: user.id,
+  });
+  if (!res.ok) return { ok: false, error: res.error ?? "The email could not be sent." };
+  await recordEvent({
+    type: "SECURITY",
+    title: `Account invitation sent to ${user.email}`,
+    meta: { userId: user.id },
+  });
+  return { ok: true };
+}
+
+/**
+ * Email someone a 7-day link to set their password and finish their card.
+ * Sending again replaces any earlier link, so only the newest one works.
+ */
+export async function adminSendInvite(userId: string): Promise<AdminResult> {
+  try {
+    await requireAdminUser();
+    const res = await sendInviteFor(userId);
+    revalidatePath("/admin/users");
+    return res;
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Could not send the invitation." };
+  }
+}
+
+/**
+ * Put a user into an organisation (applying its branding and shared links),
+ * move them to another one, change their org role, or take them out (orgId null).
+ */
+export async function adminSetUserOrganisation(
+  userId: string,
+  orgId: string | null,
+  role: OrgRole = "MEMBER",
+): Promise<AdminResult> {
+  try {
+    const admin = await requireAdminUser();
+    if (!ORG_ROLES.includes(role)) return { ok: false, error: "Invalid organisation role." };
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { orgMembership: true },
+    });
+    if (!user) return { ok: false, error: "User not found." };
+    const current = user.orgMembership;
+
+    // Don't leave a team with members but nobody able to manage it.
+    if (current && current.role === "OWNER" && (orgId !== current.orgId || role !== "OWNER")) {
+      const [owners, members] = await Promise.all([
+        prisma.orgMember.count({ where: { orgId: current.orgId, role: "OWNER" } }),
+        prisma.orgMember.count({ where: { orgId: current.orgId } }),
+      ]);
+      if (owners === 1 && members > 1) {
+        return {
+          ok: false,
+          error: "This user is the only owner of their organisation. Make another member an owner first.",
+        };
+      }
+    }
+
+    if (!orgId) {
+      if (!current) return { ok: true };
+      await prisma.orgMember.delete({ where: { id: current.id } });
+      await applyLinksToMember(userId, []); // drop the org's locked links
+    } else {
+      const org = await prisma.organisation.findUnique({ where: { id: orgId }, select: { id: true } });
+      if (!org) return { ok: false, error: "That organisation no longer exists." };
+      if (current && current.orgId === orgId) {
+        await prisma.orgMember.update({ where: { id: current.id }, data: { role } });
+      } else {
+        await prisma.$transaction([
+          ...(current ? [prisma.orgMember.delete({ where: { id: current.id } })] : []),
+          prisma.orgMember.create({ data: { orgId, userId, role } }),
+        ]);
+        await syncProfileToOrg(userId, orgId);
+      }
+    }
+
+    await recordEvent({
+      type: "SECURITY",
+      title: orgId
+        ? `${user.email} assigned to an organisation by admin`
+        : `${user.email} removed from their organisation by admin`,
+      meta: { userId, orgId, role, byAdmin: admin.id },
+    });
+    revalidatePath("/admin/users");
+    revalidatePath("/dashboard/org");
+    revalidatePath("/dashboard");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Could not update the organisation." };
+  }
 }

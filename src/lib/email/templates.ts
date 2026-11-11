@@ -175,6 +175,36 @@ export function passwordResetEmail(args: {
   );
 }
 
+/* --------------------------- Account invite ------------------------------ */
+
+/** Sent when an admin has set up someone's account and card for them. */
+export function accountInviteEmail(args: {
+  name: string;
+  setupUrl: string;
+  orgName?: string | null;
+}): BuiltEmail {
+  const first = args.name.split(" ")[0] || "there";
+  const who = args.orgName
+    ? `<strong>${escapeHtml(args.orgName)}</strong> has set up your Pixcards digital business card.`
+    : "We've set up your Pixcards digital business card for you.";
+  const body = `
+    ${emailHeading(`Your Pixcards card is ready, ${escapeHtml(first)}`)}
+    ${emailParagraph(`${who} Set a password and finish it off. It only takes a few minutes:`)}
+    <ul style="margin:0 0 16px;padding-left:20px;font-family:Helvetica,Arial,sans-serif;font-size:15px;line-height:1.7;color:${BRAND.muted};">
+      <li>Add your photo and a short bio.</li>
+      <li>Check your job title, phone number and email.</li>
+      <li>Add your website and social links.</li>
+    </ul>
+    ${emailButton(args.setupUrl, "Set up my card")}
+    ${emailParagraph("This link works once and expires in 7 days. If it runs out, use \"Forgot password\" on the log-in page with this email address.")}
+    ${emailParagraph("If you weren't expecting this, you can safely ignore this email.")}
+  `;
+  return build(
+    "Your Pixcards card is ready to finish",
+    emailLayout({ preheader: "Set a password and add your photo, bio and links.", body }),
+  );
+}
+
 /* ----------------------------- Org invite -------------------------------- */
 
 export function orgInviteEmail(args: {

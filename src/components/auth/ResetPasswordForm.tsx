@@ -29,7 +29,13 @@ function SubmitButton() {
   );
 }
 
-export function ResetPasswordForm({ token }: { token: string }) {
+export function ResetPasswordForm({
+  token,
+  invite = false,
+}: {
+  token: string;
+  invite?: boolean;
+}) {
   const [state, formAction] = useActionState<ResetState, FormData>(
     resetPassword,
     undefined,
@@ -38,6 +44,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
   return (
     <form action={formAction} className="space-y-4">
       <input type="hidden" name="token" value={token} />
+      {invite && <input type="hidden" name="invite" value="1" />}
 
       {state?.error && (
         <div role="alert" className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">

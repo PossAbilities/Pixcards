@@ -12,6 +12,8 @@ import {
   setUserCardPreset,
   clearUserCardsAndOrders,
   adminCreateOrganisation,
+  adminSendInvite,
+  adminSetUserOrganisation,
 } from "@/lib/actions/admin";
 import { PRESET_OPTIONS } from "@/lib/card-preset-meta";
 import { cn, colorFromString, formatDate, initials } from "@/lib/utils";
@@ -26,7 +28,9 @@ export type AdminUser = {
   proComplimentary: boolean;
   role: "USER" | "ADMIN";
   cardPreset: string | null;
+  orgId: string | null;
   orgName: string | null;
+  orgRole: "OWNER" | "ADMIN" | "MEMBER" | null;
   ordersCount: number;
   createdAt: string;
 };
@@ -39,15 +43,28 @@ const PRO_DURATIONS: { label: string; days: number | null }[] = [
   { label: "Lifetime", days: null },
 ];
 
+export type AdminOrgOption = { id: string; name: string };
+
+const ORG_ROLE_LABEL = { OWNER: "Owner", ADMIN: "Admin", MEMBER: "Member" } as const;
+
 export function UserRow({
   user,
+  orgs,
   currentAdminId,
 }: {
   user: AdminUser;
+  orgs: AdminOrgOption[];
   currentAdminId: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
+  const [menuPos, setMenuPos] = useState<
+    { top?: number; bottom?: number; right: number; maxHeight: number } | null
+  >(null);
+  const [selOrg, setSelOrg] = useState(user.orgId ?? "");
+  const [selRole, setSelRole] = useState<"OWNER" | "ADMIN" | "MEMBER">(
+    user.orgRole ?? "MEMBER",
+  );
+  const [notice, setNotice] = useState<string | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const [proOpen, setProOpen] = useState(false);
 
@@ -57,7 +74,20 @@ export function UserRow({
       return;
     }
     const r = btnRef.current?.getBoundingClientRect();
-    if (r) setMenuPos({ top: r.bottom + 6, right: window.innerWidth - r.right });
+    if (r) {
+      const right = window.innerWidth - r.right;
+      const below = window.innerHeight - r.bottom - 12;
+      const above = r.top - 12;
+      // Open upwards for rows near the bottom of the screen; scroll if still tall.
+      setMenuPos(
+        below >= 420 || below >= above
+          ? { top: r.bottom + 6, right, maxHeight: below }
+          : { bottom: window.innerHeight - r.top + 6, right, maxHeight: above },
+      );
+    }
+    setSelOrg(user.orgId ?? "");
+    setSelRole(user.orgRole ?? "MEMBER");
+    setNotice(null);
     setOpen(true);
   }
   const [durationDays, setDurationDays] = useState<number | null>(30);
@@ -78,6 +108,40 @@ export function UserRow({
         setError(res.error ?? "Could not create organisation.");
         alert(res.error ?? "Could not create organisation.");
       }
+    });
+  }
+
+  function sendInvite() {
+    if (
+      !confirm(
+        `Email ${user.name} (${user.email}) a link to set their password and finish their card? Any earlier invitation link stops working.`,
+      )
+    )
+      return;
+    setError(null);
+    setNotice(null);
+    startTransition(async () => {
+      const res = await adminSendInvite(user.id);
+      if (res.ok) setNotice(`Invitation sent to ${user.email}.`);
+      else setError(res.error ?? "Could not send the invitation.");
+    });
+  }
+
+  const orgChanged = selOrg !== (user.orgId ?? "") || (selOrg !== "" && selRole !== (user.orgRole ?? "MEMBER"));
+
+  function saveOrg() {
+    if (!orgChanged) return;
+    if (!selOrg && !confirm(`Remove ${user.name} from ${user.orgName}? Their organisation branding stays, but shared team links are removed.`)) return;
+    if (selOrg && user.orgId && selOrg !== user.orgId) {
+      const target = orgs.find((o) => o.id === selOrg)?.name ?? "the new organisation";
+      if (!confirm(`Move ${user.name} from ${user.orgName} to ${target}? Their card will take on ${target}'s branding and links.`)) return;
+    }
+    setError(null);
+    setNotice(null);
+    startTransition(async () => {
+      const res = await adminSetUserOrganisation(user.id, selOrg || null, selRole);
+      if (res.ok) setNotice("Organisation updated.");
+      else setError(res.error ?? "Could not update the organisation.");
     });
   }
 
@@ -163,6 +227,12 @@ export function UserRow({
             </p>
             <p className="text-xs text-muted truncate">
               {user.username ? `@${user.username}` : "no profile"}
+              {user.orgName && (
+                <>
+                  {" · "}
+                  <span className="text-ink/70">{user.orgName}</span>
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -224,9 +294,27 @@ export function UserRow({
               className="fixed inset-0 z-40 cursor-default"
             />
             <div
-              className="fixed z-50 w-60 rounded-xl border border-black/5 bg-surface shadow-lg p-1 text-left"
-              style={{ top: menuPos?.top ?? 0, right: menuPos?.right ?? 16 }}
+              className="fixed z-50 w-64 overflow-y-auto rounded-xl border border-black/5 bg-surface shadow-lg p-1 text-left"
+              style={{
+                top: menuPos?.top,
+                bottom: menuPos?.bottom,
+                right: menuPos?.right ?? 16,
+                maxHeight: menuPos?.maxHeight,
+              }}
             >
+              <button
+                type="button"
+                onClick={sendInvite}
+                disabled={isPending}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-ink hover:bg-surface-low transition-colors disabled:opacity-50"
+              >
+                <Icon name="forward_to_inbox" className="text-[18px] text-primary" />
+                Send invitation
+              </button>
+              <p className="px-3 pb-1.5 -mt-1 text-[11px] text-faint">
+                Emails a 7-day link to set a password, then add their photo, bio and links.
+              </p>
+              <div className="my-1 h-px bg-black/5" />
               <button
                 type="button"
                 onClick={togglePlan}
@@ -323,34 +411,65 @@ export function UserRow({
                   <Icon name="corporate_fare" className="text-[18px] text-primary" />
                   Organisation
                 </span>
-                {user.orgName ? (
-                  <p className="mt-1.5 text-xs text-muted">
-                    Member of <strong className="text-ink">{user.orgName}</strong>.
-                    Manage it from that org&apos;s dashboard.
-                  </p>
-                ) : (
-                  <div className="mt-1.5 flex gap-2">
-                    <input
-                      value={orgName}
-                      onChange={(e) => setOrgName(e.target.value)}
-                      placeholder="Organisation name"
-                      disabled={isPending}
-                      className="min-w-0 flex-1 rounded-lg border border-outline bg-surface px-2.5 py-1.5 text-sm text-ink outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 disabled:opacity-50"
-                    />
-                    <button
-                      type="button"
-                      onClick={createOrg}
-                      disabled={isPending || !orgName.trim()}
-                      className={buttonClass("outline", "sm")}
-                    >
-                      Create
-                    </button>
-                  </div>
+                <select
+                  aria-label="Organisation"
+                  value={selOrg}
+                  onChange={(e) => setSelOrg(e.target.value)}
+                  disabled={isPending}
+                  className="mt-1.5 w-full rounded-lg border border-outline bg-surface px-2.5 py-1.5 text-sm text-ink outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 disabled:opacity-50"
+                >
+                  <option value="">No organisation</option>
+                  {orgs.map((o) => (
+                    <option key={o.id} value={o.id}>{o.name}</option>
+                  ))}
+                </select>
+                {selOrg && (
+                  <select
+                    aria-label="Role in organisation"
+                    value={selRole}
+                    onChange={(e) => setSelRole(e.target.value as typeof selRole)}
+                    disabled={isPending}
+                    className="mt-1.5 w-full rounded-lg border border-outline bg-surface px-2.5 py-1.5 text-sm text-ink outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 disabled:opacity-50"
+                  >
+                    {(["MEMBER", "ADMIN", "OWNER"] as const).map((r) => (
+                      <option key={r} value={r}>{ORG_ROLE_LABEL[r]}</option>
+                    ))}
+                  </select>
+                )}
+                {orgChanged && (
+                  <button
+                    type="button"
+                    onClick={saveOrg}
+                    disabled={isPending}
+                    className={buttonClass("outline", "sm", "mt-1.5 w-full")}
+                  >
+                    {selOrg ? "Save organisation" : "Remove from organisation"}
+                  </button>
                 )}
                 {!user.orgName && (
-                  <span className="mt-1 block text-[11px] text-faint">
-                    Creates it and makes this user the owner/admin.
-                  </span>
+                  <>
+                    <span className="mt-2.5 block text-[11px] font-medium text-muted">
+                      Or create a new one with this user as owner:
+                    </span>
+                    <div className="mt-1 flex gap-2">
+                      <input
+                        value={orgName}
+                        onChange={(e) => setOrgName(e.target.value)}
+                        placeholder="New organisation name"
+                        aria-label="New organisation name"
+                        disabled={isPending}
+                        className="min-w-0 flex-1 rounded-lg border border-outline bg-surface px-2.5 py-1.5 text-sm text-ink outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 disabled:opacity-50"
+                      />
+                      <button
+                        type="button"
+                        onClick={createOrg}
+                        disabled={isPending || !orgName.trim()}
+                        className={buttonClass("outline", "sm")}
+                      >
+                        Create
+                      </button>
+                    </div>
+                  </>
                 )}
               </div>
               <div className="my-1 h-px bg-black/5" />
@@ -399,8 +518,11 @@ export function UserRow({
                 <Icon name="delete" className="text-[18px]" />
                 Delete user
               </button>
+              {notice && (
+                <p role="status" className="px-3 py-1.5 text-xs text-green-700">{notice}</p>
+              )}
               {error && (
-                <p className="px-3 py-1.5 text-xs text-red-600">{error}</p>
+                <p role="alert" className="px-3 py-1.5 text-xs text-red-600">{error}</p>
               )}
             </div>
           </>
