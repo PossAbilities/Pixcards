@@ -105,7 +105,22 @@ export async function sendEmail(input: SendEmailInput): Promise<SendResult> {
         userId: input.userId,
         status: "failed",
       });
-      return { ok: false, error: `Email provider error (${res.status})` };
+      // Surface Resend's own reason (e.g. "domain is not verified") so admins
+      // can fix configuration without digging through server logs.
+      let reason = "";
+      try {
+        const parsed = JSON.parse(detail) as { message?: unknown };
+        if (typeof parsed.message === "string") reason = parsed.message;
+      } catch {
+        // non-JSON body — fall back to the status code only
+      }
+      reason = reason.slice(0, 300);
+      return {
+        ok: false,
+        error: reason
+          ? `Email provider error (${res.status}): ${reason}`
+          : `Email provider error (${res.status})`,
+      };
     }
     const json = (await res.json().catch(() => ({}))) as { id?: string };
     await logMessage({
