@@ -39,6 +39,8 @@ export default async function AdminUsersPage() {
     orgRole: u.orgMembership?.role ?? null,
     ordersCount: u._count.orders,
     createdAt: u.createdAt.toISOString(),
+    invitedAt: u.invitedAt?.toISOString() ?? null,
+    inviteAcceptedAt: u.inviteAcceptedAt?.toISOString() ?? null,
   }));
 
   return <UsersTable users={rows} orgs={orgs} currentAdminId={admin.id} />;

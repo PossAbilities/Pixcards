@@ -71,6 +71,11 @@ export async function resetPassword(
     data: { passwordHash: await hashPassword(parsed.data.password) },
   });
 
+  // First password set on an admin-created account = invitation accepted.
+  await prisma.user.updateMany({
+    where: { id: userId, invitedAt: { not: null }, inviteAcceptedAt: null },
+    data: { inviteAcceptedAt: new Date() },
+  });
   await createSession(userId);
   // Admin-invited people land straight in the card editor to finish their card.
   if (formData.get("invite") === "1") redirect("/dashboard/edit?welcome=1");
