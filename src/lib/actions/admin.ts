@@ -22,6 +22,8 @@ import { appUrl } from "@/lib/constants";
 import { slugify } from "@/lib/utils";
 import { createResetToken, INVITE_TTL_MS } from "@/lib/password-reset";
 import { sendAccountInvite } from "@/lib/email/dispatch";
+import { sendEmail } from "@/lib/email/send";
+import { passwordResetEmail } from "@/lib/email/templates";
 import { applyLinksToMember, syncProfileToOrg } from "@/lib/org-membership";
 import type { OrderStatus, OrgRole, Plan, Role } from "@prisma/client";
 
@@ -610,6 +612,7 @@ async function sendInviteFor(userId: string): Promise<AdminResult> {
     userId: user.id,
   });
   if (!res.ok) return { ok: false, error: res.error ?? "The email could not be sent." };
+  await prisma.user.update({ where: { id: user.id }, data: { invitedAt: new Date() } });
   await recordEvent({
     type: "SECURITY",
     title: `Account invitation sent to ${user.email}`,
@@ -697,5 +700,33 @@ export async function adminSetUserOrganisation(
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Could not update the organisation." };
+  }
+}
+
+/**
+ * Email a user the standard 60-minute "choose a new password" link. Admins never
+ * see or set the password themselves. Any earlier reset/invite link stops working.
+ */
+export async function adminSendPasswordReset(userId: string): Promise<AdminResult> {
+  try {
+    const admin = await requireAdminUser();
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, email: true },
+    });
+    if (!user) return { ok: false, error: "User not found." };
+    const token = await createResetToken(user.id);
+    const resetUrl = `${appUrl()}/reset-password?token=${encodeURIComponent(token)}`;
+    const built = passwordResetEmail({ name: user.name, resetUrl });
+    const res = await sendEmail({ to: user.email, ...built, type: "PASSWORD_RESET", userId: user.id });
+    if (!res.ok) return { ok: false, error: res.error ?? "The email could not be sent." };
+    await recordEvent({
+      type: "SECURITY",
+      title: `Password reset email sent to ${user.email} by admin`,
+      meta: { userId: user.id, byAdmin: admin.id },
+    });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Could not send the reset email." };
   }
 }

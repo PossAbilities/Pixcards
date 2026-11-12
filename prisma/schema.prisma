@@ -191,6 +191,11 @@ model User {
   marketingOptIn   Boolean   @default(false)
   marketingOptInAt DateTime?
 
+  // Admin-created accounts: when the last invitation email went out, and when
+  // the person first set their own password.
+  invitedAt        DateTime?
+  inviteAcceptedAt DateTime?
+
   profile     Profile?
   orders      Order[]
   cards       Card[]

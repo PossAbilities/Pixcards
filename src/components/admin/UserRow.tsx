@@ -13,6 +13,7 @@ import {
   clearUserCardsAndOrders,
   adminCreateOrganisation,
   adminSendInvite,
+  adminSendPasswordReset,
   adminSetUserOrganisation,
 } from "@/lib/actions/admin";
 import { PRESET_OPTIONS } from "@/lib/card-preset-meta";
@@ -33,7 +34,13 @@ export type AdminUser = {
   orgRole: "OWNER" | "ADMIN" | "MEMBER" | null;
   ordersCount: number;
   createdAt: string;
+  invitedAt: string | null;
+  inviteAcceptedAt: string | null;
 };
+
+function shortDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
 
 const PRO_DURATIONS: { label: string; days: number | null }[] = [
   { label: "1 month", days: 30 },
@@ -111,10 +118,13 @@ export function UserRow({
     });
   }
 
+  const invitePending = !!user.invitedAt && !user.inviteAcceptedAt;
+
   function sendInvite() {
+    const verb = user.invitedAt ? "Resend the invitation to" : "Email";
     if (
       !confirm(
-        `Email ${user.name} (${user.email}) a link to set their password and finish their card? Any earlier invitation link stops working.`,
+        `${verb} ${user.name} (${user.email}) with a link to set their password and finish their card? Any earlier link stops working.`,
       )
     )
       return;
@@ -124,6 +134,22 @@ export function UserRow({
       const res = await adminSendInvite(user.id);
       if (res.ok) setNotice(`Invitation sent to ${user.email}.`);
       else setError(res.error ?? "Could not send the invitation.");
+    });
+  }
+
+  function sendReset() {
+    if (
+      !confirm(
+        `Email ${user.name} (${user.email}) a link to choose a new password? The link lasts 60 minutes. Their current password keeps working until they change it.`,
+      )
+    )
+      return;
+    setError(null);
+    setNotice(null);
+    startTransition(async () => {
+      const res = await adminSendPasswordReset(user.id);
+      if (res.ok) setNotice(`Password reset email sent to ${user.email}.`);
+      else setError(res.error ?? "Could not send the reset email.");
     });
   }
 
@@ -224,6 +250,14 @@ export function UserRow({
           <div className="min-w-0">
             <p className="text-sm font-semibold text-ink truncate">
               {user.name}
+              {invitePending && (
+                <span
+                  className="ml-1.5 inline-block rounded-full bg-amber-100 px-2 py-0.5 align-middle text-[10px] font-semibold text-amber-800"
+                  title={`Invited ${shortDate(user.invitedAt!)} — hasn't set a password yet`}
+                >
+                  Invited
+                </span>
+              )}
             </p>
             <p className="text-xs text-muted truncate">
               {user.username ? `@${user.username}` : "no profile"}
@@ -309,10 +343,26 @@ export function UserRow({
                 className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-ink hover:bg-surface-low transition-colors disabled:opacity-50"
               >
                 <Icon name="forward_to_inbox" className="text-[18px] text-primary" />
-                Send invitation
+                {user.invitedAt ? "Resend invitation" : "Send invitation"}
               </button>
               <p className="px-3 pb-1.5 -mt-1 text-[11px] text-faint">
-                Emails a 7-day link to set a password, then add their photo, bio and links.
+                {user.inviteAcceptedAt
+                  ? `Invited ${shortDate(user.invitedAt!)} · account set up ${shortDate(user.inviteAcceptedAt)}`
+                  : user.invitedAt
+                    ? `Last invited ${shortDate(user.invitedAt)} · not set up yet`
+                    : "Emails a 7-day link to set a password, then add their photo, bio and links."}
+              </p>
+              <button
+                type="button"
+                onClick={sendReset}
+                disabled={isPending}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-ink hover:bg-surface-low transition-colors disabled:opacity-50"
+              >
+                <Icon name="lock_reset" className="text-[18px] text-primary" />
+                Send password reset
+              </button>
+              <p className="px-3 pb-1.5 -mt-1 text-[11px] text-faint">
+                Emails a 60-minute link to choose a new password.
               </p>
               <div className="my-1 h-px bg-black/5" />
               <button
