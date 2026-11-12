@@ -108,3 +108,33 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 export function isPro(user: { plan: Plan } | null): boolean {
   return user?.plan === "PRO";
 }
+
+/* ------------------------- Email verification ---------------------------- */
+// Stateless signed link. Uses a different claim name ("vid") from session
+// tokens ("uid") plus a purpose check, so neither can stand in for the other.
+// Binding the email means changing address invalidates any old link.
+
+const VERIFY_PURPOSE = "verify-email";
+
+export async function signEmailVerifyToken(userId: string, email: string): Promise<string> {
+  return new SignJWT({ vid: userId, em: email.toLowerCase(), pur: VERIFY_PURPOSE })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("2d")
+    .sign(secret);
+}
+
+export async function readEmailVerifyToken(
+  token: string,
+): Promise<{ userId: string; email: string } | null> {
+  try {
+    const { payload } = await jwtVerify(token, secret);
+    if (payload.pur !== VERIFY_PURPOSE) return null;
+    const userId = payload.vid;
+    const email = payload.em;
+    if (typeof userId !== "string" || typeof email !== "string") return null;
+    return { userId, email };
+  } catch {
+    return null;
+  }
+}

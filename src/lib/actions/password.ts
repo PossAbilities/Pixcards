@@ -71,6 +71,11 @@ export async function resetPassword(
     data: { passwordHash: await hashPassword(parsed.data.password) },
   });
 
+  // Clicking an emailed link proves they control the inbox.
+  await prisma.user.updateMany({
+    where: { id: userId, emailVerifiedAt: null },
+    data: { emailVerifiedAt: new Date() },
+  });
   // First password set on an admin-created account = invitation accepted.
   await prisma.user.updateMany({
     where: { id: userId, invitedAt: { not: null }, inviteAcceptedAt: null },

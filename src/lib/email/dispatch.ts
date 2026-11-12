@@ -10,6 +10,7 @@ import {
   passwordResetEmail,
   orgInviteEmail,
   accountInviteEmail,
+  verifyEmailEmail,
 } from "./templates";
 
 export async function sendOrgInvite(
@@ -39,6 +40,16 @@ export async function sendAccountInvite(args: {
     setupUrl: args.setupUrl,
     orgName: args.orgName,
   });
+  return sendEmail({ to: args.email, ...built, type: "OTHER", userId: args.userId });
+}
+
+export async function sendVerifyEmail(args: {
+  email: string;
+  name: string;
+  verifyUrl: string;
+  userId: string;
+}): Promise<SendResult> {
+  const built = verifyEmailEmail({ name: args.name, verifyUrl: args.verifyUrl });
   return sendEmail({ to: args.email, ...built, type: "OTHER", userId: args.userId });
 }
 

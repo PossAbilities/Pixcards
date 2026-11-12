@@ -48,6 +48,8 @@ type Props = {
   defaultTitle: string;
   shareUrl: string;
   avatarUrl?: string | null;
+  /** Verified staff on a free-card domain: one card, no charge. */
+  free?: boolean;
 };
 
 type ElementType = "text" | "image" | "qr";
@@ -239,6 +241,7 @@ export function CardStudio({
   defaultTitle,
   shareUrl,
   avatarUrl,
+  free = false,
 }: Props) {
   /* ----- order state ----- */
   const [materialId, setMaterialId] = useState<string>("white-gloss");
@@ -360,8 +363,8 @@ export function CardStudio({
   const discountOff = appliedDiscount
     ? Math.min(appliedDiscount.amountOffCents, baseCents)
     : 0;
-  const totalCents = Math.max(0, baseCents - discountOff);
-  const total = money(totalCents);
+  const totalCents = free ? 0 : Math.max(0, baseCents - discountOff);
+  const total = free ? "Free" : money(totalCents);
 
   // Re-applying needed if the order amount changes — clear a stale discount.
   useEffect(() => {
@@ -866,13 +869,13 @@ export function CardStudio({
       const fd = new FormData();
       fd.append("material", materialId);
       fd.append("cardName", cardName);
-      fd.append("quantity", String(quantity));
+      fd.append("quantity", String(free ? 1 : quantity));
       fd.append("shipName", shipName);
       fd.append("shipAddress", shipAddress);
       fd.append("shipCity", shipCity);
       fd.append("shipPostal", shipPostal);
       fd.append("shipCountry", shipCountry);
-      fd.append("discountCode", discountCode);
+      fd.append("discountCode", free ? "" : discountCode);
       fd.append("personalisedAck", personalisedAck ? "yes" : "");
       fd.append(
         "design",
@@ -903,6 +906,7 @@ export function CardStudio({
     front,
     back,
     plan,
+    free,
   ]);
 
   /* ------------------------------------------------------------------ */
@@ -1311,6 +1315,11 @@ export function CardStudio({
         {/* ---------------- Quantity ---------------- */}
         <Card className="p-6">
           <SectionHeading icon="tag" title="Quantity" />
+          {free ? (
+            <p className="text-sm text-muted">
+              1 card — staff cards are free, one at a time.
+            </p>
+          ) : (
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -1343,6 +1352,7 @@ export function CardStudio({
             </button>
             <span className="text-sm text-muted">cards (1–50)</span>
           </div>
+          )}
         </Card>
 
         {/* ---------------- Shipping ---------------- */}
@@ -1440,7 +1450,7 @@ export function CardStudio({
                   <dt className="text-muted">Quantity</dt>
                   <dd className="font-medium text-ink">× {quantity}</dd>
                 </div>
-                {appliedDiscount && discountOff > 0 && (
+                {!free && appliedDiscount && discountOff > 0 && (
                   <div className="flex items-center justify-between text-emerald-700">
                     <dt>Discount ({appliedDiscount.code})</dt>
                     <dd className="font-semibold">− {money(discountOff)}</dd>
@@ -1455,6 +1465,7 @@ export function CardStudio({
               </dl>
             </div>
 
+            {!free && (
             <div>
               <label
                 htmlFor="cardDiscount"
@@ -1498,6 +1509,7 @@ export function CardStudio({
                 </p>
               )}
             </div>
+            )}
 
             <OrderConsent checked={personalisedAck} onChange={setPersonalisedAck} />
 
@@ -1529,8 +1541,8 @@ export function CardStudio({
                 </>
               ) : (
                 <>
-                  <Icon name="lock" className="text-[18px]" />
-                  Continue to payment · {total}
+                  <Icon name={free ? "redeem" : "lock"} className="text-[18px]" />
+                  {free ? "Order my free card" : <>Continue to payment · {total}</>}
                 </>
               )}
             </button>

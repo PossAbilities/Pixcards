@@ -9,6 +9,7 @@ import { material, appUrl, PRO_PRICE_CENTS, APP_NAME } from "@/lib/constants";
 import { validateDiscount, recordRedemption } from "@/lib/discounts";
 import { sendOrderReceipt, sendProWelcome } from "@/lib/email/dispatch";
 import { recordEvent } from "@/lib/events";
+import { freeCardStatus, FREE_CARD_MAX_QUANTITY } from "@/lib/complimentary";
 
 const orderSchema = z.object({
   material: z.string().min(1),
@@ -29,7 +30,6 @@ const orderSchema = z.object({
 export async function createCardOrder(formData: FormData): Promise<{ error: string } | void> {
   const user = await getSessionUser();
   if (!user) redirect("/login");
-  if (paymentsUnavailable) return { error: PAYMENTS_UNAVAILABLE };
 
   // Personalised goods: the buyer must acknowledge there's no 14-day
   // cancellation right before ordering (CCR 2013 reg. 28(1)(b)).
@@ -42,11 +42,19 @@ export async function createCardOrder(formData: FormData): Promise<{ error: stri
   }
   const d = parsed.data;
   const mat = material(d.material);
-  let priceCents = mat.priceCents * d.quantity;
+
+  // Verified staff on a free-card domain: one card, no charge.
+  const { free } = await freeCardStatus(user.id);
+  // Free staff cards don't need the payment system.
+  if (paymentsUnavailable && !free) return { error: PAYMENTS_UNAVAILABLE };
+  if (free && d.quantity > FREE_CARD_MAX_QUANTITY) {
+    return { error: `Staff cards are free one at a time — set the quantity to ${FREE_CARD_MAX_QUANTITY}.` };
+  }
+  let priceCents = free ? 0 : mat.priceCents * d.quantity;
 
   // Optional discount code
   let redemption: { codeId: string; amountOffCents: number } | null = null;
-  if (d.discountCode.trim()) {
+  if (!free && d.discountCode.trim()) {
     const res = await validateDiscount(d.discountCode, "CARD", priceCents, user.id);
     if (!res.valid) return { error: res.reason };
     priceCents = res.finalCents;
@@ -72,7 +80,7 @@ export async function createCardOrder(formData: FormData): Promise<{ error: stri
 
   await recordEvent({
     type: "ORDER_PLACED",
-    title: `New card order from ${user.name}`,
+    title: free ? `Free staff card order from ${user.name}` : `New card order from ${user.name}`,
     message: `${d.quantity} × ${mat.name} — ${(priceCents / 100).toFixed(2)} GBP`,
     meta: { orderId: order.id, userId: user.id, email: user.email, quantity: d.quantity, priceCents },
   });

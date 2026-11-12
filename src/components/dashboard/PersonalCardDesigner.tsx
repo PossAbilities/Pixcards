@@ -46,12 +46,17 @@ export function PersonalCardDesigner({
   qrPreview,
   onClose,
   onSaved,
+  saveAction = updateMyCardDesign,
+  resetAction = resetMyCardDesign,
 }: {
   initialSpec: CardTemplateSpec;
   previewMerge: MergeData;
   qrPreview: string;
   onClose?: () => void;
   onSaved?: () => void;
+  /** Defaults to saving the signed-in user's card; admin passes its own. */
+  saveAction?: (specJson: string) => Promise<{ ok: boolean; error?: string }>;
+  resetAction?: () => Promise<{ ok: boolean; error?: string; spec?: string }>;
 }) {
   const [spec, setSpec] = useState<CardTemplateSpec>(initialSpec);
   const [activeSide, setActiveSide] = useState<"front" | "back">("front");
@@ -145,7 +150,7 @@ export function PersonalCardDesigner({
     setError(null);
     setSaved(false);
     startTransition(async () => {
-      const res = await updateMyCardDesign(JSON.stringify(spec));
+      const res = await saveAction(JSON.stringify(spec));
       if (res.ok) {
         setSaved(true);
         onSaved?.();
@@ -162,7 +167,7 @@ export function PersonalCardDesigner({
     setError(null);
     setSaved(false);
     startTransition(async () => {
-      const res = await resetMyCardDesign();
+      const res = await resetAction();
       if (res.ok && res.spec) {
         setSpec(JSON.parse(res.spec) as CardTemplateSpec);
         setSelectedId(null);
