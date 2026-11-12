@@ -9,6 +9,7 @@ const isDev = process.env.NODE_ENV !== "production";
 // Supabase, set via env) or be data:/blob: URIs from the card designers and
 // html-to-image, hence https:/data:/blob:. Stripe Checkout is reached by a
 // server-action redirect, so it's allowed as a form target.
+// The production policy is mirrored in netlify.toml [[headers]] — keep in sync.
 const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,

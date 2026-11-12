@@ -21,6 +21,18 @@
   # to ship in the client bundle), so exclude them from Netlify's secret scan.
   SECRETS_SCAN_OMIT_KEYS = "SUPABASE_STORAGE_BUCKET,NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_APP_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,EMAIL_FROM,EMAIL_REPLY_TO"
 
+# Security headers at the CDN edge, so static/cached responses carry them too
+# (next.config.ts headers() alone may not reach CDN-served pages and assets).
+# Keep the Content-Security-Policy in sync with the production `csp` in
+# next.config.ts.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' data: blob: https:; media-src 'self' data: blob: https:; frame-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self' https://checkout.stripe.com https://billing.stripe.com; frame-ancestors 'self'; upgrade-insecure-requests"
+
 # Required environment variables (set in Netlify UI → Site settings → Environment):
 #   DATABASE_URL          Supabase pooled URL (port 6543, ?pgbouncer=true)
 #   DIRECT_URL            Supabase direct URL (port 5432) — used by db push
