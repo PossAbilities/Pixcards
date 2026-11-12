@@ -22,11 +22,14 @@ export function SavedCardPanel({
   defaultName,
   spec,
   merge,
+  free = false,
 }: {
   unitPriceCents: number;
   defaultName: string;
   spec: CardTemplateSpec;
   merge: MergeData;
+  /** Verified staff: this order costs nothing. */
+  free?: boolean;
 }) {
   const [state, action, pending] = useActionState<State, FormData>(
     async (_prev, formData) => (await orderMyCard(formData)) ?? null,
@@ -170,7 +173,8 @@ export function SavedCardPanel({
             {/* Carries the applied code into the order action. */}
             <input type="hidden" name="discountCode" value={applied ? applied.code : ""} />
 
-            {/* Discount code */}
+            {/* Discount code (not needed for free staff cards) */}
+            {!free && (
             <div className="sm:col-span-2">
               <Label htmlFor="sp-code">Discount code</Label>
               {applied ? (
@@ -199,6 +203,7 @@ export function SavedCardPanel({
               )}
               {codeErr && <p role="alert" className="mt-1.5 text-sm font-medium text-red-700">{codeErr}</p>}
             </div>
+            )}
 
             <div className="sm:col-span-2">
               <OrderConsent />
@@ -207,12 +212,20 @@ export function SavedCardPanel({
             <div className="sm:col-span-2 flex flex-wrap items-center gap-3">
               <button type="submit" disabled={pending} className={buttonClass("primary", "md")}>
                 <Icon name="shopping_cart_checkout" className="text-[18px]" />
-                {pending ? "Starting checkout…" : `Continue to payment · ${money(totalCents)}`}
+                {free
+                  ? pending
+                    ? "Placing your order…"
+                    : "Order my free card"
+                  : pending
+                    ? "Starting checkout…"
+                    : `Continue to payment · ${money(totalCents)}`}
               </button>
-              {applied && (
+              {!free && applied && (
                 <span className="text-xs text-muted line-through">{money(unitPriceCents)}</span>
               )}
-              <span className="text-xs text-muted">White CR80 card · secure checkout</span>
+              <span className="text-xs text-muted">
+                {free ? "White CR80 card · free for staff" : "White CR80 card · secure checkout"}
+              </span>
               {state?.error && <span role="alert" className="text-sm font-medium text-red-700">{state.error}</span>}
             </div>
           </form>

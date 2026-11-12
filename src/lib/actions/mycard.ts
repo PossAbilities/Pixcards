@@ -1,4 +1,6 @@
 "use server";
+import { freeCardStatus, FREE_CARD_MAX_QUANTITY } from "@/lib/complimentary";
+import { sendOrderReceipt } from "@/lib/email/dispatch";
 
 import { z } from "zod";
 import { redirect } from "next/navigation";
@@ -130,7 +132,6 @@ export async function previewMyCardDiscount(
 export async function orderMyCard(formData: FormData): Promise<{ error: string } | void> {
   const user = await getSessionUser();
   if (!user) redirect("/login");
-  if (paymentsUnavailable) return { error: PAYMENTS_UNAVAILABLE };
   // Personalised goods: the buyer must acknowledge there's no 14-day
   // cancellation right before ordering (CCR 2013 reg. 28(1)(b)).
   if (formData.get("personalisedAck") !== "yes") {
@@ -141,6 +142,14 @@ export async function orderMyCard(formData: FormData): Promise<{ error: string }
     return { error: parsed.error.issues[0]?.message ?? "Invalid order" };
   }
   const d = parsed.data;
+
+  // Verified staff on a free-card domain: one card, no charge.
+  const { free } = await freeCardStatus(user.id);
+  // Free staff cards don't need the payment system.
+  if (paymentsUnavailable && !free) return { error: PAYMENTS_UNAVAILABLE };
+  if (free && d.quantity > FREE_CARD_MAX_QUANTITY) {
+    return { error: `Staff cards are free one at a time — set the quantity to ${FREE_CARD_MAX_QUANTITY}.` };
+  }
 
   const card = await loadMyCard(user.id);
   if (!card) return { error: "Profile not found." };
@@ -165,9 +174,9 @@ export async function orderMyCard(formData: FormData): Promise<{ error: string }
 
   // Optional discount code (validated; one use per user is enforced in
   // validateDiscount + the DB unique constraint).
-  let priceCents = fullPrice;
+  let priceCents = free ? 0 : fullPrice;
   let redemption: { codeId: string; amountOffCents: number } | null = null;
-  if (d.discountCode.trim()) {
+  if (!free && d.discountCode.trim()) {
     const res = await validateDiscount(d.discountCode, "CARD", fullPrice, user.id);
     if (!res.valid) return { error: res.reason };
     priceCents = res.finalCents;
@@ -192,8 +201,8 @@ export async function orderMyCard(formData: FormData): Promise<{ error: string }
   });
   await recordEvent({
     type: "ORDER_PLACED",
-    title: `Card order from ${user.name}`,
-    meta: { orderId: order.id },
+    title: free ? `Free staff card order from ${user.name}` : `Card order from ${user.name}`,
+    meta: { orderId: order.id, complimentary: free },
   });
 
   if (stripeEnabled && stripe && priceCents > 0) {
@@ -236,6 +245,7 @@ export async function orderMyCard(formData: FormData): Promise<{ error: string }
     await recordRedemption(redemption.codeId, user.id, "order", redemption.amountOffCents);
   }
   await prisma.order.update({ where: { id: order.id }, data: { status: "PAID" } });
+  if (free) await sendOrderReceipt(order.id);
   redirect(`/dashboard/orders`);
 }
 

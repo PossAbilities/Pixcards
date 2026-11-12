@@ -8,6 +8,8 @@ import { appUrl, material } from "@/lib/constants";
 import { loadMyCard } from "@/lib/mycard";
 import { domainDesignsForEmail } from "@/lib/card-preset-meta";
 import { DomainDesignPicker } from "@/components/dashboard/DomainDesignPicker";
+import { FreeCardBanner } from "@/components/dashboard/FreeCardBanner";
+import { freeCardStatus } from "@/lib/complimentary";
 
 export const metadata: Metadata = { title: "Order a card" };
 
@@ -29,6 +31,7 @@ export default async function OrderPage({
   const myCard = showSavedCard ? await loadMyCard(user.id) : null;
   const presetPrice = material("white-gloss").priceCents;
   const domainDesigns = domainDesignsForEmail(user.email);
+  const freeStatus = await freeCardStatus(user.id);
   const defaultTitle =
     profile?.jobTitle && profile.jobTitle.trim().length > 0
       ? profile.jobTitle
@@ -56,6 +59,10 @@ export default async function OrderPage({
         </div>
       )}
 
+      {freeStatus.eligible && (
+        <FreeCardBanner verified={freeStatus.free} email={user.email} />
+      )}
+
       {domainDesigns && (
         <DomainDesignPicker
           options={domainDesigns.options}
@@ -70,6 +77,7 @@ export default async function OrderPage({
             defaultName={user.name}
             spec={myCard.spec}
             merge={myCard.merge}
+            free={freeStatus.free}
           />
           <details className="group rounded-2xl border border-outline bg-surface">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-5">
@@ -86,6 +94,7 @@ export default async function OrderPage({
                 defaultTitle={defaultTitle}
                 shareUrl={shareUrl}
                 avatarUrl={profile?.avatarUrl ?? null}
+                free={freeStatus.free}
               />
             </div>
           </details>
@@ -97,6 +106,7 @@ export default async function OrderPage({
           defaultTitle={defaultTitle}
           shareUrl={shareUrl}
           avatarUrl={profile?.avatarUrl ?? null}
+          free={freeStatus.free}
         />
       )}
     </div>

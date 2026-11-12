@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useRef, useState, useTransition } from "react";
 import { Icon } from "@/components/Icon";
 import { Badge, ProBadge, buttonClass } from "@/components/ui";
@@ -364,6 +366,21 @@ export function UserRow({
               <p className="px-3 pb-1.5 -mt-1 text-[11px] text-faint">
                 Emails a 60-minute link to choose a new password.
               </p>
+              <div className="my-1 h-px bg-black/5" />
+              <Link
+                href={`/admin/users/${user.id}/card`}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-ink hover:bg-surface-low transition-colors"
+              >
+                <Icon name="design_services" className="text-[18px] text-primary" />
+                Design their card
+              </Link>
+              <Link
+                href={`/admin/cards?newOrder=${encodeURIComponent(user.id)}`}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-ink hover:bg-surface-low transition-colors"
+              >
+                <Icon name="print" className="text-[18px] text-primary" />
+                Create a print order
+              </Link>
               <div className="my-1 h-px bg-black/5" />
               <button
                 type="button"

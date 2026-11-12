@@ -175,6 +175,22 @@ export function passwordResetEmail(args: {
   );
 }
 
+/* ---------------------------- Verify email -------------------------------- */
+
+export function verifyEmailEmail(args: { name: string; verifyUrl: string }): BuiltEmail {
+  const first = args.name.split(" ")[0] || "there";
+  const body = `
+    ${emailHeading("Confirm your email address")}
+    ${emailParagraph(`Hi ${escapeHtml(first)}, click below to confirm this is your email address. Once it's confirmed, your staff card is free to order.`)}
+    ${emailButton(args.verifyUrl, "Confirm my email")}
+    ${emailParagraph("This link expires in 2 days. If you didn't ask for this, you can safely ignore it.")}
+  `;
+  return build(
+    "Confirm your email for Pixcards",
+    emailLayout({ preheader: "One click to confirm your email address.", body }),
+  );
+}
+
 /* --------------------------- Account invite ------------------------------ */
 
 /** Sent when an admin has set up someone's account and card for them. */

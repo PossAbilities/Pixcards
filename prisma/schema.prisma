@@ -195,6 +195,9 @@ model User {
   // the person first set their own password.
   invitedAt        DateTime?
   inviteAcceptedAt DateTime?
+  // Set once the person has proved they control the inbox (clicked an emailed
+  // verify / invite / reset link). Gates free staff cards for domain accounts.
+  emailVerifiedAt  DateTime?
 
   profile     Profile?
   orders      Order[]
