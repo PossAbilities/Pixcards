@@ -44,7 +44,7 @@ jobs:
         run: |
           tar --exclude=.git --exclude=.github --exclude=node_modules --exclude=.next -czf /tmp/release.tar.gz .
           scp -i ~/.ssh/deploy_key /tmp/release.tar.gz \
-            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/root/pixcards-release.tar.gz"
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:pixcards-release.tar.gz"
 
       - name: Rebuild and restart on the VPS
         if: steps.secrets.outputs.ready == 'true'
