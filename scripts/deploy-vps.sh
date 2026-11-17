@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Runs ON the Ryan's Cloud VPS. .github/workflows/deploy.yml uploads the release to
-# /root/pixcards-release.tar.gz and pipes this script over ssh.
+# ~/pixcards-release.tar.gz and pipes this script over ssh.
 #
 # Swaps the new code into /opt/pixcards/app, rebuilds the image and restarts ONLY the
 # app container. The database container, its volume and /opt/pixcards/.env are never
@@ -9,7 +9,7 @@
 set -euo pipefail
 
 DIR=/opt/pixcards
-TARBALL=/root/pixcards-release.tar.gz
+TARBALL="$HOME/pixcards-release.tar.gz"
 COMPOSE=(docker compose -p pixcards -f "$DIR/docker-compose.db.yml" -f "$DIR/docker-compose.app.yml")
 
 cd "$DIR"
