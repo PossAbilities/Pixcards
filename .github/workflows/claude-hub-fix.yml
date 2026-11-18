@@ -45,7 +45,14 @@ jobs:
         run: |
           case "$BRANCH" in hub/*) ;; *) echo "Branch must start with hub/"; exit 1 ;; esac
           git check-ref-format --branch "$BRANCH" >/dev/null
-          git checkout -b "$BRANCH"
+          # hub-continue-branch: a follow-up from the hub's chat carries on
+          # from Claude's earlier work on this branch (same pull request).
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            git fetch origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH"
+            git checkout -B "$BRANCH" "origin/$BRANCH"
+          else
+            git checkout -b "$BRANCH"
+          fi
 
       # The request reaches Claude through a file written from an env
       # variable, so it is never part of this workflow's text, and any
