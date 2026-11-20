@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { unsubscribeUrl as unsubscribeLink } from "@/lib/unsubscribe";
 import { sendEmail } from "@/lib/email/send";
 import { marketingEmail } from "@/lib/email/templates";
+import { runProfileReminderSweep, sendProfileReminder } from "@/lib/email/profile-reminders";
 
 async function requireAdminUser() {
   const user = await getSessionUser();
@@ -82,4 +83,28 @@ export async function sendBroadcast(input: {
   }
 
   return { ok: true, sent };
+}
+
+export type ReminderAdminResult = {
+  ok: boolean;
+  message?: string;
+  error?: string;
+};
+
+/** Send yourself the profile reminder exactly as your own account would get it. */
+export async function sendProfileReminderTest(): Promise<ReminderAdminResult> {
+  const admin = await requireAdminUser();
+  const res = await sendProfileReminder(admin.id, { testTo: admin.email });
+  if (!res.ok) return { ok: false, error: res.error ?? res.skipped ?? "Could not send." };
+  return { ok: true, message: res.demo ? "Logged (demo mode — no email provider set)." : `Sent to ${admin.email}.` };
+}
+
+/** Preview (dryRun) or send profile reminders to everyone who's due one now. */
+export async function runProfileReminders(dryRun: boolean): Promise<ReminderAdminResult> {
+  await requireAdminUser();
+  const r = await runProfileReminderSweep({ dryRun });
+  if (dryRun) {
+    return { ok: true, message: `${r.due} ${r.due === 1 ? "person is" : "people are"} due a reminder right now.` };
+  }
+  return { ok: true, message: `Sent ${r.sent}${r.failed ? `, ${r.failed} failed` : ""} (${r.due} were due).` };
 }
