@@ -10,6 +10,7 @@ import {
   marketingEmail,
   type BuiltEmail,
 } from "@/lib/email/templates";
+import { profileReminderEmail } from "@/lib/email/profile-reminder";
 
 const base = appUrl();
 
@@ -50,6 +51,28 @@ const SAMPLES: Record<string, () => BuiltEmail> = {
     passwordResetEmail({
       name: "Alex Morgan",
       resetUrl: `${base}/reset-password?token=sample`,
+    }),
+  "profile-reminder-staff": () =>
+    profileReminderEmail({
+      name: "Alex Morgan",
+      percent: 50,
+      missing: ["photo", "bio"],
+      jobTitle: "",
+      editUrl: `${base}/dashboard/edit`,
+      orderUrl: `${base}/dashboard/order`,
+      offer: "free",
+      orgName: "PossAbilities",
+    }),
+  "profile-reminder": () =>
+    profileReminderEmail({
+      name: "Alex Morgan",
+      percent: 25,
+      missing: ["photo", "bio", "contact"],
+      jobTitle: "Operations Lead",
+      editUrl: `${base}/dashboard/edit`,
+      orderUrl: `${base}/dashboard/order`,
+      offer: "paid",
+      unsubscribeUrl: `${base}/unsubscribe`,
     }),
   marketing: () =>
     marketingEmail({

@@ -10,7 +10,7 @@ import {
   inputClass,
   Label,
 } from "@/components/ui";
-import { sendBroadcast } from "@/lib/actions/email";
+import { runProfileReminders, sendBroadcast, sendProfileReminderTest } from "@/lib/actions/email";
 
 const TEMPLATES: {
   key: string;
@@ -46,6 +46,18 @@ const TEMPLATES: {
     key: "password-reset",
     name: "Password reset",
     desc: "Sent when a user requests a reset link.",
+    kind: "auto",
+  },
+  {
+    key: "profile-reminder-staff",
+    name: "Finish your profile (staff)",
+    desc: "Daily nudge for unfinished profiles. Staff see the free card.",
+    kind: "auto",
+  },
+  {
+    key: "profile-reminder",
+    name: "Finish your profile",
+    desc: "Same nudge; order prompt only if they opted in to marketing.",
     kind: "auto",
   },
   {
@@ -248,6 +260,47 @@ function Broadcast({ recipientCount }: { recipientCount: number }) {
   );
 }
 
+function ProfileReminders() {
+  const [msg, setMsg] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function run(action: "test" | "check" | "send") {
+    setMsg(null);
+    setError(null);
+    if (action === "send" && !confirm("Send the profile reminder to everyone who's due one now?")) return;
+    startTransition(async () => {
+      const res =
+        action === "test" ? await sendProfileReminderTest() : await runProfileReminders(action === "check");
+      if (res.ok) setMsg(res.message ?? "Done.");
+      else setError(res.error ?? "Something went wrong.");
+    });
+  }
+
+  return (
+    <Card className="p-6">
+      <SectionHeading icon="notifications_active" title="Profile reminders" />
+      <p className="text-sm text-muted">
+        Nudges people whose profile is missing a photo, job title, bio or contact details: first after 2 days,
+        then weekly, three at most. Sends automatically once a day when <code>PROFILE_REMINDERS_ENABLED=true</code>.
+      </p>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button type="button" disabled={isPending} onClick={() => run("test")} className={buttonClass("outline")}>
+          Send me a test
+        </button>
+        <button type="button" disabled={isPending} onClick={() => run("check")} className={buttonClass("outline")}>
+          Who&apos;s due?
+        </button>
+        <button type="button" disabled={isPending} onClick={() => run("send")} className={buttonClass("primary")}>
+          Send to everyone due now
+        </button>
+      </div>
+      {msg && <p className="mt-3 text-sm font-medium text-emerald-700">{msg}</p>}
+      {error && <p className="mt-3 text-sm font-medium text-red-600">{error}</p>}
+    </Card>
+  );
+}
+
 export function EmailStudio({
   recipientCount,
   emailLive,
@@ -268,6 +321,7 @@ export function EmailStudio({
         </div>
       )}
       <PreviewGallery />
+      <ProfileReminders />
       <Broadcast recipientCount={recipientCount} />
     </div>
   );
