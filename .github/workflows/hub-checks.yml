@@ -85,29 +85,18 @@ jobs:
           done
           exit $status
 
-  strix:
-    name: Strix security scan
+  semgrep:
+    name: Semgrep security scan
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
-      # Without the key Strix scans nothing, which must never count as a pass.
-      - name: Check Strix can run
-        env:
-          LLM_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: |
-          if [ -z "$LLM_API_KEY" ]; then
-            echo "::error::No ANTHROPIC_API_KEY secret. Press Set up Fix with Claude on this site in the hub."
-            exit 1
-          fi
-      - name: Install Strix
-        run: pipx install strix-agent==1.7.0
-      # Strix exits non-zero when it finds a vulnerability, failing this check.
+      - name: Install Semgrep
+        run: pipx install semgrep==1.185.0
+      # --baseline-commit: findings already on the base branch don't fail this pull request.
       - name: Scan the changed code
         env:
-          STRIX_LLM: anthropic/claude-sonnet-5-5
-          LLM_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           BASE_REF: ${{ github.base_ref || github.event.repository.default_branch }}
-        run: strix -n -t ./ --scan-mode quick --scope-mode diff --diff-base "origin/$BASE_REF"
+        run: semgrep scan --error --metrics=off --config p/default --baseline-commit "origin/$BASE_REF"
