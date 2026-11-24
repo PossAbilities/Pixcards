@@ -42,7 +42,7 @@
     "react-rnd": "^10.5.3",
     "sharp": "^0.34.5",
     "stripe": "^22.2.2",
-    "zod": "^4.4.3"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@netlify/plugin-nextjs": "^5.15.12",
