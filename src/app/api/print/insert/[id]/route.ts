@@ -4,6 +4,9 @@ import { requireAdmin } from "@/lib/guards";
 import { cardTapUrl } from "@/lib/cards";
 import { appUrl } from "@/lib/constants";
 import { renderInsertPdf, INSERT_THEMES, insertThemeKeyFor } from "@/lib/card-insert";
+import { loadMyCard } from "@/lib/mycard";
+import { renderTemplateSidePng } from "@/lib/card-artwork";
+import { hasTemplate } from "@/lib/card-template";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -49,7 +52,18 @@ export async function GET(
     return NextResponse.json({ error: "No card generated for this order yet." }, { status: 400 });
   }
 
-  const pdf = await renderInsertPdf({ firstName, theme, cards });
+  // The outside cover mirrors the owner's own card front (live render).
+  let cardCoverPng: Buffer | undefined;
+  try {
+    const my = await loadMyCard(order.userId);
+    if (my && hasTemplate(my.spec)) {
+      cardCoverPng = await renderTemplateSidePng(my.spec.front, my.merge, 1);
+    }
+  } catch {
+    /* fall back to the brand back-cover */
+  }
+
+  const pdf = await renderInsertPdf({ firstName, theme, cards, cardCoverPng });
   const shortId = order.id.slice(-8).toUpperCase();
   return new NextResponse(new Uint8Array(pdf), {
     headers: {

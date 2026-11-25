@@ -130,49 +130,83 @@ async function place(
   return top + block.height;
 }
 
-/** COVER half (bottom): brand gradient, welcome, first name, tagline, footer. */
-async function renderCover(theme: InsertTheme, firstName: string): Promise<Buffer> {
-  const pad = Math.round(14 * MM);
+/** OUTSIDE FRONT COVER — a full-bleed mirror of the person's own card front,
+ *  scaled to cover the A6 panel (keeps the wordmark/top and bottom bar, trims
+ *  the sides). Falls back to the brand back-cover if no card art is supplied. */
+async function renderMirrorCover(coverPng: Buffer | undefined, theme: InsertTheme): Promise<Buffer> {
+  if (!coverPng) return renderBackCover(theme);
+  return sharp(coverPng)
+    .resize(HALF_W, HALF_H, { fit: "cover", position: "centre" })
+    .png()
+    .toBuffer();
+}
+
+/** OUTSIDE BACK COVER — brand gradient, centred logo mark + name + URL. */
+async function renderBackCover(theme: InsertTheme): Promise<Buffer> {
   const strip = theme.stripStops ? Math.round(4 * MM) : 0;
+  const cx = HALF_W / 2;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${HALF_W}" height="${HALF_H}">
 <defs>${gradientSvgDef("cov", theme.coverStops)}${theme.stripStops ? gradientSvgDef("strip", theme.stripStops, true) : ""}</defs>
 <rect width="${HALF_W}" height="${HALF_H}" fill="url(#cov)"/>
-<circle cx="${HALF_W - 55 * MM}" cy="${-30 * MM}" r="${70 * MM}" fill="#ffffff" opacity="0.10"/>
-<circle cx="${-20 * MM}" cy="${HALF_H + 25 * MM}" r="${60 * MM}" fill="#ffffff" opacity="0.08"/>
-<g fill="none" stroke="#ffffff" stroke-width="${Math.round(1.1 * MM)}" stroke-linecap="round" opacity="0.95">
- <path d="M ${pad + 3 * MM} ${pad + 3 * MM} a ${3 * MM} ${3 * MM} 0 0 1 ${6 * MM} 0"/>
- <path d="M ${pad + 1.2 * MM} ${pad + 4.3 * MM} a ${4.8 * MM} ${4.8 * MM} 0 0 1 ${9.6 * MM} 0"/>
+<circle cx="${HALF_W - 40 * MM}" cy="${-26 * MM}" r="${64 * MM}" fill="#ffffff" opacity="0.08"/>
+<circle cx="${-18 * MM}" cy="${HALF_H + 22 * MM}" r="${54 * MM}" fill="#ffffff" opacity="0.07"/>
+<g fill="none" stroke="#ffffff" stroke-width="${Math.round(1.3 * MM)}" stroke-linecap="round" opacity="0.95">
+ <path d="M ${cx - 4 * MM} ${34 * MM} a ${4 * MM} ${4 * MM} 0 0 1 ${8 * MM} 0"/>
+ <path d="M ${cx - 6.5 * MM} ${35.6 * MM} a ${6.5 * MM} ${6.5 * MM} 0 0 1 ${13 * MM} 0"/>
 </g>
 ${strip ? `<rect x="0" y="${HALF_H - strip}" width="${HALF_W}" height="${strip}" fill="url(#strip)"/>` : ""}
 </svg>`;
   const base = await sharp(Buffer.from(svg)).png().toBuffer();
   const layers: sharp.OverlayOptions[] = [];
-
-  // Brand name (top, beside the tap arcs)
-  const brand = await renderTextPng({ text: theme.brandName, fontSize: 40, color: "#ffffff", font: "montserrat", bold: true, letterSpacing: 0.3 });
-  await place(layers, brand, pad + 14 * MM, pad + 1 * MM);
-
-  // WELCOME kicker + big first name + tagline (lower third)
-  const kicker = await renderTextPng({ text: "WELCOME", fontSize: 26, color: theme.kicker, font: "montserrat", bold: true, letterSpacing: 3 });
-  const name = await renderTextPng({ text: firstName, fontSize: 86, color: "#ffffff", font: "montserrat", bold: true });
-  const tagline = await renderTextPng({ text: "Your smart business card has arrived. Tap it, share it, never run out again.", fontSize: 30, color: "#ffffff", width: HALF_W - pad * 2 });
-
-  let y = HALF_H - strip - pad - tagline.height - name.height - kicker.height - 10 * MM;
-  y = await place(layers, kicker, pad, y);
-  y = await place(layers, name, pad - 2 * MM, y + 2 * MM);
-  await place(layers, tagline, pad, y + 4 * MM);
-
-  // Footer line
-  const footL = await renderTextPng({ text: "The last business card you’ll ever need.", fontSize: 22, color: "#ffffff" });
-  const footR = await renderTextPng({ text: theme.footerUrl, fontSize: 22, color: "#ffffff", bold: true });
-  const footY = HALF_H - strip - pad + 1 * MM;
-  await place(layers, footL, pad, footY);
-  layers.push({ input: footR.buf, left: HALF_W - pad - footR.width, top: Math.round(footY) });
-
+  const brand = await renderTextPng({ text: theme.brandName, fontSize: 48, color: "#ffffff", font: "montserrat", bold: true, letterSpacing: 0.3 });
+  layers.push({ input: brand.buf, left: Math.round(cx - brand.width / 2), top: Math.round(46 * MM) });
+  const url = await renderTextPng({ text: theme.footerUrl, fontSize: 26, color: "#ffffff", bold: true });
+  layers.push({ input: url.buf, left: Math.round(cx - url.width / 2), top: Math.round(HALF_H - strip - 16 * MM) });
   return sharp(base).composite(layers).png().toBuffer();
 }
 
-/** INSIDE half (top): greeting, activation steps, QR, footer. */
+/** INSIDE CARD-HOLDER panel — a CR80-sized placeholder with four diagonal
+ *  corner slits; cut the slits and tuck the real card's corners under. */
+async function renderCardHolder(theme: InsertTheme): Promise<Buffer> {
+  const pad = Math.round(12 * MM);
+  const cardW = Math.round(85.6 * MM);
+  const cardH = Math.round(54 * MM);
+  const L = Math.round((HALF_W - cardW) / 2);
+  const T = Math.round((HALF_H - cardH) / 2) + Math.round(7 * MM);
+  const slit = Math.round(16 * MM);
+  const cut = theme.accent;
+  // A slit runs at 45° across each card corner; the paper triangle between the
+  // slit and the panel corner is the flap the card corner slides under.
+  const slitLine = (x: number, y: number, dx: number, dy: number) => {
+    // perpendicular to the corner diagonal (dx,dy) → a 45° cut across the corner
+    const px = dy, py = -dx;
+    const hx = (px * slit) / 2, hy = (py * slit) / 2;
+    return `<line x1="${Math.round(x - hx)}" y1="${Math.round(y - hy)}" x2="${Math.round(x + hx)}" y2="${Math.round(y + hy)}" stroke="${cut}" stroke-width="${Math.round(0.7 * MM)}" stroke-linecap="round"/>`;
+  };
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${HALF_W}" height="${HALF_H}">
+<rect width="${HALF_W}" height="${HALF_H}" fill="#ffffff"/>
+<rect x="${L}" y="${T}" width="${cardW}" height="${cardH}" rx="${Math.round(3 * MM)}" fill="#f5f6f7" stroke="#c9ced3" stroke-width="${Math.round(0.5 * MM)}" stroke-dasharray="${Math.round(2 * MM)} ${Math.round(1.6 * MM)}"/>
+${slitLine(L, T, -1, -1)}
+${slitLine(L + cardW, T, 1, -1)}
+${slitLine(L, T + cardH, -1, 1)}
+${slitLine(L + cardW, T + cardH, 1, 1)}
+</svg>`;
+  const base = await sharp(Buffer.from(svg)).png().toBuffer();
+  const layers: sharp.OverlayOptions[] = [];
+  const kicker = await renderTextPng({ text: "YOUR CARD", fontSize: 20, color: theme.accent, font: "montserrat", bold: true, letterSpacing: 3 });
+  const title = await renderTextPng({ text: "Pop it in here", fontSize: 40, color: INK, font: "montserrat", bold: true });
+  await place(layers, kicker, pad, pad);
+  await place(layers, title, pad, pad + kicker.height + 1 * MM);
+  // Hint inside the placeholder rectangle.
+  const hint = await renderTextPng({ text: "Card tucks under the four corners", fontSize: 20, color: FAINT, width: cardW - 10 * MM, align: "center" });
+  layers.push({ input: hint.buf, left: Math.round(L + (cardW - hint.width) / 2), top: Math.round(T + cardH / 2 - hint.height / 2) });
+  // Instruction under the placeholder.
+  const instr = await renderTextPng({ text: "Snip the four diagonal marks with a craft knife, then slot the card’s corners underneath.", fontSize: 20, color: MUTED, width: HALF_W - pad * 2, align: "center" });
+  layers.push({ input: instr.buf, left: Math.round((HALF_W - instr.width) / 2), top: Math.round(T + cardH + 6 * MM) });
+  return sharp(base).composite(layers).png().toBuffer();
+}
+
+/** INSIDE TEXT panel: greeting, activation steps, QR, footer. */
 async function renderInside(
   theme: InsertTheme,
   firstName: string,
@@ -249,11 +283,35 @@ async function renderInside(
   return sharp(base).composite(layers).png().toBuffer();
 }
 
-/** Build the print-ready A5 PDF (one page per card). */
+/** The four rendered A6 panels for one card (PNG buffers). */
+export async function renderInsertPanels(opts: {
+  firstName: string;
+  theme: InsertTheme;
+  code: string;
+  tapUrl: string;
+  cardCoverPng?: Buffer;
+}): Promise<{ frontCover: Buffer; backCover: Buffer; insideText: Buffer; cardHolder: Buffer }> {
+  const [frontCover, backCover, insideText, cardHolder] = await Promise.all([
+    renderMirrorCover(opts.cardCoverPng, opts.theme),
+    renderBackCover(opts.theme),
+    renderInside(opts.theme, opts.firstName, opts.code, opts.tapUrl),
+    renderCardHolder(opts.theme),
+  ]);
+  return { frontCover, backCover, insideText, cardHolder };
+}
+
+/**
+ * Build the print-ready A5 PDF — TWO pages per card for double-sided printing:
+ *   Page 1 (OUTSIDE): front cover (card mirror) on the bottom half, back cover
+ *     on the top half (rotated) so both read upright when folded.
+ *   Page 2 (INSIDE): welcome text on the bottom half, card holder on the top.
+ * Print double-sided (flip on SHORT edge) and fold in half.
+ */
 export async function renderInsertPdf(opts: {
   firstName: string;
   theme: InsertTheme;
   cards: { code: string; tapUrl: string }[];
+  cardCoverPng?: Buffer;
 }): Promise<Buffer> {
   const pdf = await PDFDocument.create();
   const pageW = 148 * PT_PER_MM;
@@ -261,17 +319,29 @@ export async function renderInsertPdf(opts: {
   const halfPt = 105 * PT_PER_MM;
 
   for (const card of opts.cards) {
-    const [coverPng, insidePng] = await Promise.all([
-      renderCover(opts.theme, opts.firstName),
-      renderInside(opts.theme, opts.firstName, card.code, card.tapUrl),
+    const { frontCover, backCover, insideText, cardHolder } = await renderInsertPanels({
+      firstName: opts.firstName,
+      theme: opts.theme,
+      code: card.code,
+      tapUrl: card.tapUrl,
+      cardCoverPng: opts.cardCoverPng,
+    });
+    const [fc, bc, it, ch] = await Promise.all([
+      pdf.embedPng(frontCover),
+      pdf.embedPng(backCover),
+      pdf.embedPng(insideText),
+      pdf.embedPng(cardHolder),
     ]);
-    const cover = await pdf.embedPng(coverPng);
-    const inside = await pdf.embedPng(insidePng);
-    const page = pdf.addPage([pageW, pageH]);
-    // Cover on the bottom half (upright).
-    page.drawImage(cover, { x: 0, y: 0, width: pageW, height: halfPt });
-    // Inside on the top half, rotated 180° (anchor top-right → fills the half).
-    page.drawImage(inside, { x: pageW, y: pageH, width: pageW, height: halfPt, rotate: degrees(180) });
+
+    // Page 1 — OUTSIDE.
+    const p1 = pdf.addPage([pageW, pageH]);
+    p1.drawImage(fc, { x: 0, y: 0, width: pageW, height: halfPt }); // front cover, bottom, upright
+    p1.drawImage(bc, { x: pageW, y: pageH, width: pageW, height: halfPt, rotate: degrees(180) }); // back cover, top, flipped
+
+    // Page 2 — INSIDE.
+    const p2 = pdf.addPage([pageW, pageH]);
+    p2.drawImage(it, { x: 0, y: 0, width: pageW, height: halfPt }); // welcome text, bottom, upright
+    p2.drawImage(ch, { x: pageW, y: pageH, width: pageW, height: halfPt, rotate: degrees(180) }); // card holder, top, flipped
   }
 
   const bytes = await pdf.save();
