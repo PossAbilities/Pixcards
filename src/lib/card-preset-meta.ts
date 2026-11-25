@@ -68,6 +68,9 @@ export const DESIGN_META: Record<string, { name: string; blurb: string }> = {
   "pa-bigpink": { name: "Big Pink", blurb: "Bold & playful" },
 };
 
+/** Bump when the preset artwork changes, to bust cached preview thumbnails. */
+export const PRESET_PREVIEW_VERSION = "avenir2";
+
 /** The design options offered to a given email domain (registration picker +
  *  the admin domain console). Order is the order shown. */
 export const DOMAIN_DESIGNS: Record<string, { label: string; default: string; options: string[] }> = {

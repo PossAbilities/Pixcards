@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card, SectionHeading, buttonClass } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import { chooseDomainDesign } from "@/lib/actions/mycard";
-import { DESIGN_META } from "@/lib/card-preset-meta";
+import { DESIGN_META, PRESET_PREVIEW_VERSION } from "@/lib/card-preset-meta";
 import { cn } from "@/lib/utils";
 
 /**
@@ -67,7 +67,7 @@ export function DomainDesignPicker({
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={`/api/preset-preview/${id}`}
+                src={`/api/preset-preview/${id}?v=${PRESET_PREVIEW_VERSION}`}
                 alt={`${meta.name} card`}
                 loading="lazy"
                 className="aspect-[1013/638] w-full object-cover"

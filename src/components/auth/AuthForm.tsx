@@ -6,7 +6,7 @@ import Link from "next/link";
 import { loginAction, registerAction, type AuthState } from "@/app/(auth)/actions";
 import { buttonClass, inputClass, Label } from "@/components/ui";
 import { Icon } from "@/components/Icon";
-import { domainDesignsForEmail, DESIGN_META } from "@/lib/card-preset-meta";
+import { domainDesignsForEmail, DESIGN_META, PRESET_PREVIEW_VERSION } from "@/lib/card-preset-meta";
 
 
 function SubmitButton({ mode }: { mode: "login" | "register" }) {
@@ -161,7 +161,7 @@ export function AuthForm({
                   }
                 >
                   <img
-                    src={`/api/preset-preview/${id}`}
+                    src={`/api/preset-preview/${id}?v=${PRESET_PREVIEW_VERSION}`}
                     alt={`${meta.name} card`}
                     loading="lazy"
                     className="aspect-[1013/638] w-full object-cover"

@@ -35,7 +35,9 @@ export async function GET(
   return new NextResponse(new Uint8Array(thumb), {
     headers: {
       "Content-Type": "image/png",
-      "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+      // Short fresh window + a version query on the URL, so design changes
+      // show promptly instead of being pinned for a day.
+      "Cache-Control": "public, max-age=600, stale-while-revalidate=86400",
     },
   });
 }
