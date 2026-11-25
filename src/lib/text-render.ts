@@ -10,6 +10,11 @@ import {
   NUNITO_SANS_700_B64,
   NUNITO_SANS_900_B64,
 } from "@/lib/fonts/nunito-sans";
+import {
+  AVENIR_REGULAR_B64,
+  AVENIR_MEDIUM_B64,
+  AVENIR_HEAVY_B64,
+} from "@/lib/fonts/avenir";
 
 /**
  * Server-side text rendering. Netlify's serverless runtime has no system fonts,
@@ -25,7 +30,10 @@ export type FontKey =
   | "dmsans"
   | "nunito"
   | "nunitob"
-  | "nunitobk";
+  | "nunitobk"
+  | "avenir"
+  | "avenirmed"
+  | "avenirhvy";
 
 const FONTS: Record<FontKey, { b64: string; family: string; file: string }> = {
   sans: { b64: LIBERATION_SANS_B64, family: "Liberation Sans", file: "pix-sans.ttf" },
@@ -36,6 +44,11 @@ const FONTS: Record<FontKey, { b64: string; family: string; file: string }> = {
   nunito: { b64: NUNITO_SANS_400_B64, family: "Nunito Sans", file: "pix-nunito.ttf" },
   nunitob: { b64: NUNITO_SANS_700_B64, family: "Nunito Sans Bold", file: "pix-nunito-b.ttf" },
   nunitobk: { b64: NUNITO_SANS_900_B64, family: "Nunito Sans Black", file: "pix-nunito-bk.ttf" },
+  // Avenir (PossAbilities brand) — Heavy (logo + name), Medium (job title),
+  // Regular (everything else). Distinct families for exact fontfile selection.
+  avenir: { b64: AVENIR_REGULAR_B64, family: "Avenir", file: "pix-avenir.ttf" },
+  avenirmed: { b64: AVENIR_MEDIUM_B64, family: "Avenir Medium", file: "pix-avenir-med.ttf" },
+  avenirhvy: { b64: AVENIR_HEAVY_B64, family: "Avenir Heavy", file: "pix-avenir-hvy.ttf" },
 };
 const B64: Record<FontKey, string> = {
   sans: FONTS.sans.b64,
@@ -44,6 +57,9 @@ const B64: Record<FontKey, string> = {
   nunito: FONTS.nunito.b64,
   nunitob: FONTS.nunitob.b64,
   nunitobk: FONTS.nunitobk.b64,
+  avenir: FONTS.avenir.b64,
+  avenirmed: FONTS.avenirmed.b64,
+  avenirhvy: FONTS.avenirhvy.b64,
 };
 
 const written = new Set<FontKey>();

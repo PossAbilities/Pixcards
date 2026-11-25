@@ -363,12 +363,24 @@ function wordmarkEl(opts: {
   };
 }
 
-/** Render every text element of a spec in the Nunito Sans brand font. */
+/** Avenir weight for a text element by its role:
+ *  Heavy = PossAbilities logo + the person's name, Medium = job title,
+ *  Regular = everything else. */
+function brandFontFor(e: TemplateElement): string {
+  const text = e.text ?? "";
+  const rich = e.richText ?? "";
+  if (rich.includes("Poss") || text === "PossAbilities") return "avenirhvy"; // logo
+  if (/\{\{\s*name\s*\}\}/i.test(text)) return "avenirhvy"; // person's name
+  if (/\{\{\s*(title|jobtitle|role)\s*\}\}/i.test(text)) return "avenirmed"; // job title
+  return "avenir";
+}
+
+/** Render every text element of a spec in the Avenir brand font (by role). */
 function withBrandFont(spec: CardTemplateSpec): CardTemplateSpec {
   const fix = (s: SideSpec): SideSpec => ({
     ...s,
     elements: s.elements.map((e) =>
-      e.kind === "text" && !e.font ? { ...e, font: "nunito" } : e,
+      e.kind === "text" && !e.font ? { ...e, font: brandFontFor(e) } : e,
     ),
   });
   return { front: fix(spec.front), back: fix(spec.back) };

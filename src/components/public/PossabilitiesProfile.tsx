@@ -20,7 +20,7 @@ const TINT = "#f4eef6";
 // it natively. Nunito Sans is the bundled free fallback everywhere else (and
 // the licensed Avenir webfont slots in ahead of it once supplied).
 const FONT =
-  "'Avenir Next','Avenir',var(--font-nunito-sans),'Nunito Sans',ui-sans-serif,system-ui,sans-serif";
+  "'Avenir','Avenir Next',var(--font-nunito-sans),'Nunito Sans',ui-sans-serif,system-ui,sans-serif";
 
 /** Stroke-icon paths matching the brand mockups. */
 const ICON: Record<string, string> = {
@@ -189,12 +189,25 @@ export function PossabilitiesProfile({
     </div>
   );
 
+  // Embed the licensed Avenir (served as subset TTF by /api/brand-font) at the
+  // three brand weights. Nunito Sans (via next/font) stays the fallback.
+  const fontLink = (
+    <style
+      dangerouslySetInnerHTML={{
+        __html:
+          "@font-face{font-family:'Avenir';font-weight:400;font-display:swap;src:url('/api/brand-font/regular') format('truetype')}" +
+          "@font-face{font-family:'Avenir';font-weight:500;font-display:swap;src:url('/api/brand-font/medium') format('truetype')}" +
+          "@font-face{font-family:'Avenir';font-weight:900;font-display:swap;src:url('/api/brand-font/heavy') format('truetype')}",
+      }}
+    />
+  );
 
   /* ------------------------------- A · Colour Bar ----------------------- */
   if (variant === "pa-colourbar") {
     const borders = [TEAL, PURPLE, PINK];
     return (
       <div style={{ fontFamily: FONT, background: "#fff", color: PURPLE }}>
+        {fontLink}
         {bars}
         <div style={{ maxWidth: 480, margin: "0 auto", padding: "26px 22px 28px", display: "flex", flexDirection: "column", alignItems: "center" }}>
           <div style={{ fontSize: 24, fontWeight: 900, letterSpacing: "-0.4px" }}>
@@ -205,25 +218,25 @@ export function PossabilitiesProfile({
             <Avatar size={108} bg={TEAL} ink={PURPLE} ring={PURPLE} />
           </div>
           <h1 style={{ fontSize: 29, fontWeight: 900, margin: "16px 0 0", lineHeight: 1.1, textAlign: "center" }}>{name}</h1>
-          {role && <p style={{ fontSize: 16, fontWeight: 700, margin: "6px 0 0", color: PINK_TEXT }}>{role}</p>}
+          {role && <p style={{ fontSize: 16, fontWeight: 500, margin: "6px 0 0", color: PINK_TEXT }}>{role}</p>}
           <p style={{ fontSize: 14, margin: "4px 0 0", color: PURPLE, opacity: 0.8 }}>{locLine}</p>
           <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 12, marginTop: 22 }}>
             <SaveButton
-              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, minHeight: 54, borderRadius: 14, background: PURPLE, color: "#fff", fontSize: 18, fontWeight: 900, textDecoration: "none", width: "100%" }}
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, minHeight: 54, borderRadius: 14, background: PURPLE, color: "#fff", fontSize: 18, fontWeight: 400, textDecoration: "none", width: "100%" }}
               iconStroke="#fff"
             />
             {items.map((it, i) => (
               <Row
                 key={it.key}
                 item={it}
-                style={{ display: "flex", alignItems: "center", gap: 14, minHeight: 54, borderRadius: 14, background: TINT, color: PURPLE, fontSize: 16, fontWeight: 700, textDecoration: "none", padding: "8px 16px", borderLeft: `8px solid ${borders[i % borders.length]}`, overflowWrap: "anywhere" }}
+                style={{ display: "flex", alignItems: "center", gap: 14, minHeight: 54, borderRadius: 14, background: TINT, color: PURPLE, fontSize: 16, fontWeight: 400, textDecoration: "none", padding: "8px 16px", borderLeft: `8px solid ${borders[i % borders.length]}`, overflowWrap: "anywhere" }}
               >
                 <Glyph name={it.icon} /> {it.label}
               </Row>
             ))}
           </div>
         </div>
-        <footer style={{ textAlign: "center", fontWeight: 900, fontSize: 15, padding: "6px 0 16px", color: PURPLE }}>
+        <footer style={{ textAlign: "center", fontWeight: 400, fontSize: 15, padding: "6px 0 16px", color: PURPLE }}>
           Live The Life You Choose
         </footer>
         {bars}
@@ -235,12 +248,13 @@ export function PossabilitiesProfile({
   if (variant === "pa-wave") {
     return (
       <div style={{ fontFamily: FONT, background: "#fff", color: PURPLE }}>
+        {fontLink}
         <div style={{ background: PURPLE, textAlign: "center", padding: "36px 24px 28px" }}>
           <div style={{ fontSize: 27, fontWeight: 900, letterSpacing: "-0.4px" }}>
             <span style={{ color: TEAL }}>Poss</span>
             <span style={{ color: "#fff" }}>Abilities</span>
           </div>
-          <p style={{ color: "#fff", fontSize: 14, fontWeight: 700, margin: "8px 0 0" }}>Live The Life You Choose</p>
+          <p style={{ color: "#fff", fontSize: 14, fontWeight: 400, margin: "8px 0 0" }}>Live The Life You Choose</p>
         </div>
         <svg viewBox="0 0 390 84" preserveAspectRatio="none" aria-hidden style={{ display: "block", width: "100%", height: "auto", background: PURPLE }}>
           <path d="M0 34 C100 4 200 74 390 24 L390 84 L0 84 Z" fill={PINK} />
@@ -250,18 +264,18 @@ export function PossabilitiesProfile({
         <div style={{ maxWidth: 480, margin: "-38px auto 0", padding: "0 24px 32px", display: "flex", flexDirection: "column", alignItems: "center", position: "relative" }}>
           <Avatar size={100} bg={PINK} ink="#fff" />
           <h1 style={{ fontSize: 29, fontWeight: 900, margin: "12px 0 0", lineHeight: 1.1, textAlign: "center" }}>{name}</h1>
-          {role && <p style={{ fontSize: 16, fontWeight: 700, margin: "6px 0 0", color: PINK_TEXT }}>{role}</p>}
+          {role && <p style={{ fontSize: 16, fontWeight: 500, margin: "6px 0 0", color: PINK_TEXT }}>{role}</p>}
           <p style={{ fontSize: 14, margin: "4px 0 0", opacity: 0.8 }}>{locLine}</p>
           <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 12, marginTop: 22 }}>
             <SaveButton
-              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, minHeight: 54, borderRadius: 28, background: PINK_TEXT, color: "#fff", fontSize: 18, fontWeight: 900, textDecoration: "none", width: "100%" }}
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, minHeight: 54, borderRadius: 28, background: PINK_TEXT, color: "#fff", fontSize: 18, fontWeight: 400, textDecoration: "none", width: "100%" }}
               iconStroke="#fff"
             />
             {items.map((it) => (
               <Row
                 key={it.key}
                 item={it}
-                style={{ display: "flex", alignItems: "center", gap: 14, minHeight: 54, borderRadius: 28, background: TINT, color: PURPLE, fontSize: 16, fontWeight: 700, textDecoration: "none", padding: "8px 14px 8px 10px", overflowWrap: "anywhere" }}
+                style={{ display: "flex", alignItems: "center", gap: 14, minHeight: 54, borderRadius: 28, background: TINT, color: PURPLE, fontSize: 16, fontWeight: 400, textDecoration: "none", padding: "8px 14px 8px 10px", overflowWrap: "anywhere" }}
               >
                 <span style={{ width: 38, height: 38, borderRadius: "50%", background: PURPLE, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
                   <Glyph name={it.icon} size={20} stroke={TEAL} />
@@ -289,6 +303,7 @@ export function PossabilitiesProfile({
   });
   return (
     <div style={{ fontFamily: FONT, background: TEAL, color: PURPLE }}>
+      {fontLink}
       <header style={{ maxWidth: 480, width: "100%", margin: "0 auto", padding: "36px 26px 36px", position: "relative", overflow: "hidden", boxSizing: "border-box" }}>
         <svg viewBox="0 0 24 24" aria-hidden style={{ position: "absolute", right: -80, top: -16, width: 300, height: 300, fill: "none", stroke: "#fff", strokeOpacity: 0.5, strokeWidth: 1.2, strokeLinecap: "round" }}>
           {ICON.tap.split(" M").map((seg, i) => <path key={i} d={(i ? "M" : "") + seg} />)}
@@ -296,13 +311,13 @@ export function PossabilitiesProfile({
         <div style={{ fontSize: 24, fontWeight: 900, letterSpacing: "-0.4px", position: "relative", color: PURPLE }}>
           <span>Poss</span><span>Abilities</span>
         </div>
-        <p style={{ fontSize: 20, fontWeight: 900, margin: "48px 0 0", position: "relative" }}>Hi, I&apos;m</p>
+        <p style={{ fontSize: 20, fontWeight: 400, margin: "48px 0 0", position: "relative" }}>Hi, I&apos;m</p>
         <h1 style={{ fontSize: "clamp(56px,22vw,92px)", fontWeight: 900, lineHeight: 0.95, letterSpacing: "-3px", margin: 0, position: "relative", overflowWrap: "anywhere" }}>{firstName}</h1>
-        <p style={{ fontSize: 17, fontWeight: 700, margin: "10px 0 0", position: "relative" }}>{[name, role].filter(Boolean).join(" · ")}</p>
+        <p style={{ fontSize: 17, fontWeight: 400, margin: "10px 0 0", position: "relative" }}>{[name, role].filter(Boolean).join(" · ")}</p>
       </header>
       <div style={{ maxWidth: 480, width: "100%", margin: "0 auto", background: "#fff", borderRadius: "32px 32px 0 0", padding: "26px 22px 24px", display: "flex", flexDirection: "column", gap: 12, boxSizing: "border-box" }}>
         <SaveButton
-          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, minHeight: 54, borderRadius: 16, background: PURPLE, color: "#fff", fontSize: 18, fontWeight: 900, textDecoration: "none" }}
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, minHeight: 54, borderRadius: 16, background: PURPLE, color: "#fff", fontSize: 18, fontWeight: 400, textDecoration: "none" }}
           iconStroke={TEAL}
         />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 12 }}>
@@ -310,14 +325,14 @@ export function PossabilitiesProfile({
             <Row
               key={it.key}
               item={it}
-              style={{ minHeight: 118, borderRadius: 16, padding: 16, display: "flex", flexDirection: "column", justifyContent: "space-between", textDecoration: "none", fontSize: 19, fontWeight: 900, background: s.background, color: s.color }}
+              style={{ minHeight: 118, borderRadius: 16, padding: 16, display: "flex", flexDirection: "column", justifyContent: "space-between", textDecoration: "none", fontSize: 19, fontWeight: 400, background: s.background, color: s.color }}
             >
               <Glyph name={it.icon} size={30} stroke={s.iconStroke} />
               {label}
             </Row>
           ))}
         </div>
-        <p style={{ textAlign: "center", fontWeight: 900, fontSize: 15, marginTop: "auto", paddingTop: 12 }}>
+        <p style={{ textAlign: "center", fontWeight: 400, fontSize: 15, marginTop: "auto", paddingTop: 12 }}>
           Live The Life You Choose
         </p>
       </div>

@@ -256,7 +256,10 @@ export async function renderTemplateSidePng(
         font = weight >= 850 ? "nunitobk" : weight >= 650 ? "nunitob" : "nunito";
         bold = false;
       } else if (el.font) {
+        // Any explicitly-set face (e.g. the Avenir weights) carries its own
+        // weight — never faux-bold on top of it.
         font = el.font as FontKey;
+        bold = false;
       }
       const layer = await textOverlay({
         text: content,
