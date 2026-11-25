@@ -27,6 +27,8 @@ export type InsertTheme = {
   brandName: string;
   footerUrl: string;
   stripStops?: Stop[]; // optional gradient strip along the cover bottom
+  /** Optional two-tone Pango wordmark (Avenir Black) for the back cover. */
+  wordmark?: string;
 };
 
 export const INSERT_THEMES: Record<string, InsertTheme> = {
@@ -67,6 +69,7 @@ export const INSERT_THEMES: Record<string, InsertTheme> = {
     kicker: "#4fd1c5",
     brandName: "PossAbilities",
     footerUrl: "possabilities.org.uk",
+    wordmark: `<span foreground="#4fd1c5">Poss</span><span foreground="#ffffff">Abilities</span>`,
     stripStops: [
       { off: 0, color: "#16a79f" },
       { off: 100, color: "#e0007a" },
@@ -150,16 +153,23 @@ async function renderBackCover(theme: InsertTheme): Promise<Buffer> {
 <rect width="${HALF_W}" height="${HALF_H}" fill="url(#cov)"/>
 <circle cx="${HALF_W - 40 * MM}" cy="${-26 * MM}" r="${64 * MM}" fill="#ffffff" opacity="0.08"/>
 <circle cx="${-18 * MM}" cy="${HALF_H + 22 * MM}" r="${54 * MM}" fill="#ffffff" opacity="0.07"/>
-<g fill="none" stroke="#ffffff" stroke-width="${Math.round(1.3 * MM)}" stroke-linecap="round" opacity="0.95">
- <path d="M ${cx - 4 * MM} ${34 * MM} a ${4 * MM} ${4 * MM} 0 0 1 ${8 * MM} 0"/>
- <path d="M ${cx - 6.5 * MM} ${35.6 * MM} a ${6.5 * MM} ${6.5 * MM} 0 0 1 ${13 * MM} 0"/>
-</g>
 ${strip ? `<rect x="0" y="${HALF_H - strip}" width="${HALF_W}" height="${strip}" fill="url(#strip)"/>` : ""}
 </svg>`;
   const base = await sharp(Buffer.from(svg)).png().toBuffer();
   const layers: sharp.OverlayOptions[] = [];
-  const brand = await renderTextPng({ text: theme.brandName, fontSize: 48, color: "#ffffff", font: "montserrat", bold: true, letterSpacing: 0.3 });
-  layers.push({ input: brand.buf, left: Math.round(cx - brand.width / 2), top: Math.round(46 * MM) });
+  // Brand wordmark, centred. PossAbilities uses its two-tone Avenir Black
+  // logo; other brands use their name in the display face.
+  const brand =
+    theme.wordmark
+      ? await renderTextPng({
+          markup: theme.wordmark,
+          fontSize: 60,
+          color: "#ffffff",
+          font: "avenirblk",
+          letterSpacing: 60 * -0.035,
+        })
+      : await renderTextPng({ text: theme.brandName, fontSize: 48, color: "#ffffff", font: "montserrat", bold: true, letterSpacing: 0.3 });
+  layers.push({ input: brand.buf, left: Math.round(cx - brand.width / 2), top: Math.round(HALF_H / 2 - brand.height / 2 - 4 * MM) });
   const url = await renderTextPng({ text: theme.footerUrl, fontSize: 26, color: "#ffffff", bold: true });
   layers.push({ input: url.buf, left: Math.round(cx - url.width / 2), top: Math.round(HALF_H - strip - 16 * MM) });
   return sharp(base).composite(layers).png().toBuffer();
