@@ -9,8 +9,8 @@ import { initials as initialsOf, telHref } from "@/lib/utils";
  * pa-* ids. Uses the brand palette + Nunito Sans; contact rows are driven by
  * the person's real data (email, phone, links). */
 
-const PURPLE = "#48065a";
-const PINK = "#ec008c";
+const PURPLE = "#550068";
+const PINK = "#ff0092";
 /** Slightly deeper brand pink for text and white-on-pink buttons, so they
  *  meet WCAG AA contrast (5:1). The logo and decoration keep the exact PINK. */
 const PINK_TEXT = "#d6007f";
@@ -221,7 +221,7 @@ export function PossabilitiesProfile({
         {fontLink}
         {bars}
         <div style={{ maxWidth: 480, margin: "0 auto", padding: "26px 22px 28px", display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <div style={{ fontFamily: LOGO_FONT, fontSize: 24, fontWeight: 900, letterSpacing: "-0.4px" }}>
+          <div style={{ fontFamily: LOGO_FONT, fontSize: 24, fontWeight: 900, letterSpacing: "-0.035em" }}>
             <span style={{ color: PINK }}>Poss</span>
             <span style={{ color: PURPLE }}>Abilities</span>
           </div>
@@ -261,7 +261,7 @@ export function PossabilitiesProfile({
       <div style={{ fontFamily: FONT, background: "#fff", color: PURPLE }}>
         {fontLink}
         <div style={{ background: PURPLE, textAlign: "center", padding: "36px 24px 28px" }}>
-          <div style={{ fontFamily: LOGO_FONT, fontSize: 27, fontWeight: 900, letterSpacing: "-0.4px" }}>
+          <div style={{ fontFamily: LOGO_FONT, fontSize: 27, fontWeight: 900, letterSpacing: "-0.035em" }}>
             <span style={{ color: TEAL }}>Poss</span>
             <span style={{ color: "#fff" }}>Abilities</span>
           </div>
@@ -319,7 +319,7 @@ export function PossabilitiesProfile({
         <svg viewBox="0 0 24 24" aria-hidden style={{ position: "absolute", right: -80, top: -16, width: 300, height: 300, fill: "none", stroke: "#fff", strokeOpacity: 0.5, strokeWidth: 1.2, strokeLinecap: "round" }}>
           {ICON.tap.split(" M").map((seg, i) => <path key={i} d={(i ? "M" : "") + seg} />)}
         </svg>
-        <div style={{ fontFamily: LOGO_FONT, fontSize: 24, fontWeight: 900, letterSpacing: "-0.4px", position: "relative", color: PURPLE }}>
+        <div style={{ fontFamily: LOGO_FONT, fontSize: 24, fontWeight: 900, letterSpacing: "-0.035em", position: "relative", color: PURPLE }}>
           <span>Poss</span><span>Abilities</span>
         </div>
         <p style={{ fontSize: 20, fontWeight: 400, margin: "48px 0 0", position: "relative" }}>Hi, I&apos;m</p>

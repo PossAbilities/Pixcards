@@ -304,15 +304,15 @@ export async function defaultPossabilitiesSpec(): Promise<CardTemplateSpec> {
 /* ========================================================================== *
  *  PossAbilities official brand set — three selectable designs.
  *  Authoritative palette from the brand's own card artwork:
- *    purple #48065a · magenta #ec008c · teal #66cccc · light tint #f4eef6.
+ *    purple #550068 · magenta #ff0092 · teal #66cccc · light tint #f4eef6.
  *  A · Colour Bar   — white, brand colour-bar motif. Clean, formal.
  *  B · Purple Wave  — purple with a sweeping teal wave + pink rim.
  *  C · Big Pink     — white with an oversized magenta tap symbol.
  *  Each is a full front+back template with editable text + {{merge}} fields.
  * ========================================================================== */
 
-const B_PURPLE = "#48065a";
-const B_MAGENTA = "#ec008c";
+const B_PURPLE = "#550068";
+const B_MAGENTA = "#ff0092";
 const B_TEAL = "#66cccc";
 
 async function toPng(svg: string): Promise<string> {

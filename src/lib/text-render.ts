@@ -164,6 +164,8 @@ export type TextSvgOpts = {
   /** Raw Pango markup for the span content (e.g. two-tone wordmark). When set,
    *  `color`/`text` are ignored for the fill (the markup carries its own). */
   markup?: string;
+  /** Letter spacing in px at the rendered size (negative = tighter). */
+  letterSpacing?: number;
 };
 
 /** Per-glyph <path> elements for a line of text (one path each — librsvg
@@ -234,11 +236,15 @@ export async function textOverlay(
     // weight must be in the markup — Pango won't bold otherwise (bold text
     // silently rendered regular before this, softening print output).
     const weight = opts.bold ? ' weight="bold"' : "";
+    // Pango letter_spacing is in 1024ths of a point; ~1px ≈ 0.75pt at 96dpi.
+    const ls = opts.letterSpacing
+      ? ` letter_spacing="${Math.round(opts.letterSpacing * 0.75 * 1024)}"`
+      : "";
     // The outer foreground still applies so any un-spanned text in the markup
     // (e.g. the words around coloured separators) uses the element's colour
     // instead of Pango's default black. Inner <span foreground> overrides it.
     const inner = opts.markup ?? escapePango(opts.text);
-    const markup = `<span foreground="${opts.color}"${alpha}${weight}>${inner}</span>`;
+    const markup = `<span foreground="${opts.color}"${alpha}${weight}${ls}>${inner}</span>`;
     const buf = await sharp({
       text: {
         text: markup,

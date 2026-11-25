@@ -286,6 +286,8 @@ export async function renderTemplateSidePng(
         font = face as FontKey;
         bold = false;
       }
+      // The logo (Avenir Black) is tracked tighter to match the brand mark.
+      const letterSpacing = font === "avenirblk" ? size * -0.035 : undefined;
       const layer = await textOverlay({
         text: content,
         markup,
@@ -296,6 +298,7 @@ export async function renderTemplateSidePng(
         align: el.align ?? "left",
         bold,
         font,
+        letterSpacing,
       });
       if (layer) layers.push(layer);
     } else if (el.kind === "image") {

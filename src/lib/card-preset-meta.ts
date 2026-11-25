@@ -27,27 +27,27 @@ export const PRESET_PROFILE_THEME: Record<string, PresetProfileTheme> = {
     accentColor: "#e0007a",
     panelColor: "#16a79f",
   },
-  // Official PossAbilities brand set (purple #48065a / magenta #ec008c /
+  // Official PossAbilities brand set (purple #550068 / magenta #ff0092 /
   // teal #66cccc). Each digital profile is colour-coordinated with its card.
   "pa-colourbar": {
     theme: "indigo",
     template: "pa-colourbar",
-    brandHeader: "linear-gradient(135deg,#48065a 0%,#2b1547 100%)",
-    accentColor: "#ec008c",
+    brandHeader: "linear-gradient(135deg,#550068 0%,#2b1547 100%)",
+    accentColor: "#ff0092",
     panelColor: "#66cccc",
   },
   "pa-wave": {
     theme: "indigo",
     template: "pa-wave",
-    brandHeader: "linear-gradient(160deg,#48065a 0%,#48065a 55%,#66cccc 100%)",
-    accentColor: "#ec008c",
+    brandHeader: "linear-gradient(160deg,#550068 0%,#550068 55%,#66cccc 100%)",
+    accentColor: "#ff0092",
     panelColor: "#66cccc",
   },
   "pa-bigpink": {
     theme: "indigo",
     template: "pa-bigpink",
     brandHeader: "linear-gradient(135deg,#66cccc 0%,#45b5b5 100%)",
-    accentColor: "#ec008c",
+    accentColor: "#ff0092",
     panelColor: "#66cccc",
   },
 };
