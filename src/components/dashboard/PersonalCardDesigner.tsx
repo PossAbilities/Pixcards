@@ -23,6 +23,46 @@ const ED_H = Math.round(ED_W / CARD_RATIO);
 const REF_H = 638;
 const SCALE = ED_H / REF_H;
 
+// The Avenir brand faces, served as @font-face so the editor preview matches
+// the server-rendered print output (which uses the same subset Avenir TTFs).
+const AVENIR_FACE_CSS = `
+@font-face{font-family:'PA Avenir Black';src:url(/api/brand-font/black) format('truetype');font-weight:900;font-display:swap}
+@font-face{font-family:'PA Avenir Heavy';src:url(/api/brand-font/heavy) format('truetype');font-weight:800;font-display:swap}
+@font-face{font-family:'PA Avenir Medium';src:url(/api/brand-font/medium) format('truetype');font-weight:500;font-display:swap}
+@font-face{font-family:'PA Avenir';src:url(/api/brand-font/regular) format('truetype');font-weight:400;font-display:swap}
+`;
+const PA_FONT: Record<string, { family: string; weight: number }> = {
+  avenirblk: { family: "'PA Avenir Black','Helvetica Neue',Arial,sans-serif", weight: 900 },
+  avenirhvy: { family: "'PA Avenir Heavy','Helvetica Neue',Arial,sans-serif", weight: 800 },
+  avenirmed: { family: "'PA Avenir Medium','Helvetica Neue',Arial,sans-serif", weight: 500 },
+  avenir: { family: "'PA Avenir','Helvetica Neue',Arial,sans-serif", weight: 400 },
+};
+
+/** A PossAbilities card side carries the "PossAbilities" wordmark. */
+function isPaSide(s: SideSpec): boolean {
+  return s.elements.some(
+    (e) => e.kind === "text" && ((e.richText ?? "").includes("Poss") || e.text === "PossAbilities"),
+  );
+}
+/** Avenir face by role — mirrors the server renderer (Black = logo, Heavy =
+ *  name, Medium = job title, Regular = everything else). */
+function paFaceFor(el: TemplateElement): keyof typeof PA_FONT {
+  const txt = el.text ?? "";
+  const rt = el.richText ?? "";
+  if (rt.includes("Poss") || txt === "PossAbilities") return "avenirblk";
+  if (/\{\{\s*name\s*\}\}/i.test(txt)) return "avenirhvy";
+  if (/\{\{\s*(title|jobtitle|role)\s*\}\}/i.test(txt)) return "avenirmed";
+  return "avenir";
+}
+/** Convert the stored Pango wordmark markup (two-tone <span foreground=...>)
+ *  into safe inline-styled HTML for the live preview. */
+function richToHtml(markup: string): string {
+  return markup.replace(/<span\b([^>]*)>/g, (_m, attrs: string) => {
+    const fg = /foreground="(#[0-9a-fA-F]{3,8})"/.exec(attrs);
+    return fg ? `<span style="color:${fg[1]}">` : "<span>";
+  });
+}
+
 let _id = 0;
 const uid = () => `e${Date.now().toString(36)}${_id++}`;
 
@@ -189,18 +229,31 @@ export function PersonalCardDesigner({
 
   function renderEl(el: TemplateElement) {
     if (el.kind === "text") {
+      const pa = isPaSide(side);
+      const face = pa ? paFaceFor(el) : null;
+      const size = (el.fontSize ?? 34) * SCALE;
+      const style: React.CSSProperties = {
+        color: el.color,
+        fontSize: size,
+        fontWeight: face ? PA_FONT[face].weight : el.fontWeight ?? 600,
+        textAlign: el.align ?? "left",
+        fontFamily: face ? PA_FONT[face].family : "Helvetica, Arial, sans-serif",
+        letterSpacing: face === "avenirblk" ? size * -0.035 : undefined,
+        whiteSpace: "nowrap",
+      };
+      // The two-tone wordmark (and any stored rich markup) renders as HTML so
+      // the editor shows the real brand colours, matching the print output.
+      if (el.richText) {
+        return (
+          <div
+            className="h-full w-full overflow-hidden leading-tight"
+            style={style}
+            dangerouslySetInnerHTML={{ __html: richToHtml(applyMerge(el.richText, previewMerge)) }}
+          />
+        );
+      }
       return (
-        <div
-          className="h-full w-full overflow-hidden leading-tight"
-          style={{
-            color: el.color,
-            fontSize: (el.fontSize ?? 34) * SCALE,
-            fontWeight: el.fontWeight ?? 600,
-            textAlign: el.align ?? "left",
-            fontFamily: "Helvetica, Arial, sans-serif",
-            whiteSpace: "nowrap",
-          }}
-        >
+        <div className="h-full w-full overflow-hidden leading-tight" style={style}>
           {applyMerge(el.text ?? "", previewMerge)}
         </div>
       );
@@ -219,6 +272,7 @@ export function PersonalCardDesigner({
 
   return (
     <div>
+      <style>{AVENIR_FACE_CSS}</style>
       <div className="mb-3 flex items-center justify-between">
         <div className="inline-flex rounded-lg border border-outline p-0.5">
           {(["front", "back"] as const).map((s) => (

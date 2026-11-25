@@ -420,7 +420,7 @@ export async function cardAColourBarSpec(): Promise<CardTemplateSpec> {
       bg: `url("${front}")`,
       elements: [
         wordmarkEl({ x: 0.063, y: 0.13, w: 0.7, size: 46, possColor: B_MAGENTA, abilColor: B_PURPLE, align: "left" }),
-        { id: eid(), kind: "text", x: 0.064, y: 0.3, w: 0.6, h: 0.05, text: "Live The Life You Choose", color: B_PURPLE, fontSize: 20, fontWeight: 700, align: "left" },
+        { id: eid(), kind: "text", x: 0.064, y: 0.225, w: 0.6, h: 0.05, text: "Live The Life You Choose", color: B_PURPLE, fontSize: 20, fontWeight: 700, align: "left" },
       ],
     },
     back: {
