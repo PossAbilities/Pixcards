@@ -114,5 +114,19 @@ jobs:
           git config user.name "ryans-cloud-hub[bot]"
           git config user.email "hub@ryanscloud.uk"
           git add -A
+          # This run can't change workflow files (GitHub refuses the whole
+          # push), and they decide which checks run, so they're left for Ryan
+          # to review. Everything else ships. The hub tells him what was left.
+          wf=$(git diff --cached --no-renames --name-only -- .github/workflows)
+          if [ -n "$wf" ]; then
+            git diff --cached -- .github/workflows | head -n 200
+            for f in $wf; do echo "[hub-skipped-workflow] $f"; done
+            git reset -q -- .github/workflows
+            git checkout -q -- .github/workflows
+            git clean -fdq -- .github/workflows
+            if [ -z "$(git status --porcelain)" ]; then
+              echo "Claude produced no changes."; exit 0
+            fi
+          fi
           git commit -m "$TITLE"
           git push -u origin "$BRANCH"
