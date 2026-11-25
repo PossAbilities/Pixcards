@@ -14,6 +14,7 @@ import {
   AVENIR_REGULAR_B64,
   AVENIR_MEDIUM_B64,
   AVENIR_HEAVY_B64,
+  AVENIR_BLACK_B64,
 } from "@/lib/fonts/avenir";
 
 /**
@@ -33,7 +34,8 @@ export type FontKey =
   | "nunitobk"
   | "avenir"
   | "avenirmed"
-  | "avenirhvy";
+  | "avenirhvy"
+  | "avenirblk";
 
 const FONTS: Record<FontKey, { b64: string; family: string; file: string }> = {
   sans: { b64: LIBERATION_SANS_B64, family: "Liberation Sans", file: "pix-sans.ttf" },
@@ -49,6 +51,7 @@ const FONTS: Record<FontKey, { b64: string; family: string; file: string }> = {
   avenir: { b64: AVENIR_REGULAR_B64, family: "Avenir", file: "pix-avenir.ttf" },
   avenirmed: { b64: AVENIR_MEDIUM_B64, family: "Avenir Medium", file: "pix-avenir-med.ttf" },
   avenirhvy: { b64: AVENIR_HEAVY_B64, family: "Avenir Heavy", file: "pix-avenir-hvy.ttf" },
+  avenirblk: { b64: AVENIR_BLACK_B64, family: "Avenir Black", file: "pix-avenir-blk.ttf" },
 };
 const B64: Record<FontKey, string> = {
   sans: FONTS.sans.b64,
@@ -60,6 +63,7 @@ const B64: Record<FontKey, string> = {
   avenir: FONTS.avenir.b64,
   avenirmed: FONTS.avenirmed.b64,
   avenirhvy: FONTS.avenirhvy.b64,
+  avenirblk: FONTS.avenirblk.b64,
 };
 
 const written = new Set<FontKey>();

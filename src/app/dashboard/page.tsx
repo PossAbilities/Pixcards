@@ -8,6 +8,7 @@ import { appUrl, theme as getTheme } from "@/lib/constants";
 import { Icon } from "@/components/Icon";
 import type { CardData } from "@/components/DigitalCard";
 import { ProfileShowcase } from "@/components/dashboard/ProfileShowcase";
+import { ProfilePrompt } from "@/components/dashboard/ProfilePrompt";
 
 export const metadata: Metadata = { title: "Your profile" };
 
@@ -83,8 +84,17 @@ export default async function ProfilePage({
     })),
   };
 
+  // Nudge staff to add the personal touches that make a card theirs.
+  const missing: string[] = [];
+  if (!profile.avatarUrl) missing.push("a profile photo");
+  if (!profile.bio?.trim()) missing.push("a short bio");
+  if (!profile.links.some((l) => l.platform.toLowerCase().includes("linkedin")))
+    missing.push("your LinkedIn");
+  if (!profile.phone?.trim()) missing.push("your phone number");
+
   return (
     <div>
+      <ProfilePrompt missing={missing} editHref="/dashboard/edit" />
       {adminDenied && (
         <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <Icon name="shield_person" className="mt-0.5 text-[18px]" />

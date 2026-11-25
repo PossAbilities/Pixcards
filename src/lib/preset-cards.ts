@@ -369,7 +369,7 @@ function wordmarkEl(opts: {
 function brandFontFor(e: TemplateElement): string {
   const text = e.text ?? "";
   const rich = e.richText ?? "";
-  if (rich.includes("Poss") || text === "PossAbilities") return "avenirhvy"; // logo
+  if (rich.includes("Poss") || text === "PossAbilities") return "avenirblk"; // logo
   if (/\{\{\s*name\s*\}\}/i.test(text)) return "avenirhvy"; // person's name
   if (/\{\{\s*(title|jobtitle|role)\s*\}\}/i.test(text)) return "avenirmed"; // job title
   return "avenir";

@@ -21,6 +21,8 @@ const TINT = "#f4eef6";
 // the licensed Avenir webfont slots in ahead of it once supplied).
 const FONT =
   "'Avenir','Avenir Next',var(--font-nunito-sans),'Nunito Sans',ui-sans-serif,system-ui,sans-serif";
+// The PossAbilities logo is set in Avenir Black.
+const LOGO_FONT = `'Avenir Black',${FONT}`;
 
 /** Stroke-icon paths matching the brand mockups. */
 const ICON: Record<string, string> = {
@@ -30,6 +32,10 @@ const ICON: Record<string, string> = {
     "M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z",
   globe: "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20 M2 12h20 M12 2a15 15 0 0 1 0 20 M12 2a15 15 0 0 0 0 20",
   linkedin: "M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6 M2 9h4v12H2z M4 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4",
+  facebook: "M15 3h-2.5a3.5 3.5 0 0 0-3.5 3.5V9H7v3h2v9h3v-9h2.4l.6-3H12V6.5a1 1 0 0 1 1-1h2z",
+  instagram: "M7 3h10a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4z M12 8.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6 M17.3 6.7h.01",
+  x: "M4 3l16 18 M20 3L4 21",
+  flipbook: "M12 5v16 M12 5a4 4 0 0 0-4-3H3v16h5a4 4 0 0 1 4 3 M12 5a4 4 0 0 1 4-3h5v16h-5a4 4 0 0 0-4 3",
   tap: "M6 8.5a6.5 6.5 0 0 1 0 7 M10 6a10 10 0 0 1 0 12 M14 3.5a13.5 13.5 0 0 1 0 17",
 };
 
@@ -67,6 +73,10 @@ type Item = {
 function linkIcon(link: CardLink): string {
   const p = (link.platform || "").toLowerCase();
   if (p.includes("linkedin")) return "linkedin";
+  if (p.includes("facebook")) return "facebook";
+  if (p.includes("instagram")) return "instagram";
+  if (p.includes("twitter") || p === "x") return "x";
+  if (p.includes("flipbook") || p.includes("book")) return "flipbook";
   if (p.includes("mail") || p.includes("email")) return "mail";
   if (p.includes("phone") || p.includes("tel")) return "phone";
   return "globe";
@@ -197,7 +207,8 @@ export function PossabilitiesProfile({
         __html:
           "@font-face{font-family:'Avenir';font-weight:400;font-display:swap;src:url('/api/brand-font/regular') format('truetype')}" +
           "@font-face{font-family:'Avenir';font-weight:500;font-display:swap;src:url('/api/brand-font/medium') format('truetype')}" +
-          "@font-face{font-family:'Avenir';font-weight:900;font-display:swap;src:url('/api/brand-font/heavy') format('truetype')}",
+          "@font-face{font-family:'Avenir';font-weight:900;font-display:swap;src:url('/api/brand-font/heavy') format('truetype')}" +
+          "@font-face{font-family:'Avenir Black';font-weight:900;font-display:swap;src:url('/api/brand-font/black') format('truetype')}",
       }}
     />
   );
@@ -210,7 +221,7 @@ export function PossabilitiesProfile({
         {fontLink}
         {bars}
         <div style={{ maxWidth: 480, margin: "0 auto", padding: "26px 22px 28px", display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <div style={{ fontSize: 24, fontWeight: 900, letterSpacing: "-0.4px" }}>
+          <div style={{ fontFamily: LOGO_FONT, fontSize: 24, fontWeight: 900, letterSpacing: "-0.4px" }}>
             <span style={{ color: PINK }}>Poss</span>
             <span style={{ color: PURPLE }}>Abilities</span>
           </div>
@@ -250,7 +261,7 @@ export function PossabilitiesProfile({
       <div style={{ fontFamily: FONT, background: "#fff", color: PURPLE }}>
         {fontLink}
         <div style={{ background: PURPLE, textAlign: "center", padding: "36px 24px 28px" }}>
-          <div style={{ fontSize: 27, fontWeight: 900, letterSpacing: "-0.4px" }}>
+          <div style={{ fontFamily: LOGO_FONT, fontSize: 27, fontWeight: 900, letterSpacing: "-0.4px" }}>
             <span style={{ color: TEAL }}>Poss</span>
             <span style={{ color: "#fff" }}>Abilities</span>
           </div>
@@ -308,7 +319,7 @@ export function PossabilitiesProfile({
         <svg viewBox="0 0 24 24" aria-hidden style={{ position: "absolute", right: -80, top: -16, width: 300, height: 300, fill: "none", stroke: "#fff", strokeOpacity: 0.5, strokeWidth: 1.2, strokeLinecap: "round" }}>
           {ICON.tap.split(" M").map((seg, i) => <path key={i} d={(i ? "M" : "") + seg} />)}
         </svg>
-        <div style={{ fontSize: 24, fontWeight: 900, letterSpacing: "-0.4px", position: "relative", color: PURPLE }}>
+        <div style={{ fontFamily: LOGO_FONT, fontSize: 24, fontWeight: 900, letterSpacing: "-0.4px", position: "relative", color: PURPLE }}>
           <span>Poss</span><span>Abilities</span>
         </div>
         <p style={{ fontSize: 20, fontWeight: 400, margin: "48px 0 0", position: "relative" }}>Hi, I&apos;m</p>

@@ -3,6 +3,7 @@ import {
   AVENIR_REGULAR_B64,
   AVENIR_MEDIUM_B64,
   AVENIR_HEAVY_B64,
+  AVENIR_BLACK_B64,
 } from "@/lib/fonts/avenir";
 
 export const runtime = "nodejs";
@@ -16,6 +17,7 @@ const FONTS: Record<string, string> = {
   regular: AVENIR_REGULAR_B64,
   medium: AVENIR_MEDIUM_B64,
   heavy: AVENIR_HEAVY_B64,
+  black: AVENIR_BLACK_B64,
 };
 
 export async function GET(

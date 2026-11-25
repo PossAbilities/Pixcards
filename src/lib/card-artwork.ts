@@ -232,6 +232,15 @@ export async function renderTemplateSidePng(
 
   const layers: sharp.OverlayOptions[] = [];
 
+  // A PossAbilities card side (identified by its "PossAbilities" wordmark)
+  // renders in the Avenir brand font by role — this upgrades older stored
+  // order designs (seeded before Avenir) to the brand font at download time.
+  const isPaSide = side.elements.some(
+    (e) =>
+      e.kind === "text" &&
+      ((e.richText ?? "").includes("Poss") || e.text === "PossAbilities"),
+  );
+
   for (const el of side.elements) {
     const left = Math.round(el.x * ow);
     const top = Math.round(el.y * oh);
@@ -252,13 +261,29 @@ export async function renderTemplateSidePng(
       // faux-bold is disabled to avoid double-weighting.
       let font: FontKey = "sans";
       let bold = weight >= 700;
-      if (el.font === "nunito") {
+      // On a PossAbilities side, pick the Avenir face by role (Black = logo,
+      // Heavy = name, Medium = job title, Regular = everything else) — this
+      // overrides whatever an older stored design had (e.g. "nunito").
+      let face = el.font;
+      if (isPaSide) {
+        const txt = el.text ?? "";
+        const rt = el.richText ?? "";
+        face =
+          rt.includes("Poss") || txt === "PossAbilities"
+            ? "avenirblk"
+            : /\{\{\s*name\s*\}\}/i.test(txt)
+              ? "avenirhvy"
+              : /\{\{\s*(title|jobtitle|role)\s*\}\}/i.test(txt)
+                ? "avenirmed"
+                : "avenir";
+      }
+      if (face === "nunito") {
         font = weight >= 850 ? "nunitobk" : weight >= 650 ? "nunitob" : "nunito";
         bold = false;
-      } else if (el.font) {
+      } else if (face) {
         // Any explicitly-set face (e.g. the Avenir weights) carries its own
         // weight — never faux-bold on top of it.
-        font = el.font as FontKey;
+        font = face as FontKey;
         bold = false;
       }
       const layer = await textOverlay({

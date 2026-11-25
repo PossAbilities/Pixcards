@@ -245,6 +245,14 @@ export function PossabilitiesManager({
             <span className="mb-1 block text-xs font-semibold text-muted">Instagram URL</span>
             <input className={stdInput} value={std.instagram} placeholder="https://instagram.com/…" onChange={(e) => setField("instagram", e.target.value)} />
           </label>
+          <label>
+            <span className="mb-1 block text-xs font-semibold text-muted">X URL</span>
+            <input className={stdInput} value={std.x} placeholder="https://x.com/…" onChange={(e) => setField("x", e.target.value)} />
+          </label>
+          <label className="sm:col-span-2">
+            <span className="mb-1 block text-xs font-semibold text-muted">Flipbook / brochure link</span>
+            <input className={stdInput} value={std.flipbook} placeholder="https://…  (PDF about what we do)" onChange={(e) => setField("flipbook", e.target.value)} />
+          </label>
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <button type="button" onClick={saveStd} disabled={pending} className={buttonClass("primary", "md")}>

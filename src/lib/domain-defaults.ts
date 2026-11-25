@@ -10,6 +10,8 @@ export type DomainDefaultsData = {
   linkedin: string;
   facebook: string;
   instagram: string;
+  x: string;
+  flipbook: string;
 };
 
 const EMPTY: DomainDefaultsData = {
@@ -18,6 +20,8 @@ const EMPTY: DomainDefaultsData = {
   linkedin: "",
   facebook: "",
   instagram: "",
+  x: "",
+  flipbook: "",
 };
 
 /** Read a domain's standard-details template (empty object if none set). */
@@ -31,11 +35,14 @@ export async function getDomainDefaults(domain: string): Promise<DomainDefaultsD
         linkedin: row.linkedin,
         facebook: row.facebook,
         instagram: row.instagram,
+        x: row.x,
+        flipbook: row.flipbook,
       }
     : { ...EMPTY };
 }
 
-/** The standard contact/social links implied by a domain's defaults. */
+/** The standard contact/social links implied by a domain's defaults. Order is
+ *  the order they appear on the card/profile. */
 export function standardLinks(d: DomainDefaultsData): StdLink[] {
   const host = (u: string) => u.replace(/^https?:\/\/(www\.)?/i, "").replace(/\/+$/, "");
   const links: StdLink[] = [];
@@ -47,6 +54,10 @@ export function standardLinks(d: DomainDefaultsData): StdLink[] {
     links.push({ platform: "facebook", label: "Facebook", url: d.facebook.trim(), icon: "link" });
   if (d.instagram.trim())
     links.push({ platform: "instagram", label: "Instagram", url: d.instagram.trim(), icon: "link" });
+  if (d.x.trim())
+    links.push({ platform: "twitter", label: "X", url: d.x.trim(), icon: "link" });
+  if (d.flipbook.trim())
+    links.push({ platform: "flipbook", label: "What we do", url: d.flipbook.trim(), icon: "menu_book" });
   return links;
 }
 

@@ -231,6 +231,8 @@ export async function setDomainDefaults(
       linkedin: data.linkedin.trim(),
       facebook: data.facebook.trim(),
       instagram: data.instagram.trim(),
+      x: data.x.trim(),
+      flipbook: data.flipbook.trim(),
     };
     await prisma.domainDefaults.upsert({
       where: { domain: clean },
