@@ -23,8 +23,8 @@
 
 # Security headers at the CDN edge, so static/cached responses carry them too
 # (next.config.ts headers() alone may not reach CDN-served pages and assets).
-# Keep the Content-Security-Policy in sync with the production `csp` in
-# next.config.ts.
+# Keep the Content-Security-Policy and Permissions-Policy in sync with the
+# production `csp` and `permissionsPolicy` in next.config.ts.
 [[headers]]
   for = "/*"
   [headers.values]
@@ -32,6 +32,7 @@
     X-Content-Type-Options = "nosniff"
     X-Frame-Options = "SAMEORIGIN"
     Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' data: blob: https:; media-src 'self' data: blob: https:; frame-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self' https://checkout.stripe.com https://billing.stripe.com; frame-ancestors 'self'; upgrade-insecure-requests"
+    Permissions-Policy = "accelerometer=(), autoplay=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), usb=(), browsing-topics=()"
 
 # Required environment variables (set in Netlify UI → Site settings → Environment):
 #   DATABASE_URL          Supabase pooled URL (port 6543, ?pgbouncer=true)

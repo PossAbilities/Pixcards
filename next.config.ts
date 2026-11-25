@@ -27,6 +27,25 @@ const csp = [
   ...(isDev ? [] : ["upgrade-insecure-requests"]),
 ].join("; ");
 
+// Permissions-Policy: switch off powerful browser features the app never uses.
+// Web Share and the Clipboard API ARE used (share/copy-link buttons), so they're
+// deliberately left out. Stripe Checkout is a redirect, so payment isn't needed.
+// Mirrored in netlify.toml [[headers]] — keep in sync.
+const permissionsPolicy = [
+  "accelerometer=()",
+  "autoplay=()",
+  "camera=()",
+  "display-capture=()",
+  "geolocation=()",
+  "gyroscope=()",
+  "magnetometer=()",
+  "microphone=()",
+  "midi=()",
+  "payment=()",
+  "usb=()",
+  "browsing-topics=()",
+].join(", ");
+
 const nextConfig: NextConfig = {
   // Pin the workspace root to this project. Without it, Next infers the root
   // from the nearest lockfile — a stray package-lock.json in a parent folder
@@ -47,6 +66,7 @@ const nextConfig: NextConfig = {
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "Content-Security-Policy", value: csp },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: permissionsPolicy },
         ],
       },
     ];
