@@ -138,8 +138,31 @@ async function place(
  *  the sides). Falls back to the brand back-cover if no card art is supplied. */
 async function renderMirrorCover(coverPng: Buffer | undefined, theme: InsertTheme): Promise<Buffer> {
   if (!coverPng) return renderBackCover(theme);
-  return sharp(coverPng)
-    .resize(HALF_W, HALF_H, { fit: "cover", position: "centre" })
+  // Present the whole card centred with a safe margin (never full-bleed-cropped,
+  // which pushed the wordmark into the edge/bleed zone). The card keeps its own
+  // proportions and sits on a clean panel with a subtle frame.
+  const margin = Math.round(12 * MM);
+  const maxW = HALF_W - margin * 2;
+  const maxH = HALF_H - margin * 2;
+  const meta = await sharp(coverPng).metadata();
+  const ar = (meta.width ?? 1013) / (meta.height ?? 638);
+  let w = maxW;
+  let h = Math.round(w / ar);
+  if (h > maxH) {
+    h = maxH;
+    w = Math.round(h * ar);
+  }
+  const card = await sharp(coverPng).resize(w, h).png().toBuffer();
+  const left = Math.round((HALF_W - w) / 2);
+  const top = Math.round((HALF_H - h) / 2);
+  const bg = await sharp({
+    create: { width: HALF_W, height: HALF_H, channels: 4, background: "#ffffff" },
+  }).png().toBuffer();
+  const frame = Buffer.from(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${HALF_W}" height="${HALF_H}"><rect x="${left - 1}" y="${top - 1}" width="${w + 2}" height="${h + 2}" rx="${Math.round(2.5 * MM)}" fill="none" stroke="#dfe3e7" stroke-width="${Math.round(0.4 * MM)}"/></svg>`,
+  );
+  return sharp(bg)
+    .composite([{ input: card, left, top }, { input: frame, top: 0, left: 0 }])
     .png()
     .toBuffer();
 }
