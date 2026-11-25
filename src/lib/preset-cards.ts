@@ -469,7 +469,7 @@ export async function cardBPurpleWaveSpec(): Promise<CardTemplateSpec> {
       bg: `url("${front}")`,
       elements: [
         wordmarkEl({ x: 0.063, y: 0.13, w: 0.7, size: 46, possColor: B_TEAL, abilColor: "#ffffff", align: "left" }),
-        { id: eid(), kind: "text", x: 0.064, y: 0.3, w: 0.6, h: 0.05, text: "Live The Life You Choose", color: "#ffffff", fontSize: 20, fontWeight: 700, align: "left" },
+        { id: eid(), kind: "text", x: 0.064, y: 0.225, w: 0.6, h: 0.05, text: "Live The Life You Choose", color: "#ffffff", fontSize: 20, fontWeight: 700, align: "left" },
       ],
     },
     back: {
@@ -527,7 +527,7 @@ export async function cardCBigPinkSpec(): Promise<CardTemplateSpec> {
       bg: `url("${front}")`,
       elements: [
         wordmarkEl({ x: 0.063, y: 0.12, w: 0.6, size: 46, possColor: B_MAGENTA, abilColor: B_PURPLE, align: "left" }),
-        { id: eid(), kind: "text", x: 0.064, y: 0.5, w: 0.5, h: 0.14, text: "Live The Life You Choose", color: B_PURPLE, fontSize: 30, fontWeight: 800, align: "left" },
+        { id: eid(), kind: "text", x: 0.064, y: 0.215, w: 0.5, h: 0.14, text: "Live The Life You Choose", color: B_PURPLE, fontSize: 30, fontWeight: 800, align: "left" },
       ],
     },
     back: {
