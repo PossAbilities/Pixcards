@@ -124,14 +124,6 @@ export default async function AdminOrderDetailPage({
   // Team/auto orders have no studio artwork, but each card is auto-designed
   // from the member's details + org brand. Show those baked cards instead.
   const hasBakedCards = !hasArtwork && order.cards.length > 0;
-  // Serve artwork via the image endpoint when it's an inline data-URI, so the
-  // page stays light (a multi-MB inline PNG crashes the tab on re-render).
-  const artworkUrl = (side: "front" | "back", value?: string) =>
-    value
-      ? value.startsWith("data:")
-        ? `/api/img/order/${order.id}/${side}`
-        : value
-      : undefined;
   const mat = material(order.material);
   const cardNameText = design.spec?.cardName || order.cardName;
   const username = order.user.profile?.username;
@@ -176,14 +168,17 @@ export default async function AdminOrderDetailPage({
         {hasArtwork ? (
           <>
             <div className="flex flex-col gap-6 sm:flex-row">
+              {/* Preview is rendered LIVE from the owner's current design (via
+                  the print route), so it matches what actually prints — not the
+                  snapshot baked at order time. */}
               <ArtworkPanel
                 side="front"
-                image={artworkUrl("front", design.frontImage)}
+                image={design.frontImage ? `/api/print/${order.id}/front?scale=1&inline=1` : undefined}
                 orderId={order.id}
               />
               <ArtworkPanel
                 side="back"
-                image={artworkUrl("back", design.backImage)}
+                image={design.backImage ? `/api/print/${order.id}/back?scale=1&inline=1` : undefined}
                 orderId={order.id}
               />
             </div>

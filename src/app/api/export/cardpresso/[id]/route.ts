@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
 import { appUrl } from "@/lib/constants";
 import { renderCardSide, renderTemplateSidePng } from "@/lib/card-artwork";
+import { loadMyCard } from "@/lib/mycard";
 import {
   hasTemplate,
   parseTemplate,
@@ -143,11 +144,22 @@ export async function GET(
       );
     }
   } else {
-    // Single order — re-render fresh from the stored design when we have it
-    // (sharpest possible output), else use the artwork baked at order time.
+    // Single order — render LIVE from the owner's current design (latest brand
+    // font, colours and layout), then the stored design, then the baked image.
     let front: Buffer | null = null;
     let back: Buffer | null = null;
-    if (design.templateSpec && design.merge && hasTemplate(design.templateSpec)) {
+    try {
+      const my = await loadMyCard(order.userId);
+      if (my && hasTemplate(my.spec)) {
+        [front, back] = await Promise.all([
+          renderTemplateSidePng(my.spec.front, my.merge),
+          renderTemplateSidePng(my.spec.back, my.merge),
+        ]);
+      }
+    } catch {
+      /* fall through */
+    }
+    if (!front && design.templateSpec && design.merge && hasTemplate(design.templateSpec)) {
       try {
         [front, back] = await Promise.all([
           renderTemplateSidePng(design.templateSpec.front, design.merge),
