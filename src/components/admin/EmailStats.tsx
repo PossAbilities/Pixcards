@@ -16,6 +16,7 @@ const TYPE_LABELS: Record<string, string> = {
   ORDER_SHIPPED: "Order shipped",
   PASSWORD_RESET: "Password reset",
   MARKETING: "Marketing",
+  PROFILE_REMINDER: "Profile reminder",
   OTHER: "Other",
 };
 
