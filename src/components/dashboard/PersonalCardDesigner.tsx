@@ -1,7 +1,7 @@
 "use client";
 
 import { keyboardRndProps, elementLabel } from "@/lib/keyboard-nudge";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Rnd } from "react-rnd";
 import { Icon } from "@/components/Icon";
 import { buttonClass, inputClass, Label } from "@/components/ui";
@@ -107,6 +107,49 @@ export function PersonalCardDesigner({
 
   const side = spec[activeSide];
   const selected = side.elements.find((e) => e.id === selectedId) ?? null;
+
+  // Live print-accurate preview: the card side is rendered by the SAME engine
+  // that makes the print artwork (POST /api/card-render), debounced as you
+  // edit, and shown as the canvas background. The draggable boxes sit on top
+  // as outlines, so what you see here is exactly what prints.
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewing, setPreviewing] = useState(false);
+  const previewUrlRef = useRef<string | null>(null);
+  const sideJson = JSON.stringify(side);
+  const mergeJson = JSON.stringify(previewMerge);
+  useEffect(() => {
+    let cancelled = false;
+    setPreviewing(true);
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch("/api/card-render", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ side, merge: previewMerge, scale: 1 }),
+        });
+        if (!res.ok) throw new Error("render failed");
+        const blob = await res.blob();
+        if (cancelled) return;
+        const url = URL.createObjectURL(blob);
+        if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+        previewUrlRef.current = url;
+        setPreviewUrl(url);
+      } catch {
+        /* keep the last good preview (or the client fallback) */
+      } finally {
+        if (!cancelled) setPreviewing(false);
+      }
+    }, 350);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sideJson, mergeJson]);
+  // Release the last object URL on unmount.
+  useEffect(() => () => {
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+  }, []);
 
   function mutateSide(fn: (s: SideSpec) => SideSpec) {
     setSpec((prev) => ({ ...prev, [activeSide]: fn(prev[activeSide]) }));
@@ -228,6 +271,9 @@ export function PersonalCardDesigner({
   }, [side.bg]);
 
   function renderEl(el: TemplateElement) {
+    // With the print-accurate preview underneath, the boxes are just grab
+    // handles — the server render already draws every element's real content.
+    if (previewUrl) return <div className="h-full w-full" />;
     if (el.kind === "text") {
       const pa = isPaSide(side);
       const face = pa ? paFaceFor(el) : null;
@@ -304,6 +350,16 @@ export function PersonalCardDesigner({
             style={{ width: ED_W, height: ED_H, ...bgStyle }}
             onMouseDown={() => setSelectedId(null)}
           >
+            {/* Print-accurate preview underlay — the real server render. */}
+            {previewUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={previewUrl}
+                alt=""
+                draggable={false}
+                className="pointer-events-none absolute inset-0 h-full w-full select-none"
+              />
+            )}
             {side.elements.map((el) => (
               <Rnd
                 key={el.id}
@@ -331,7 +387,11 @@ export function PersonalCardDesigner({
                 })}
                 className={cn(
                   "flex items-center",
-                  selectedId === el.id ? "ring-2 ring-primary" : "hover:ring-1 hover:ring-primary/40",
+                  selectedId === el.id
+                    ? "ring-2 ring-primary"
+                    : previewUrl
+                      ? "ring-1 ring-primary/25 hover:ring-primary/50"
+                      : "hover:ring-1 hover:ring-primary/40",
                 )}
               >
                 {renderEl(el)}
@@ -339,7 +399,8 @@ export function PersonalCardDesigner({
             ))}
           </div>
           <p className="mt-2 text-xs text-faint">
-            Drag and resize elements. Preview shows your real details.
+            Drag and resize the outlined boxes. The preview is the exact print
+            artwork{previewing ? " · updating…" : ""}.
           </p>
         </div>
 
