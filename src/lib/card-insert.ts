@@ -74,6 +74,27 @@ export const INSERT_THEMES: Record<string, InsertTheme> = {
   },
 };
 
+/**
+ * Resolve the carrier/insert theme key for a card owner. Brand presets
+ * (pa-colourbar/-wave/-bigpink, possabilities, perspective) map to their
+ * brand; a custom card falls back to the owner's email domain, so a
+ * PossAbilities staffer's insert is PossAbilities-branded even when they've
+ * customised their card. Keys are shared by the PDF (INSERT_THEMES) and the
+ * on-screen insert page (its own THEMES map).
+ */
+export function insertThemeKeyFor(
+  cardPreset?: string | null,
+  email?: string | null,
+): "default" | "perspective" | "possabilities" {
+  const p = (cardPreset ?? "").toLowerCase();
+  if (p === "perspective") return "perspective";
+  if (p === "possabilities" || p.startsWith("pa-")) return "possabilities";
+  const domain = (email ?? "").split("@")[1]?.toLowerCase() ?? "";
+  if (domain === "possabilities.org.uk") return "possabilities";
+  if (domain.includes("perspectivestudio")) return "perspective";
+  return "default";
+}
+
 const INK = "#191c1e";
 const MUTED = "#5b6166";
 const FAINT = "#9aa0a6";

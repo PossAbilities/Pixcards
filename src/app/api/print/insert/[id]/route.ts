@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/guards";
 import { cardTapUrl } from "@/lib/cards";
 import { appUrl } from "@/lib/constants";
-import { renderInsertPdf, INSERT_THEMES } from "@/lib/card-insert";
+import { renderInsertPdf, INSERT_THEMES, insertThemeKeyFor } from "@/lib/card-insert";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -32,19 +32,11 @@ export async function GET(
 
   const firstName = (order.user.name || "there").split(" ")[0];
 
-  // Theme by the user's brand preset first, then the order design, else default.
-  let preset = "default";
-  const cp = order.user.profile?.cardPreset;
-  if (cp && INSERT_THEMES[cp]) preset = cp;
-  else {
-    try {
-      const d = JSON.parse(order.design) as { spec?: { preset?: string } };
-      if (d?.spec?.preset && INSERT_THEMES[d.spec.preset]) preset = d.spec.preset;
-    } catch {
-      /* default */
-    }
-  }
-  const theme = INSERT_THEMES[preset];
+  // Theme by the owner's brand (preset, or email domain for custom cards).
+  const theme =
+    INSERT_THEMES[
+      insertThemeKeyFor(order.user.profile?.cardPreset, order.user.email)
+    ];
 
   const username = order.user.profile?.username;
   const cards =

@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/guards";
 import { cardTapUrl } from "@/lib/cards";
+import { insertThemeKeyFor } from "@/lib/card-insert";
 import { appUrl } from "@/lib/constants";
 import { PrintToolbar } from "@/components/print/PrintToolbar";
 
@@ -39,6 +40,14 @@ const THEMES: Record<string, CarrierTheme> = {
     brandName: "PERSPECTIVE STUDIO",
     footerUrl: "perspectivestudio.co.uk",
     strip: "linear-gradient(90deg,#c7ec4f 0%,#5aa0e0 50%,#ff5a1f 100%)",
+  },
+  possabilities: {
+    cover: "linear-gradient(135deg,#3f2160 0%,#341a52 55%,#2b1547 100%)",
+    accent: "#e0007a",
+    kicker: "#4fd1c5",
+    brandName: "PossAbilities",
+    footerUrl: "possabilities.org.uk",
+    strip: "linear-gradient(90deg,#16a79f 0%,#e0007a 100%)",
   },
 };
 const INK = "#191c1e";
@@ -488,15 +497,9 @@ export default async function CardInsertPage({
   if (!order) notFound();
 
   const firstName = (order.user.name || "there").split(" ")[0];
-  // Pick the carrier theme from the order's card design preset.
-  let preset = "default";
-  try {
-    const d = JSON.parse(order.design) as { spec?: { preset?: string } };
-    if (d?.spec?.preset && THEMES[d.spec.preset]) preset = d.spec.preset;
-  } catch {
-    /* default */
-  }
-  const theme = THEMES[preset];
+  // Pick the carrier theme from the owner's brand (preset, or email domain for
+  // custom cards) — shared resolver so it matches the printed PDF.
+  const theme = THEMES[insertThemeKeyFor(order.user.profile?.cardPreset, order.user.email)];
   // Prefer real card codes; if none generated yet, fall back to the profile
   // URL so the insert is still printable.
   const username = order.user.profile?.username;
