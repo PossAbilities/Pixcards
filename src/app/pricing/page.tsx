@@ -3,11 +3,11 @@ import type { Metadata } from "next";
 import { SiteNav } from "@/components/marketing/SiteNav";
 import { SiteFooter } from "@/components/marketing/SiteFooter";
 import { Reveal } from "@/components/marketing/Reveal";
+import { EmailLink } from "@/components/marketing/EmailLink";
 import { Icon } from "@/components/Icon";
 import { buttonClass, ProBadge, Badge } from "@/components/ui";
 import { UpgradePanel } from "@/components/public/UpgradePanel";
 import { getSessionUser } from "@/lib/auth";
-import { CONTACT_EMAIL } from "@/lib/site";
 import { money, PRO_PRICE_CENTS, CARD_MATERIALS } from "@/lib/constants";
 
 export const metadata: Metadata = {
@@ -316,13 +316,13 @@ export default async function PricingPage({
                   all set up for you. Get in touch and we&apos;ll set it up.
                 </p>
               </div>
-              <a
-                href={`mailto:${CONTACT_EMAIL}?subject=Setting%20up%20an%20organisation`}
+              <EmailLink
+                subject="Setting up an organisation"
                 className={buttonClass("primary", "md")}
               >
                 <Icon name="mail" className="text-[18px]" />
                 Get in touch
-              </a>
+              </EmailLink>
             </div>
           </Reveal>
         </section>

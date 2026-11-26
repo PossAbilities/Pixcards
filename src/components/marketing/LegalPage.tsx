@@ -1,6 +1,7 @@
 import { SiteNav } from "@/components/marketing/SiteNav";
 import { SiteFooter } from "@/components/marketing/SiteFooter";
-import { BUSINESS, CONTACT_EMAIL, LEGAL_NAME } from "@/lib/site";
+import { EmailLink } from "@/components/marketing/EmailLink";
+import { BUSINESS, LEGAL_NAME } from "@/lib/site";
 
 /** Shared shell for the legal / policy pages. */
 export function LegalPage({
@@ -58,10 +59,7 @@ export function Section({
 }
 
 export function MailLink({ subject }: { subject?: string }) {
-  const href = subject
-    ? `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}`
-    : `mailto:${CONTACT_EMAIL}`;
-  return <a href={href}>{CONTACT_EMAIL}</a>;
+  return <EmailLink subject={subject} />;
 }
 
 /** "Who we are" block — only renders the business fields that are filled in. */
