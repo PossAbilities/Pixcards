@@ -2,9 +2,10 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { SiteNav } from "@/components/marketing/SiteNav";
 import { SiteFooter } from "@/components/marketing/SiteFooter";
+import { EmailLink } from "@/components/marketing/EmailLink";
 import { Icon } from "@/components/Icon";
 import { buttonClass, Badge } from "@/components/ui";
-import { CONTACT_EMAIL, SUPPORT_RESPONSE_TIME } from "@/lib/site";
+import { SUPPORT_RESPONSE_TIME } from "@/lib/site";
 import { APP_NAME } from "@/lib/constants";
 
 export const metadata: Metadata = {
@@ -114,21 +115,13 @@ export default function SupportPage() {
                     put &ldquo;Pro&rdquo; in your subject line and we&rsquo;ll
                     answer your message before others in the queue.
                   </p>
-                  <a
-                    href={`mailto:${CONTACT_EMAIL}`}
-                    className={buttonClass("primary", "lg", "mt-6")}
-                  >
+                  <EmailLink className={buttonClass("primary", "lg", "mt-6")}>
                     <Icon name="mail" className="text-[20px]" />
                     Email support
-                  </a>
+                  </EmailLink>
                   <p className="mt-3 text-sm text-muted">
                     or write to us at{" "}
-                    <a
-                      href={`mailto:${CONTACT_EMAIL}`}
-                      className="font-semibold text-primary hover:text-primary-deep"
-                    >
-                      {CONTACT_EMAIL}
-                    </a>
+                    <EmailLink className="font-semibold text-primary hover:text-primary-deep" />
                   </p>
                 </div>
 
